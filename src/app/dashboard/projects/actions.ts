@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
+import { projectAccess } from '@/lib/project-access';
 import { createClient } from '@/lib/supabase/server';
 
 // 1. Create Project (Admin only)
@@ -62,12 +62,15 @@ export async function updateProject(projectId: string, formData: FormData) {
 
 // 3. Add Member to Project
 export async function addProjectMember(projectId: string, userId: string) {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from('project_members')
-    .insert({ project_id: projectId, user_id: userId });
-
-  if (error) return { error: error.message };
+  const access = await projectAccess(projectId, true);
+  if (access.error) return { error: access.error };
+  const supabase = access.supabase;
+  if (!userId) return { error: 'Choose a teammate first.' };
+  const { data: profile } = await supabase.from('profiles').select('id').eq('id', userId).single();
+  if (!profile) return { error: 'This teammate is not in the workspace. Invite them from Team Users first.' };
+  const { error } = await supabase.from('project_members').insert({ project_id: projectId, user_id: userId });
+  if (error && error.code !== '23505') return { error: error.message };
+  revalidatePath('/dashboard');
 
   revalidatePath(`/dashboard/projects/${projectId}`);
   return { success: true };
@@ -79,7 +82,9 @@ export async function removeProjectMember(
   memberId: string,
   newAssigneeId?: string
 ) {
-  const supabase = await createClient();
+  const access = await projectAccess(projectId, true);
+  if (access.error) return { error: access.error };
+  const supabase = access.supabase;
 
   const { error } = await supabase.rpc('remove_member_and_reassign_tasks', {
     p_project_id: projectId,

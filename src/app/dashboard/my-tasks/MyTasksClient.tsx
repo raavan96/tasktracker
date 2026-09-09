@@ -1,15 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import type { TaskStatus, Task } from '@/lib/task-types';
 import Link from 'next/link';
 import { updateTaskStatus } from '@/app/dashboard/tasks/actions';
 import { 
   Search, 
-  Filter, 
   CheckCircle2, 
-  Clock, 
-  AlertCircle, 
-  Circle, 
   Calendar, 
   ExternalLink,
   MessageSquare
@@ -19,10 +16,12 @@ export default function MyTasksClient({
   initialTasks,
   projects,
 }: {
-  initialTasks: any[];
-  projects: any[];
+  initialTasks: (Omit<Task, 'task_comments' | 'assignee' | 'created_by'> & { project?: { name: string }; task_comments?: { count: number }[] })[];
+  projects: { id: string; name: string }[];
 }) {
-  const [tasks, setTasks] = useState(initialTasks);
+  const tasks = initialTasks;
+  const [error, setError] = useState('');
+  const [pendingId, setPendingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [projectFilter, setProjectFilter] = useState('all');
@@ -39,16 +38,18 @@ export default function MyTasksClient({
     return matchesSearch && matchesStatus && matchesProject && matchesPriority;
   });
 
-  async function handleQuickStatusChange(taskId: string, projectId: string, newStatus: any) {
-    // Optimistic UI update
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
-    );
-    await updateTaskStatus(taskId, projectId, newStatus);
+  async function handleQuickStatusChange(taskId: string, projectId: string, newStatus: TaskStatus) {
+    setPendingId(taskId); setError('');
+    try {
+      const result = await updateTaskStatus(taskId, projectId, newStatus);
+      if (result.error) setError(result.error);
+    } catch { setError('The status could not be saved. Please try again.'); }
+    finally { setPendingId(null); }
   }
 
   return (
     <div className="space-y-6">
+      {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
       {/* Search & Filter Bar */}
       <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm grid grid-cols-1 sm:grid-cols-4 gap-3">
         {/* Search */}
@@ -56,7 +57,7 @@ export default function MyTasksClient({
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
           <input
             type="text"
-            placeholder="Search tasks..."
+            aria-label="Search tasks" placeholder="Search tasks..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
@@ -66,7 +67,7 @@ export default function MyTasksClient({
         {/* Project Filter */}
         <div>
           <select
-            value={projectFilter}
+            aria-label="Filter by project" value={projectFilter}
             onChange={(e) => setProjectFilter(e.target.value)}
             className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
           >
@@ -80,7 +81,7 @@ export default function MyTasksClient({
         {/* Status Filter */}
         <div>
           <select
-            value={statusFilter}
+            aria-label="Filter by status" value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
           >
@@ -95,7 +96,7 @@ export default function MyTasksClient({
         {/* Priority Filter */}
         <div>
           <select
-            value={priorityFilter}
+            aria-label="Filter by priority" value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
             className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
           >
@@ -148,10 +149,10 @@ export default function MyTasksClient({
                       Due {new Date(task.due_date).toLocaleDateString()}
                     </span>
                   )}
-                  {task.task_comments?.[0]?.count > 0 && (
+                  {(task.task_comments?.[0]?.count || 0) > 0 && (
                     <span className="flex items-center">
                       <MessageSquare className="w-3 h-3 mr-1" />
-                      {task.task_comments[0].count}
+                      {task.task_comments?.[0]?.count}
                     </span>
                   )}
                 </div>
@@ -160,8 +161,10 @@ export default function MyTasksClient({
               {/* Quick Status Select */}
               <div className="flex items-center space-x-2 self-start sm:self-center">
                 <select
+                  aria-label={`Status for ${task.title}`}
+                  disabled={pendingId !== null}
                   value={task.status}
-                  onChange={(e) => handleQuickStatusChange(task.id, task.project_id, e.target.value)}
+                  onChange={(e) => handleQuickStatusChange(task.id, task.project_id, e.target.value as TaskStatus)}
                   className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border focus:ring-2 focus:ring-blue-500 cursor-pointer ${
                     task.status === 'done' ? 'bg-green-50 text-green-700 border-green-200' :
                     task.status === 'blocked' ? 'bg-red-50 text-red-700 border-red-200' :

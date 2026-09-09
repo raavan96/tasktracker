@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import type { Member } from '@/lib/task-types';
 import { createProject } from './projects/actions';
 import { Plus, X, Loader2 } from 'lucide-react';
 
-export default function CreateProjectModal({ users }: { users: any[] }) {
+export default function CreateProjectModal({ users }: { users: Member[] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

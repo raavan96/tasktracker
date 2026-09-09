@@ -1,123 +1,91 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { projectAccess, checkAssignee } from '@/lib/project-access';
+import { parseTaskForm, type TaskStatus } from '@/lib/task-types';
 
-// 1. Create Task
+function refreshTasks(projectId: string) {
+  revalidatePath(`/dashboard/projects/${projectId}`);
+  revalidatePath('/dashboard/my-tasks');
+  revalidatePath('/dashboard');
+}
+
+async function taskAccess(taskId: string, projectId: string, mode: 'edit' | 'status' | 'comment') {
+  const access = await projectAccess(projectId);
+  if (access.error) return access;
+  const { data: task } = await access.supabase.from('tasks').select('id, created_by, assignee_id').eq('id', taskId).eq('project_id', projectId).single();
+  if (!task) return { error: 'Task not found or access denied.' } as const;
+  if (mode !== 'comment' && !access.isAdmin && task.created_by !== access.user.id && !(mode === 'status' && task.assignee_id === access.user.id)) {
+    return { error: mode === 'edit' ? 'Only an admin or the task creator can edit this task.' : 'Only an admin, the task creator, or the assignee can change this status.' } as const;
+  }
+  return access;
+}
+
 export async function createTask(projectId: string, formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  const title = (formData.get('title') as string)?.trim();
-  const description = (formData.get('description') as string)?.trim();
-  const assigneeId = (formData.get('assigneeId') as string) || null;
-  const priority = formData.get('priority') as 'low' | 'medium' | 'high' | 'urgent';
-  const status = (formData.get('status') as 'todo' | 'in_progress' | 'blocked' | 'done') || 'todo';
-  const dueDate = (formData.get('dueDate') as string) || null;
-
-  if (!title) return { error: 'Task title is required' };
-
-  const { error } = await supabase.from('tasks').insert({
-    project_id: projectId,
-    title,
-    description,
-    assignee_id: assigneeId,
-    created_by: user?.id,
-    priority,
-    status,
-    due_date: dueDate,
-  });
-
-  if (error) return { error: error.message };
-
-  revalidatePath(`/dashboard/projects/${projectId}`);
+  const access = await projectAccess(projectId);
+  if (access.error) return { error: access.error };
+  const parsed = parseTaskForm(formData);
+  if (parsed.error) return { error: parsed.error };
+  const assignmentError = await checkAssignee(access.supabase, projectId, parsed.data.assignee_id);
+  if (assignmentError) return { error: assignmentError };
+  const { data, error } = await access.supabase.from('tasks').insert({ ...parsed.data, project_id: projectId, created_by: access.user.id }).select('id').single();
+  if (error || !data) return { error: error?.message || 'The task could not be created.' };
+  refreshTasks(projectId);
   return { success: true };
 }
 
-// 2. Update Task Details & Assignee
 export async function updateTask(taskId: string, projectId: string, formData: FormData) {
-  const supabase = await createClient();
-
-  const title = (formData.get('title') as string)?.trim();
-  const description = (formData.get('description') as string)?.trim();
-  const assigneeId = (formData.get('assigneeId') as string) || null;
-  const priority = formData.get('priority') as 'low' | 'medium' | 'high' | 'urgent';
-  const status = formData.get('status') as 'todo' | 'in_progress' | 'blocked' | 'done';
-  const dueDate = (formData.get('dueDate') as string) || null;
-
-  const { error } = await supabase
-    .from('tasks')
-    .update({
-      title,
-      description,
-      assignee_id: assigneeId,
-      priority,
-      status,
-      due_date: dueDate,
-    })
-    .eq('id', taskId);
-
-  if (error) return { error: error.message };
-
-  revalidatePath(`/dashboard/projects/${projectId}`);
+  const access = await taskAccess(taskId, projectId, 'edit');
+  if (access.error) return { error: access.error };
+  const parsed = parseTaskForm(formData);
+  if (parsed.error) return { error: parsed.error };
+  const assignmentError = await checkAssignee(access.supabase, projectId, parsed.data.assignee_id);
+  if (assignmentError) return { error: assignmentError };
+  const { data, error } = await access.supabase.from('tasks').update(parsed.data).eq('id', taskId).eq('project_id', projectId).select('id').single();
+  if (error || !data) return { error: error?.message || 'The task could not be updated. Refresh and try again.' };
+  refreshTasks(projectId);
   return { success: true };
 }
 
-// 3. Quick Status Update (Assignable members can move task status)
-export async function updateTaskStatus(
-  taskId: string,
-  projectId: string,
-  newStatus: 'todo' | 'in_progress' | 'blocked' | 'done'
-) {
-  const supabase = await createClient();
-
-  const { error } = await supabase
-    .from('tasks')
-    .update({ status: newStatus })
-    .eq('id', taskId);
-
-  if (error) return { error: error.message };
-
-  revalidatePath(`/dashboard/projects/${projectId}`);
+export async function updateTaskStatus(taskId: string, projectId: string, newStatus: TaskStatus) {
+  if (!['todo', 'in_progress', 'blocked', 'done'].includes(newStatus)) return { error: 'Choose a valid status.' };
+  const access = await taskAccess(taskId, projectId, 'status');
+  if (access.error) return { error: access.error };
+  const { data, error } = await access.supabase.from('tasks').update({ status: newStatus }).eq('id', taskId).eq('project_id', projectId).select('id').single();
+  if (error || !data) return { error: error?.message || 'The status could not be updated.' };
+  refreshTasks(projectId);
   return { success: true };
 }
 
-// 4. Delete Task
 export async function deleteTask(taskId: string, projectId: string) {
-  const supabase = await createClient();
-
-  const { error } = await supabase.from('tasks').delete().eq('id', taskId);
-  if (error) return { error: error.message };
-
-  revalidatePath(`/dashboard/projects/${projectId}`);
+  const access = await taskAccess(taskId, projectId, 'edit');
+  if (access.error) return { error: access.error };
+  const { data, error } = await access.supabase.from('tasks').delete().eq('id', taskId).eq('project_id', projectId).select('id').single();
+  if (error || !data) return { error: error?.message || 'The task could not be deleted.' };
+  refreshTasks(projectId);
   return { success: true };
 }
 
-// 5. Comments
 export async function addComment(taskId: string, projectId: string, content: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!content.trim()) return { error: 'Comment cannot be empty' };
-
-  const { error } = await supabase.from('task_comments').insert({
-    task_id: taskId,
-    author_id: user?.id,
-    content: content.trim(),
-  });
-
+  if (!content.trim()) return { error: 'Write an update before sending.' };
+  if (content.length > 10000) return { error: 'Keep updates under 10,000 characters.' };
+  const access = await taskAccess(taskId, projectId, 'comment');
+  if (access.error) return { error: access.error };
+  const { error } = await access.supabase.from('task_comments').insert({ task_id: taskId, author_id: access.user.id, content: content.trim() });
   if (error) return { error: error.message };
-
-  revalidatePath(`/dashboard/projects/${projectId}`);
+  refreshTasks(projectId);
   return { success: true };
 }
 
 export async function deleteComment(commentId: string, projectId: string) {
-  const supabase = await createClient();
-  const { error } = await supabase.from('task_comments').delete().eq('id', commentId);
-
+  const access = await projectAccess(projectId);
+  if (access.error) return { error: access.error };
+  const { data: comment } = await access.supabase.from('task_comments').select('author_id, task_id').eq('id', commentId).single();
+  if (!comment || (!access.isAdmin && comment.author_id !== access.user.id)) return { error: 'You cannot delete this comment.' };
+  const task = await taskAccess(comment.task_id, projectId, 'comment');
+  if (task.error) return { error: task.error };
+  const { error } = await access.supabase.from('task_comments').delete().eq('id', commentId);
   if (error) return { error: error.message };
-
-  revalidatePath(`/dashboard/projects/${projectId}`);
+  refreshTasks(projectId);
   return { success: true };
 }

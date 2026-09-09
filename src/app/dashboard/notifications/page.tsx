@@ -41,7 +41,7 @@ export default async function NotificationsPage() {
           <p className="text-sm text-gray-500">Task assignment alerts and workspace updates.</p>
         </div>
 
-        {notifications && notifications.some((n: any) => !n.is_read) && (
+        {notifications && notifications.some((n) => !n.is_read) && (
           <form action={markAllAsRead}>
             <button
               type="submit"
@@ -61,7 +61,7 @@ export default async function NotificationsPage() {
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100 overflow-hidden">
-          {notifications.map((n: any) => (
+          {notifications.map((n) => (
             <div
               key={n.id}
               className={`p-4 flex items-start justify-between gap-4 transition ${

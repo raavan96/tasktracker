@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --background: #f6f8fc;
+  --foreground: #172033;
 }
 
 @theme inline {
@@ -12,15 +13,37 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
+
+@layer base {
+  input, textarea, select {
+    color: #172033;
+    background-color: #fff;
+    border-color: #cbd5e1;
+  }
+  input::placeholder, textarea::placeholder { color: #64748b; opacity: 1; }
+  button:not(:disabled), select { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+  :where(button, a, input, textarea, select):focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 3px;
+  }
+  h1, h2, h3 { letter-spacing: -0.025em; }
+}
+
+.task-dialog {
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  background: white;
+  color: #172033;
+  margin: auto;
+  width: min(42rem, calc(100% - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 1.5rem;
+  box-shadow: 0 24px 80px #0f172a30;
+}
+.task-dialog::backdrop { background: #0f172a70; backdrop-filter: blur(3px); }

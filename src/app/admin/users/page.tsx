@@ -24,7 +24,7 @@ export default async function AdminUsersPage() {
     .order('created_at', { ascending: false });
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div className="w-full space-y-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Team Management</h1>
         <p className="text-sm text-gray-500">Invite new team members, manage permissions, and assign roles.</p>

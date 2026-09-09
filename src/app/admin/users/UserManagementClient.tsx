@@ -30,14 +30,12 @@ export default function UserManagementClient({
 
     const form = e.currentTarget;
     const formData = new FormData(form);
-    const res = await inviteUser(formData);
-
-    if (res?.error) setFeedback({ error: res.error });
-    if (res?.success) {
-      setFeedback({ success: res.success });
-      form.reset();
-    }
-    setIsInviting(false);
+    try {
+      const res = await inviteUser(formData);
+      if (res?.error) setFeedback({ error: res.error });
+      if (res?.success) { setFeedback({ success: res.success }); form.reset(); }
+    } catch { setFeedback({ error: 'Invitation could not be confirmed. Check your connection and try again.' }); }
+    finally { setIsInviting(false); }
   }
 
   async function handleRoleChange(userId: string, newRole: 'admin' | 'member') {
@@ -60,12 +58,12 @@ export default function UserManagementClient({
   return (
     <div className="space-y-8">
       {feedback?.error && (
-        <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md">
+        <div role="alert" className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md">
           {feedback.error}
         </div>
       )}
       {feedback?.success && (
-        <div className="p-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded-md">
+        <div role="status" className="p-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded-md">
           {feedback.success}
         </div>
       )}
@@ -75,11 +73,12 @@ export default function UserManagementClient({
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <UserPlus className="w-5 h-5 mr-2 text-blue-600" /> Invite New Member
         </h2>
-        <form onSubmit={handleInvite} className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <p className="mb-5 text-sm text-slate-600">1. Send an invitation. 2. Your teammate sets a password from the email. 3. Open a project’s Team tab to add them and assign tasks.</p>
+        <form onSubmit={handleInvite} className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Full Name</label>
+            <label htmlFor="fullName" className="block text-xs font-medium text-gray-700 mb-1">Full Name</label>
             <input
-              name="fullName"
+              id="fullName" name="fullName"
               type="text"
               required
               placeholder="Jane Doe"
@@ -87,19 +86,19 @@ export default function UserManagementClient({
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Company Email</label>
+            <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">Company Email</label>
             <input
-              name="email"
+              id="email" name="email"
               type="email"
               required
-              placeholder="jane@company.com"
+              placeholder={`name@${process.env.NEXT_PUBLIC_COMPANY_DOMAIN || 'company.com'}`}
               className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Role</label>
+            <label htmlFor="role" className="block text-xs font-medium text-gray-700 mb-1">Role</label>
             <select
-              name="role"
+              id="role" name="role"
               className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
             >
               <option value="member">Member</option>

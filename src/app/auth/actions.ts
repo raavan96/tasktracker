@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export async function signIn(formData: FormData) {
-  const email = (formData.get('email') as string)?.trim().toLowerCase();
+  const email = String(formData.get('email') || '').trim().toLowerCase();
   const password = formData.get('password') as string;
   const domain = process.env.NEXT_PUBLIC_COMPANY_DOMAIN;
 
@@ -30,7 +30,7 @@ export async function signOut() {
 }
 
 export async function requestPasswordReset(formData: FormData) {
-  const email = (formData.get('email') as string)?.trim().toLowerCase();
+  const email = String(formData.get('email') || '').trim().toLowerCase();
   const domain = process.env.NEXT_PUBLIC_COMPANY_DOMAIN;
 
   if (domain && domain !== '*' && !email.endsWith(`@${domain.toLowerCase()}`)) {
@@ -50,7 +50,7 @@ export async function requestPasswordReset(formData: FormData) {
 }
 
 export async function updatePassword(formData: FormData) {
-  const password = formData.get('password') as string;
+  const password = String(formData.get('password') || '');
   const confirmPassword = formData.get('confirmPassword') as string;
 
   if (password.length < 8) {
@@ -61,13 +61,15 @@ export async function updatePassword(formData: FormData) {
   }
 
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Your link has expired. Request a new password-reset link.' };
   const { error } = await supabase.auth.updateUser({ password });
 
   if (error) {
     return { error: error.message };
   }
 
-  redirect('/dashboard');
+  return { success: true };
 }
 
 export async function inviteUser(formData: FormData) {
@@ -84,7 +86,7 @@ export async function inviteUser(formData: FormData) {
     return { error: 'Unauthorized: Admin privileges required.' };
   }
 
-  const email = (formData.get('email') as string)?.trim().toLowerCase();
+  const email = String(formData.get('email') || '').trim().toLowerCase();
   const fullName = (formData.get('fullName') as string)?.trim();
   const role = (formData.get('role') as 'admin' | 'member') || 'member';
   const domain = process.env.NEXT_PUBLIC_COMPANY_DOMAIN;
@@ -92,6 +94,12 @@ export async function inviteUser(formData: FormData) {
   if (domain && domain !== '*' && !email.endsWith(`@${domain.toLowerCase()}`)) {
     return { error: `Invitations must be sent to @${domain} addresses.` };
   }
+
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: 'Enter a valid email address.' };
+  if (!fullName) return { error: 'Enter the teammate’s full name.' };
+  if (!['admin', 'member'].includes(role)) return { error: 'Choose a valid role.' };
+  if (!process.env.NEXT_PUBLIC_APP_URL) return { error: 'The app URL must be configured before invitations can be sent.' };
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return { error: 'Invitation service is not configured. Ask your administrator to check the server settings.' };
 
   const adminClient = createAdminClient();
   const { error } = await adminClient.auth.admin.inviteUserByEmail(email, {
