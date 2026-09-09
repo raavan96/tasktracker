@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { cookies } from 'next/headers';
+import ThemeProvider from '@/components/ThemeProvider';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,13 +19,15 @@ export const metadata: Metadata = {
   description: "Delegate tasks, track progress, and keep your team’s updates in one place.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const theme = (await cookies()).get('tasktracker-theme')?.value === 'dark' ? 'dark' : 'light';
   return (
     <html
       lang="en"
+      data-theme={theme}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col"><ThemeProvider initialTheme={theme}>{children}</ThemeProvider></body>
     </html>
   );
 }

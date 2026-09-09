@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import DeleteConfirmation from '@/components/DeleteConfirmation';
 import Modal from '@/components/Modal';
 import TaskForm from '@/components/TaskForm';
 import type { Task, Member } from '@/lib/task-types';
@@ -10,10 +12,12 @@ import {
   updateTask,
   updateTaskStatus,
   addComment,
+  deleteTask,
 } from '@/app/dashboard/tasks/actions';
 import { createNote, deleteNote } from '@/app/dashboard/notes/actions';
 import {
   addProjectMember,
+  deleteProject,
   removeProjectMember
 } from '@/app/dashboard/projects/actions';
 import {
@@ -45,6 +49,8 @@ export default function ProjectView({
   tasks: Task[]; notes: { id: string; title: string; content: string; author_id: string; updated_at: string; author: Member | null }[];
   members: Member[]; allWorkspaceUsers: Member[]; currentUserId: string; isAdmin: boolean;
 }) {
+  const router = useRouter();
+  const [deleteTarget, setDeleteTarget] = useState<{ kind: 'task' | 'project'; id: string; name: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'tasks' | 'notes' | 'members'>('tasks');
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
@@ -112,7 +118,7 @@ export default function ProjectView({
       {errorNotice}
       {feedback?.success && <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{feedback.success}</div>}
       {/* Project Header */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+      <div className="bg-surface border border-gray-200 rounded-xl p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center space-x-3">
@@ -128,6 +134,8 @@ export default function ProjectView({
 
           {/* Action buttons */}
           <div className="flex items-center space-x-2">
+            {isAdmin && <button type="button" onClick={() => { setFeedback(null); setDeleteTarget({ kind: 'project', id: project.id, name: project.name }); }}
+              className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete project</button>}
             {activeTab === 'tasks' && (isAdmin || members.some((m: Member) => m.id === currentUserId)) && (
               <button
                 onClick={() => { setFeedback(null); setEditingTask(null); setIsTaskModalOpen(true); }}
@@ -192,7 +200,7 @@ export default function ProjectView({
                     </span>
                     <span className="font-semibold text-sm text-gray-800">{col.title}</span>
                   </div>
-                  <span className="text-xs text-gray-500 font-semibold bg-white px-2 py-0.5 rounded-full border border-gray-200">
+                  <span className="text-xs text-gray-500 font-semibold bg-surface px-2 py-0.5 rounded-full border border-gray-200">
                     {columnTasks.length}
                   </span>
                 </div>
@@ -206,7 +214,7 @@ export default function ProjectView({
                       aria-label={`Open task: ${task.title}`}
                       onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedTaskId(task.id); setFeedback(null); setCommentInput(''); } }}
                       onClick={() => { setSelectedTaskId(task.id); setFeedback(null); setCommentInput(''); }}
-                      className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:border-blue-300 transition cursor-pointer space-y-3"
+                      className="bg-surface p-4 rounded-lg border border-gray-200 shadow-sm hover:border-blue-300 transition cursor-pointer space-y-3"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <h4 className="text-sm font-semibold text-gray-900 leading-tight">{task.title}</h4>
@@ -248,13 +256,13 @@ export default function ProjectView({
       {activeTab === 'notes' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {notes.length === 0 ? (
-            <div className="col-span-full text-center py-12 bg-white rounded-xl border border-gray-200">
+            <div className="col-span-full text-center py-12 bg-surface rounded-xl border border-gray-200">
               <StickyNote className="w-10 h-10 text-gray-400 mx-auto mb-2" />
               <p className="text-sm text-gray-500">No notes written for this project yet.</p>
             </div>
           ) : (
             notes.map((note) => (
-              <div key={note.id} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-3">
+              <div key={note.id} className="bg-surface border border-gray-200 rounded-xl p-5 shadow-sm space-y-3">
                 <div className="flex justify-between items-start">
                   <h3 className="font-semibold text-gray-900 text-base">{note.title}</h3>
                   {(isAdmin || note.author_id === currentUserId) && (
@@ -287,13 +295,13 @@ export default function ProjectView({
         <div className="space-y-6">
           {/* Admin Add Member Control */}
           {isAdmin && (
-            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+            <div className="bg-surface border border-gray-200 rounded-xl p-5 shadow-sm">
               <h3 className="font-semibold text-gray-900 text-sm mb-2">Add Teammate to This Project</h3>
               <p className="mb-4 text-sm text-slate-600">Add a workspace teammate here to make them available in the task assignee list. <Link href="/admin/users" className="font-medium text-blue-700 underline">Invite someone new</Link></p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <select
                   id="newProjectMemberSelect" aria-label="Teammate to add" value={newMemberId} onChange={(event) => setNewMemberId(event.target.value)}
-                  className="flex-1 px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-3 py-2 border rounded-lg text-sm bg-surface focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="" disabled>Select a team member to add...</option>
                   {allWorkspaceUsers
@@ -320,7 +328,7 @@ export default function ProjectView({
           )}
 
           {/* Assigned Members List */}
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+          <div className="bg-surface border border-gray-200 rounded-xl overflow-hidden shadow-sm">
             <div className="p-4 border-b flex justify-between items-center bg-gray-50">
               <h3 className="font-semibold text-gray-900 text-sm">
                 Assigned Project Members ({members.length})
@@ -363,6 +371,18 @@ export default function ProjectView({
         </Modal>
       )}
 
+      {deleteTarget && <DeleteConfirmation kind={deleteTarget.kind} name={deleteTarget.name} onClose={() => setDeleteTarget(null)}
+        onConfirm={async (confirmation) => {
+          const result = deleteTarget.kind === 'project' ? await deleteProject(deleteTarget.id, confirmation) : await deleteTask(deleteTarget.id, project.id);
+          if (!result.error) {
+            const isProject = deleteTarget.kind === 'project';
+            setDeleteTarget(null); setSelectedTaskId(null);
+            if (isProject) { router.push('/dashboard'); router.refresh(); }
+            else setFeedback({ success: 'Task deleted.' });
+          }
+          return result;
+        }} />}
+
       {/* MODAL: TASK DETAIL & COMMENTS */}
       {selectedTask && (
         <Modal title={selectedTask.title} busy={isSubmitting} onClose={() => setSelectedTaskId(null)}>
@@ -370,6 +390,7 @@ export default function ProjectView({
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
             <span>Assigned to <strong>{selectedTask.assignee?.full_name || selectedTask.assignee?.email || 'Unassigned'}</strong> · <span className="capitalize">{selectedTask.priority} priority</span></span>
             {(isAdmin || selectedTask.created_by === currentUserId) && <button type="button" disabled={isSubmitting} onClick={() => { setEditingTask(selectedTask); setSelectedTaskId(null); setFeedback(null); setIsTaskModalOpen(true); }} className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"><Pencil className="h-4 w-4" />Edit task</button>}
+            {(isAdmin || selectedTask.created_by === currentUserId) && <button type="button" disabled={isSubmitting} onClick={() => { setDeleteTarget({ kind: 'task', id: selectedTask.id, name: selectedTask.title }); setSelectedTaskId(null); setFeedback(null); }} className="flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete task</button>}
           </div>
           {selectedTask.due_date && <p className="mb-3 text-sm text-slate-600">Due {new Date(selectedTask.due_date.slice(0, 10) + 'T00:00:00').toLocaleDateString()}</p>}
             {/* Quick Status Bar */}
@@ -501,7 +522,7 @@ export default function ProjectView({
                 <select
                   value={reassignTo}
                   onChange={(e) => setReassignTo(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg text-sm bg-surface focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Leave Tasks Unassigned</option>
                   {members

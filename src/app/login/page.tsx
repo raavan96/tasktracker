@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ThemeToggle } from '@/components/ThemeProvider';
 import { signIn, requestPasswordReset } from '@/app/auth/actions';
 import { Loader2, Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
 
@@ -34,7 +35,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+      <div className="absolute right-4 top-4"><ThemeToggle /></div>
+      <div className="max-w-md w-full bg-surface p-8 rounded-xl shadow-sm border border-gray-200">
         <div className="text-center mb-8">
           <div className="mx-auto w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mb-3">
             <ShieldCheck className="w-6 h-6" />

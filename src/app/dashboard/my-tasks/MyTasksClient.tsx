@@ -51,7 +51,7 @@ export default function MyTasksClient({
     <div className="space-y-6">
       {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
       {/* Search & Filter Bar */}
-      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm grid grid-cols-1 sm:grid-cols-4 gap-3">
+      <div className="bg-surface p-4 rounded-xl border border-gray-200 shadow-sm grid grid-cols-1 sm:grid-cols-4 gap-3">
         {/* Search */}
         <div className="relative">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
@@ -69,7 +69,7 @@ export default function MyTasksClient({
           <select
             aria-label="Filter by project" value={projectFilter}
             onChange={(e) => setProjectFilter(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border rounded-lg text-sm bg-surface focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Projects</option>
             {projects.map((p) => (
@@ -83,7 +83,7 @@ export default function MyTasksClient({
           <select
             aria-label="Filter by status" value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border rounded-lg text-sm bg-surface focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Statuses</option>
             <option value="todo">To Do</option>
@@ -98,7 +98,7 @@ export default function MyTasksClient({
           <select
             aria-label="Filter by priority" value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border rounded-lg text-sm bg-surface focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Priorities</option>
             <option value="low">Low</option>
@@ -111,13 +111,13 @@ export default function MyTasksClient({
 
       {/* Task List */}
       {filteredTasks.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-gray-200 rounded-xl">
+        <div className="text-center py-16 bg-surface border border-gray-200 rounded-xl">
           <CheckCircle2 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <h3 className="text-base font-semibold text-gray-900">No tasks found</h3>
           <p className="text-sm text-gray-500 mt-1">Try clearing your filters or check back when new tasks are assigned to you.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100 overflow-hidden">
+        <div className="bg-surface rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100 overflow-hidden">
           {filteredTasks.map((task) => (
             <div key={task.id} className="p-4 hover:bg-gray-50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1.5 flex-1">

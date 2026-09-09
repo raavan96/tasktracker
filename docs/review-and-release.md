@@ -4,7 +4,7 @@ This branch keeps the existing Next.js, Supabase, and Vercel stack.
 
 ## Changes
 
-- Consistent light theme, Geist typography, readable input values and placeholders, and visible keyboard focus.
+- Light/dark toggle with a remembered cookie preference, Geist typography, readable input values and placeholders, and visible keyboard focus.
 - Shared workspace navigation on admin and dashboard pages, including mobile navigation and current-page highlighting.
 - An Edit task form for title, description, assignee, priority, deadline, and status. Admins and task creators can edit; assignees can change status.
 - Native task dialogs with focus containment, Escape dismissal, and mobile scrolling; keyboard-accessible task cards.
@@ -14,11 +14,20 @@ This branch keeps the existing Next.js, Supabase, and Vercel stack.
 - Password setup page and invitation/recovery callback handling for PKCE codes, supported token hashes, and default invitation fragments. Signed-in users can access password setup.
 - Server checks for task/project access, assignee membership, valid task fields, and writes that affect no rows.
 
+## Theme and deletion follow-up
+
+- Use the sun/moon button in the workspace header or login screen. The preference is stored in a one-year same-site cookie and applied during server rendering to avoid a light flash on reload.
+- Open a task and choose **Delete task**. Admins and the task creator have this option.
+- Open a project and choose **Delete project**. Only admins have this option, and the exact project name must be entered before confirming.
+- Archived records can also be deleted. Task/project deletions check access on the server, return write errors, and refresh affected lists.
+- Deletion uses one parent-row DELETE, with dependent cleanup governed by existing Supabase foreign keys/triggers. Verify the project-to-tasks/notes/members and task-to-comments relationships use ON DELETE CASCADE in staging before release. No database cascade or RLS settings were changed here. Restrictive foreign keys cause the deletion to fail rather than partially deleting data.
+
 ## Validation
 
-- `npm run build` and `npm run lint`.
-- `node --test tests/task-actions.test.cjs`: 10 tests against real action modules with mocked Supabase responses. No database writes.
+- `npm run build -- --webpack` and `npm run lint`. The normal Turbopack build hit a local sandbox port-binding restriction; the Webpack production build passed.
+- `node --test tests/task-actions.test.cjs`: 17 tests against real action modules with mocked Supabase responses. No database writes.
 - Browser checks: actual account sign-in, Team Management, project board, prefilled edit form, teammate selector, and 390px mobile navigation/form bounds.
+- Follow-up browser checks: light/dark switching, dark preference after reload, both confirmation dialogs, exact-name project confirmation, cancellation, and 390px mobile layout.
 - No live invitations, task edits, comments, role changes, removals, or password changes were submitted. Real Supabase write policies and email delivery still need a staging check.
 
 ## Before merging to production

@@ -22,7 +22,7 @@ function form(values = {}) {
   for (const [k,v] of Object.entries({ title: 'Review launch', description: 'Confirm details', priority: 'high', status: 'todo', assigneeId: '', dueDate: '', ...values })) data.set(k,v);
   return data;
 }
-function setup({ user = { id: 'admin' }, role = 'admin', member = true, assignee = true, task = { id: 'task', created_by: 'creator', assignee_id: 'member' }, writeError = null, zeroRows = false } = {}) {
+function setup({ user = { id: 'admin' }, role = 'admin', member = true, assignee = true, task = { id: 'task', created_by: 'creator', assignee_id: 'member' }, writeError = null, zeroRows = false, archived = false } = {}) {
   const writes = []; const queries = []; const invalidated = [];
   const supabase = {
     auth: { getUser: async () => ({ data: { user } }) },
@@ -41,7 +41,7 @@ function setup({ user = { id: 'admin' }, role = 'admin', member = true, assignee
         if (q.operation !== 'select') { writes.push(q); return { data: zeroRows ? null : { id: 'saved' }, error: writeError }; }
         let data;
         if (table === 'profiles') data = { role };
-        if (table === 'projects') data = { id: 'project', is_archived: false };
+        if (table === 'projects') data = { id: 'project', name: 'Launch', is_archived: archived };
         if (table === 'tasks') data = task;
         if (table === 'project_members') data = q.filters.some(([k,v]) => k === 'user_id' && v === 'outsider') ? (assignee ? { user_id: 'outsider' } : null) : (member ? { user_id: user?.id } : null);
         return { data, error: null };
@@ -51,7 +51,8 @@ function setup({ user = { id: 'admin' }, role = 'admin', member = true, assignee
   };
   const access = load('src/lib/project-access.ts', { '@/lib/supabase/server': { createClient: async () => supabase } });
   const actions = load('src/app/dashboard/tasks/actions.ts', { '@/lib/project-access': access, '@/lib/task-types': types, 'next/cache': { revalidatePath: p => invalidated.push(p) } });
-  return { actions, writes, queries, invalidated, access };
+  const projects = load('src/app/dashboard/projects/actions.ts', { '@/lib/project-access': access, '@/lib/supabase/server': { createClient: async () => supabase }, 'next/cache': { revalidatePath: p => invalidated.push(p) } });
+  return { actions, projects, writes, queries, invalidated, access };
 }
 
 test('task form rejects blank titles, invalid enums and impossible dates', () => {
@@ -94,4 +95,41 @@ test('comments keep author attribution and reject empty text', async () => {
 });
 test('only admins can manage project membership', async () => {
   const t=setup({user:{id:'member'},role:'member'}); assert.ok((await t.access.projectAccess('project',true)).error); assert.equal(t.writes.length,0);
+});
+
+test('task deletion is scoped to its project and refreshes task views', async () => {
+  const t=setup(); assert.equal((await t.actions.deleteTask('task','project')).success,true);
+  assert.equal(t.writes.length,1); assert.equal(t.writes[0].operation,'delete');
+  assert.deepEqual(t.writes[0].filters,[['id','task'],['project_id','project']]);
+});
+test('being assigned a task does not grant permission to delete it', async () => {
+  const t=setup({user:{id:'member'},role:'member'});
+  assert.ok((await t.actions.deleteTask('task','project')).error); assert.equal(t.writes.length,0);
+});
+test('task creator can delete their task', async () => {
+  const t=setup({user:{id:'creator'},role:'member'});
+  assert.equal((await t.actions.deleteTask('task','project')).success,true);
+});
+test('project deletion requires admin access and matching confirmation name', async () => {
+  const t=setup({user:{id:'member'},role:'member'});
+  assert.ok((await t.projects.deleteProject('project','Launch')).error); assert.equal(t.writes.length,0);
+  const admin=setup(); assert.ok((await admin.projects.deleteProject('project','Wrong name')).error); assert.equal(admin.writes.length,0);
+});
+test('project deletion is one atomic parent deletion', async () => {
+  const t=setup(); assert.equal((await t.projects.deleteProject('project','Launch')).success,true);
+  assert.equal(t.writes.length,1); assert.equal(t.writes[0].table,'projects'); assert.equal(t.writes[0].operation,'delete');
+  assert.deepEqual(t.writes[0].filters,[['id','project']]);
+  assert.ok(t.invalidated.includes('/dashboard')); assert.ok(t.invalidated.includes('/dashboard/my-tasks'));
+});
+test('archived projects and their tasks can be deleted', async () => {
+  const t=setup({archived:true});
+  assert.equal((await t.projects.deleteProject('project','Launch')).success,true);
+  assert.equal((await t.actions.deleteTask('task','project')).success,true);
+  assert.ok((await t.actions.createTask('project',form())).error);
+});
+test('foreign key failures and zero-row deletions do not report success', async () => {
+  const t=setup({writeError:{code:'23503',message:'FK violation'}});
+  assert.match((await t.projects.deleteProject('project','Launch')).error,/Linked records/); assert.equal(t.invalidated.length,0);
+  const empty=setup({zeroRows:true}); assert.ok((await empty.projects.deleteProject('project','Launch')).error);
+  assert.ok((await empty.actions.deleteTask('task','project')).error);
 });

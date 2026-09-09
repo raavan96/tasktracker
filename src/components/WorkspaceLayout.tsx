@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { signOut } from '@/app/auth/actions';
 import WorkspaceNav from './WorkspaceNav';
+import { ThemeToggle } from './ThemeProvider';
 import { 
   FolderKanban, 
   LogOut, 
@@ -38,7 +39,7 @@ export default async function WorkspaceLayout({
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Top Navigation */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+      <header className="bg-surface border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-8">
             <Link href="/dashboard" className="flex items-center space-x-2 font-bold text-gray-900 text-lg">
@@ -51,7 +52,8 @@ export default async function WorkspaceLayout({
             <div className="hidden md:block"><WorkspaceNav isAdmin={isAdmin} /></div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-1 sm:gap-3">
+            <ThemeToggle />
             {/* Notification Indicator */}
             <Link
               href="/dashboard/notifications"
@@ -60,7 +62,7 @@ export default async function WorkspaceLayout({
             >
               <Bell className="w-5 h-5" />
               {Number(unreadCount) > 0 && (
-                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-600 rounded-full ring-2 ring-white" />
+                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-600 rounded-full ring-2 ring-surface" />
               )}
             </Link>
 

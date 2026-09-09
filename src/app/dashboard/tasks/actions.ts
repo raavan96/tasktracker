@@ -10,13 +10,13 @@ function refreshTasks(projectId: string) {
   revalidatePath('/dashboard');
 }
 
-async function taskAccess(taskId: string, projectId: string, mode: 'edit' | 'status' | 'comment') {
-  const access = await projectAccess(projectId);
+async function taskAccess(taskId: string, projectId: string, mode: 'edit' | 'status' | 'comment' | 'delete') {
+  const access = await projectAccess(projectId, false, mode === 'delete');
   if (access.error) return access;
   const { data: task } = await access.supabase.from('tasks').select('id, created_by, assignee_id').eq('id', taskId).eq('project_id', projectId).single();
   if (!task) return { error: 'Task not found or access denied.' } as const;
   if (mode !== 'comment' && !access.isAdmin && task.created_by !== access.user.id && !(mode === 'status' && task.assignee_id === access.user.id)) {
-    return { error: mode === 'edit' ? 'Only an admin or the task creator can edit this task.' : 'Only an admin, the task creator, or the assignee can change this status.' } as const;
+    return { error: mode === 'status' ? 'Only an admin, the task creator, or the assignee can change this status.' : 'Only an admin or the task creator can edit or delete this task.' } as const;
   }
   return access;
 }
@@ -58,7 +58,7 @@ export async function updateTaskStatus(taskId: string, projectId: string, newSta
 }
 
 export async function deleteTask(taskId: string, projectId: string) {
-  const access = await taskAccess(taskId, projectId, 'edit');
+  const access = await taskAccess(taskId, projectId, 'delete');
   if (access.error) return { error: access.error };
   const { data, error } = await access.supabase.from('tasks').delete().eq('id', taskId).eq('project_id', projectId).select('id').single();
   if (error || !data) return { error: error?.message || 'The task could not be deleted.' };

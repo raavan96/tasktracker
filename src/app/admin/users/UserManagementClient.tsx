@@ -69,7 +69,7 @@ export default function UserManagementClient({
       )}
 
       {/* Invite Form */}
-      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+      <div className="bg-surface p-6 rounded-xl border border-gray-200 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <UserPlus className="w-5 h-5 mr-2 text-blue-600" /> Invite New Member
         </h2>
@@ -99,7 +99,7 @@ export default function UserManagementClient({
             <label htmlFor="role" className="block text-xs font-medium text-gray-700 mb-1">Role</label>
             <select
               id="role" name="role"
-              className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-lg text-sm bg-surface focus:ring-2 focus:ring-blue-500"
             >
               <option value="member">Member</option>
               <option value="admin">Admin</option>
@@ -118,7 +118,7 @@ export default function UserManagementClient({
       </div>
 
       {/* User Roster */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Current Members ({users.length})</h2>
         </div>

@@ -46,7 +46,7 @@ export default function AuthCallbackPage() {
     completeSignIn().catch(() => setError('We could not connect. Please reopen your email link and try again.'));
   }, []);
   return <main className="flex min-h-screen items-center justify-center p-6">
-    <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+    <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-surface p-8 shadow-sm">
       <h1 className="text-xl font-semibold">{error ? 'Unable to sign in' : 'Verifying your link…'}</h1>
       <p role={error ? 'alert' : 'status'} className="mt-3 text-sm text-slate-600">{error || 'You’ll be taken to the next step shortly.'}</p>
       {error && <Link className="mt-5 inline-block font-medium text-blue-700 underline" href="/login">Return to sign in</Link>}

@@ -45,7 +45,7 @@ export default async function NotificationsPage() {
           <form action={markAllAsRead}>
             <button
               type="submit"
-              className="text-xs bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg flex items-center font-medium shadow-sm transition"
+              className="text-xs bg-surface border border-gray-200 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg flex items-center font-medium shadow-sm transition"
             >
               <CheckCheck className="w-4 h-4 mr-1.5 text-blue-600" /> Mark all as read
             </button>
@@ -54,18 +54,18 @@ export default async function NotificationsPage() {
       </div>
 
       {(!notifications || notifications.length === 0) ? (
-        <div className="text-center py-16 bg-white border border-gray-200 rounded-xl">
+        <div className="text-center py-16 bg-surface border border-gray-200 rounded-xl">
           <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <h3 className="text-base font-semibold text-gray-900">No notifications yet</h3>
           <p className="text-sm text-gray-500 mt-1">When tasks are assigned to you, you will see alerts here.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100 overflow-hidden">
+        <div className="bg-surface rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100 overflow-hidden">
           {notifications.map((n) => (
             <div
               key={n.id}
               className={`p-4 flex items-start justify-between gap-4 transition ${
-                n.is_read ? 'bg-white' : 'bg-blue-50/40'
+                n.is_read ? 'bg-surface' : 'bg-blue-50/40'
               }`}
             >
               <div className="space-y-1">

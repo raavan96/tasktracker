@@ -4,11 +4,15 @@
   color-scheme: light;
   --background: #f6f8fc;
   --foreground: #172033;
+  --surface: #ffffff;
+  --field-border: #cbd5e1;
+  --placeholder: #64748b;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -21,11 +25,11 @@ body {
 
 @layer base {
   input, textarea, select {
-    color: #172033;
-    background-color: #fff;
-    border-color: #cbd5e1;
+    color: var(--foreground);
+    background-color: var(--surface);
+    border-color: var(--field-border);
   }
-  input::placeholder, textarea::placeholder { color: #64748b; opacity: 1; }
+  input::placeholder, textarea::placeholder { color: var(--placeholder); opacity: 1; }
   button:not(:disabled), select { cursor: pointer; }
   button:disabled { cursor: not-allowed; }
   :where(button, a, input, textarea, select):focus-visible {
@@ -36,10 +40,10 @@ body {
 }
 
 .task-dialog {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--field-border);
   border-radius: 1rem;
-  background: white;
-  color: #172033;
+  background: var(--surface);
+  color: var(--foreground);
   margin: auto;
   width: min(42rem, calc(100% - 2rem));
   max-height: calc(100dvh - 2rem);
@@ -47,3 +51,57 @@ body {
   box-shadow: 0 24px 80px #0f172a30;
 }
 .task-dialog::backdrop { background: #0f172a70; backdrop-filter: blur(3px); }
+
+/* Shared palette keeps cards, forms, borders and status badges in sync. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0b1120;
+  --foreground: #e5edf8;
+  --surface: #151e2e;
+  --field-border: #41516a;
+  --placeholder: #9aaac0;
+  --color-gray-50: #0f1726;
+  --color-gray-100: #1e293b;
+  --color-gray-200: #334155;
+  --color-gray-300: #475569;
+  --color-gray-400: #94a3b8;
+  --color-gray-500: #a8b6ca;
+  --color-gray-600: #bdc9db;
+  --color-gray-700: #d2dceb;
+  --color-gray-800: #e2e8f0;
+  --color-gray-900: #f1f5f9;
+  --color-slate-50: #0f1726;
+  --color-slate-100: #1e293b;
+  --color-slate-200: #334155;
+  --color-slate-300: #475569;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #a8b6ca;
+  --color-slate-600: #bdc9db;
+  --color-slate-700: #d2dceb;
+  --color-slate-800: #e2e8f0;
+  --color-slate-900: #f1f5f9;
+  --color-blue-50: #172c4d;
+  --color-blue-100: #172c4d;
+  --color-blue-200: color-mix(in srgb, #172c4d, #94a3b8 30%);
+  --color-red-50: #3b1d29;
+  --color-red-100: #3b1d29;
+  --color-red-200: color-mix(in srgb, #3b1d29, #94a3b8 30%);
+  --color-green-50: #12352c;
+  --color-green-100: #12352c;
+  --color-green-200: color-mix(in srgb, #12352c, #94a3b8 30%);
+  --color-emerald-50: #12352c;
+  --color-emerald-100: #12352c;
+  --color-emerald-200: color-mix(in srgb, #12352c, #94a3b8 30%);
+  --color-purple-50: #302341;
+  --color-purple-100: #302341;
+  --color-purple-200: color-mix(in srgb, #302341, #94a3b8 30%);
+  --color-orange-50: #3b2b1d;
+  --color-orange-100: #3b2b1d;
+  --color-orange-200: color-mix(in srgb, #3b2b1d, #94a3b8 30%);
+}
+:root[data-theme="dark"] :is(.text-blue-600, .text-blue-700, .text-blue-800) { color: #93c5fd; }
+:root[data-theme="dark"] :is(.text-red-600, .text-red-700, .text-red-800) { color: #fda4af; }
+:root[data-theme="dark"] :is(.text-green-600, .text-green-700, .text-green-800) { color: #86efac; }
+:root[data-theme="dark"] :is(.text-emerald-600, .text-emerald-700, .text-emerald-800) { color: #6ee7b7; }
+:root[data-theme="dark"] :is(.text-purple-600, .text-purple-700, .text-purple-800) { color: #d8b4fe; }
+:root[data-theme="dark"] :is(.text-orange-600, .text-orange-700, .text-orange-800) { color: #fdba74; }

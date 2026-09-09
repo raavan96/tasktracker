@@ -49,7 +49,7 @@ export default async function DashboardPage() {
 
       {/* Projects Grid */}
       {(!projects || projects.length === 0) ? (
-        <div className="text-center py-16 bg-white border border-gray-200 rounded-xl">
+        <div className="text-center py-16 bg-surface border border-gray-200 rounded-xl">
           <FolderKanban className="w-12 h-12 text-gray-400 mx-auto mb-3" />
           <h3 className="text-base font-semibold text-gray-900">No projects found</h3>
           <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
@@ -70,7 +70,7 @@ export default async function DashboardPage() {
               <Link
                 key={project.id}
                 href={`/dashboard/projects/${project.id}`}
-                className={`block bg-white rounded-xl border p-6 hover:shadow-md transition ${
+                className={`block bg-surface rounded-xl border p-6 hover:shadow-md transition ${
                   project.is_archived ? 'opacity-60 border-dashed border-gray-300' : 'border-gray-200'
                 }`}
               >
