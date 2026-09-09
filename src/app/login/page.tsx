@@ -2,14 +2,12 @@
 
 import { useState } from 'react';
 import { ThemeToggle } from '@/components/ThemeProvider';
-import { signIn, requestPasswordReset } from '@/app/auth/actions';
+import { signIn } from '@/app/auth/actions';
 import { Loader2, Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export default function LoginPage() {
-  const [isReset, setIsReset] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const domain = process.env.NEXT_PUBLIC_COMPANY_DOMAIN;
 
@@ -17,18 +15,11 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage(null);
-    setSuccessMessage(null);
 
     const formData = new FormData(e.currentTarget);
 
-    if (isReset) {
-      const res = await requestPasswordReset(formData);
-      if (res?.error) setErrorMessage(res.error);
-      if (res?.success) setSuccessMessage(res.success);
-    } else {
-      const res = await signIn(formData);
-      if (res?.error) setErrorMessage(res.error);
-    }
+    const res = await signIn(formData);
+    if (res?.error) setErrorMessage(res.error);
 
     setIsLoading(false);
   }
@@ -42,7 +33,7 @@ export default function LoginPage() {
             <ShieldCheck className="w-6 h-6" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900">
-            {isReset ? 'Reset your password' : 'Sign in to your account'}
+            Sign in to your account
           </h2>
           <p className="text-sm text-gray-500 mt-1">
             {domain && domain !== '*' ? `Authorized for @${domain} members only` : 'Team Task Tracker'}
@@ -52,12 +43,6 @@ export default function LoginPage() {
         {errorMessage && (
           <div className="mb-4 p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md">
             {errorMessage}
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="mb-4 p-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded-md">
-            {successMessage}
           </div>
         )}
 
@@ -76,17 +61,11 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {!isReset && (
+
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="block text-sm font-medium text-gray-700">Password</label>
-                <button
-                  type="button"
-                  onClick={() => { setIsReset(true); setErrorMessage(null); }}
-                  className="text-xs text-blue-600 hover:underline"
-                >
-                  Forgot password?
-                </button>
+
               </div>
               <div className="relative">
                 <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" />
@@ -99,7 +78,6 @@ export default function LoginPage() {
                 />
               </div>
             </div>
-          )}
 
           <button
             type="submit"
@@ -108,8 +86,6 @@ export default function LoginPage() {
           >
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
-            ) : isReset ? (
-              'Send Reset Link'
             ) : (
               <>
                 Sign In <ArrowRight className="w-4 h-4 ml-1.5" />
@@ -118,17 +94,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {isReset && (
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => { setIsReset(false); setErrorMessage(null); setSuccessMessage(null); }}
-              className="text-sm text-blue-600 hover:underline"
-            >
-              Back to sign in
-            </button>
-          </div>
-        )}
+        <p className="mt-6 text-sm text-gray-500 text-center">Need an account or forgot your password? Contact your workspace admin.</p>
       </div>
     </div>
   );

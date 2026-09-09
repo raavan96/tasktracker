@@ -297,7 +297,7 @@ export default function ProjectView({
           {isAdmin && (
             <div className="bg-surface border border-gray-200 rounded-xl p-5 shadow-sm">
               <h3 className="font-semibold text-gray-900 text-sm mb-2">Add Teammate to This Project</h3>
-              <p className="mb-4 text-sm text-slate-600">Add a workspace teammate here to make them available in the task assignee list. <Link href="/admin/users" className="font-medium text-blue-700 underline">Invite someone new</Link></p>
+              <p className="mb-4 text-sm text-slate-600">Add a workspace teammate here to make them available in the task assignee list. <Link href="/admin/users" className="font-medium text-blue-700 underline">Create a new member</Link></p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <select
                   id="newProjectMemberSelect" aria-label="Teammate to add" value={newMemberId} onChange={(event) => setNewMemberId(event.target.value)}

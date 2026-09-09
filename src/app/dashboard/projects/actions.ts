@@ -83,7 +83,7 @@ export async function addProjectMember(projectId: string, userId: string) {
   const supabase = access.supabase;
   if (!userId) return { error: 'Choose a teammate first.' };
   const { data: profile } = await supabase.from('profiles').select('id').eq('id', userId).single();
-  if (!profile) return { error: 'This teammate is not in the workspace. Invite them from Team Users first.' };
+  if (!profile) return { error: 'This teammate is not in the workspace. Create their account from Team Users first.' };
   const { error } = await supabase.from('project_members').insert({ project_id: projectId, user_id: userId });
   if (error && error.code !== '23505') return { error: error.message };
   revalidatePath('/dashboard');

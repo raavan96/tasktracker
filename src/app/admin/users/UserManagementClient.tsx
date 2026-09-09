@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { inviteUser, updateUserRole, deleteUser } from '@/app/auth/actions';
+import { createMember, resetMemberPassword, updateUserRole, deleteUser } from '@/app/auth/actions';
 import { UserPlus, Trash2, Shield, User, Loader2 } from 'lucide-react';
 
 interface Profile {
@@ -19,23 +19,37 @@ export default function UserManagementClient({
   users: Profile[];
   currentUserId: string;
 }) {
-  const [isInviting, setIsInviting] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [feedback, setFeedback] = useState<{ error?: string; success?: string } | null>(null);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
 
-  async function handleInvite(e: React.FormEvent<HTMLFormElement>) {
+  async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setIsInviting(true);
+    setIsCreating(true);
     setFeedback(null);
 
     const form = e.currentTarget;
     const formData = new FormData(form);
     try {
-      const res = await inviteUser(formData);
+      const res = await createMember(formData);
       if (res?.error) setFeedback({ error: res.error });
       if (res?.success) { setFeedback({ success: res.success }); form.reset(); }
-    } catch { setFeedback({ error: 'Invitation could not be confirmed. Check your connection and try again.' }); }
-    finally { setIsInviting(false); }
+    } catch { setFeedback({ error: 'Account creation could not be confirmed. Check the member list before retrying.' }); }
+    finally { setIsCreating(false); }
+  }
+
+  const [resetTarget, setResetTarget] = useState<Profile | null>(null);
+  const [resetBusy, setResetBusy] = useState(false);
+  async function handleReset(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!resetTarget || resetBusy) return;
+    setResetBusy(true); setFeedback(null);
+    try {
+      const result = await resetMemberPassword(resetTarget.id, new FormData(event.currentTarget));
+      setFeedback(result);
+      if (result.success) setResetTarget(null);
+    } catch { setFeedback({ error: 'Password update could not be confirmed. Check your connection.' }); }
+    finally { setResetBusy(false); }
   }
 
   async function handleRoleChange(userId: string, newRole: 'admin' | 'member') {
@@ -68,13 +82,13 @@ export default function UserManagementClient({
         </div>
       )}
 
-      {/* Invite Form */}
+      {/* Create Member Form */}
       <div className="bg-surface p-6 rounded-xl border border-gray-200 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <UserPlus className="w-5 h-5 mr-2 text-blue-600" /> Invite New Member
+          <UserPlus className="w-5 h-5 mr-2 text-blue-600" /> Create New Member
         </h2>
-        <p className="mb-5 text-sm text-slate-600">1. Send an invitation. 2. Your teammate sets a password from the email. 3. Open a project’s Team tab to add them and assign tasks.</p>
-        <form onSubmit={handleInvite} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <p className="mb-5 text-sm text-slate-600">Create an account with an initial password and share the login details privately. No invitation email is sent. Then open a project’s Team tab to add the member and assign tasks.</p>
+        <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label htmlFor="fullName" className="block text-xs font-medium text-gray-700 mb-1">Full Name</label>
             <input
@@ -105,17 +119,30 @@ export default function UserManagementClient({
               <option value="admin">Admin</option>
             </select>
           </div>
+          <PasswordFields />
           <div className="flex items-end">
             <button
               type="submit"
-              disabled={isInviting}
+              disabled={isCreating}
               className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm flex items-center justify-center disabled:opacity-50"
             >
-              {isInviting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send Invitation'}
+              {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Member'}
             </button>
           </div>
         </form>
       </div>
+
+      {resetTarget && <section key={resetTarget.id} className="bg-surface p-6 rounded-xl border border-gray-200" aria-labelledby="reset-heading">
+        <h2 id="reset-heading" className="text-lg font-semibold">Reset password for {resetTarget.full_name || resetTarget.email}</h2>
+        <p className="my-2 text-sm text-gray-600">{resetTarget.email} will use this password for their next sign-in. Share it privately.</p>
+        <form onSubmit={handleReset} className="grid gap-4 md:grid-cols-3">
+          <PasswordFields prefix="reset-" />
+          <div className="flex items-end gap-3">
+            <button disabled={resetBusy} className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-50">{resetBusy ? 'Saving…' : 'Save password'}</button>
+            <button type="button" disabled={resetBusy} onClick={() => setResetTarget(null)} className="px-3 py-2 text-sm">Cancel</button>
+          </div>
+        </form>
+      </section>}
 
       {/* User Roster */}
       <div className="bg-surface rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -162,6 +189,7 @@ export default function UserManagementClient({
                     <td className="px-6 py-4 text-right space-x-2">
                       {!isSelf && (
                         <>
+                          <button onClick={() => { setResetTarget(u); setFeedback(null); }} disabled={resetBusy} className="text-xs text-blue-600 font-medium disabled:opacity-50">Reset password</button>
                           <button
                             onClick={() => handleRoleChange(u.id, u.role === 'admin' ? 'member' : 'admin')}
                             disabled={isPending}
@@ -189,4 +217,17 @@ export default function UserManagementClient({
       </div>
     </div>
   );
+}
+
+function PasswordFields({ prefix = '' }: { prefix?: string }) {
+  return <>
+    <div>
+      <label htmlFor={`${prefix}password`} className="block text-xs font-medium text-gray-700 mb-1">Password (at least 8 characters)</label>
+      <input id={`${prefix}password`} name="password" type="password" autoComplete="new-password" minLength={8} required className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+    </div>
+    <div>
+      <label htmlFor={`${prefix}confirmPassword`} className="block text-xs font-medium text-gray-700 mb-1">Confirm password</label>
+      <input id={`${prefix}confirmPassword`} name="confirmPassword" type="password" autoComplete="new-password" minLength={8} required className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+    </div>
+  </>;
 }
