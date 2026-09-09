@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import type { Member } from '@/lib/task-types';
 import { createProject } from './projects/actions';
 import { Plus, X, Loader2 } from 'lucide-react';
 
-export default function CreateProjectModal({ users }: { users: any[] }) {
+export default function CreateProjectModal({ users }: { users: Member[] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +38,7 @@ export default function CreateProjectModal({ users }: { users: any[] }) {
 
       {isOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 border border-gray-200">
+          <div className="bg-surface rounded-xl shadow-xl max-w-lg w-full p-6 border border-gray-200">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold text-gray-900">Create New Project</h2>
               <button

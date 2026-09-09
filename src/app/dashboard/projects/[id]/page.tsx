@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound, redirect } from 'next/navigation';
 import ProjectView from './ProjectView';
+import type { Member } from '@/lib/task-types';
 
 export default async function ProjectDetailPage({
   params,
@@ -37,13 +38,10 @@ export default async function ProjectDetailPage({
     .select('user_id, joined_at, profiles(id, full_name, email, role)')
     .eq('project_id', id);
 
-  const projectMembers = membersData?.map((m: any) => ({
-    id: m.profiles.id,
-    full_name: m.profiles.full_name,
-    email: m.profiles.email,
-    role: m.profiles.role,
-    joined_at: m.joined_at,
-  })) || [];
+  const projectMembers = membersData?.flatMap((row) => {
+    const profile = (Array.isArray(row.profiles) ? row.profiles[0] : row.profiles) as Member | null;
+    return profile ? [{ ...profile, joined_at: row.joined_at }] : [];
+  }) || [];
 
   // Fetch Tasks with Assignee & Comments
   const { data: tasks } = await supabase

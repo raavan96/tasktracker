@@ -1,8 +1,24 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
+import { projectAccess } from '@/lib/project-access';
 import { createClient } from '@/lib/supabase/server';
+
+export async function deleteProject(projectId: string, confirmationName: string) {
+  const access = await projectAccess(projectId, true, true);
+  if (access.error) return { error: access.error };
+  const { data: project, error: lookupError } = await access.supabase.from('projects').select('name').eq('id', projectId).single();
+  if (lookupError || !project) return { error: 'Project not found or access denied.' };
+  if (confirmationName !== project.name) return { error: 'The project name does not match. Check it and try again.' };
+  // A single DELETE is atomic. Existing FK cascades handle linked records;
+  // restrictive foreign keys abort the deletion instead of leaving a partial project.
+  const { data, error } = await access.supabase.from('projects').delete().eq('id', projectId).select('id').single();
+  if (error || !data) return { error: error?.code === '23503' ? 'Linked records prevented deletion. Your administrator needs to check the project’s database delete rules.' : error?.message || 'The project could not be deleted. Refresh and try again.' };
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/my-tasks');
+  revalidatePath('/dashboard/notifications');
+  return { success: true };
+}
 
 // 1. Create Project (Admin only)
 export async function createProject(formData: FormData) {
@@ -62,12 +78,15 @@ export async function updateProject(projectId: string, formData: FormData) {
 
 // 3. Add Member to Project
 export async function addProjectMember(projectId: string, userId: string) {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from('project_members')
-    .insert({ project_id: projectId, user_id: userId });
-
-  if (error) return { error: error.message };
+  const access = await projectAccess(projectId, true);
+  if (access.error) return { error: access.error };
+  const supabase = access.supabase;
+  if (!userId) return { error: 'Choose a teammate first.' };
+  const { data: profile } = await supabase.from('profiles').select('id').eq('id', userId).single();
+  if (!profile) return { error: 'This teammate is not in the workspace. Create their account from Team Users first.' };
+  const { error } = await supabase.from('project_members').insert({ project_id: projectId, user_id: userId });
+  if (error && error.code !== '23505') return { error: error.message };
+  revalidatePath('/dashboard');
 
   revalidatePath(`/dashboard/projects/${projectId}`);
   return { success: true };
@@ -79,7 +98,9 @@ export async function removeProjectMember(
   memberId: string,
   newAssigneeId?: string
 ) {
-  const supabase = await createClient();
+  const access = await projectAccess(projectId, true);
+  if (access.error) return { error: access.error };
+  const supabase = access.supabase;
 
   const { error } = await supabase.rpc('remove_member_and_reassign_tasks', {
     p_project_id: projectId,

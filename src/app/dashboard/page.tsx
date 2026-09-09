@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
-import { Plus, FolderKanban, Users, CheckCircle2, Clock } from 'lucide-react';
+import { FolderKanban, Users, CheckCircle2 } from 'lucide-react';
 import CreateProjectModal from './CreateProjectModal';
 
 export default async function DashboardPage() {
@@ -49,7 +49,7 @@ export default async function DashboardPage() {
 
       {/* Projects Grid */}
       {(!projects || projects.length === 0) ? (
-        <div className="text-center py-16 bg-white border border-gray-200 rounded-xl">
+        <div className="text-center py-16 bg-surface border border-gray-200 rounded-xl">
           <FolderKanban className="w-12 h-12 text-gray-400 mx-auto mb-3" />
           <h3 className="text-base font-semibold text-gray-900">No projects found</h3>
           <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
@@ -60,17 +60,17 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project: any) => {
+          {projects.map((project) => {
             const memberCount = project.project_members?.[0]?.count || 0;
             const totalTasks = project.tasks?.length || 0;
-            const completedTasks = project.tasks?.filter((t: any) => t.status === 'done').length || 0;
+            const completedTasks = project.tasks?.filter((t) => t.status === 'done').length || 0;
             const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
             return (
               <Link
                 key={project.id}
                 href={`/dashboard/projects/${project.id}`}
-                className={`block bg-white rounded-xl border p-6 hover:shadow-md transition ${
+                className={`block bg-surface rounded-xl border p-6 hover:shadow-md transition ${
                   project.is_archived ? 'opacity-60 border-dashed border-gray-300' : 'border-gray-200'
                 }`}
               >
