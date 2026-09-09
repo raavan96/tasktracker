@@ -108,6 +108,9 @@ export async function inviteUser(formData: FormData) {
   });
 
   if (error) {
+    if (error.code === 'over_email_send_rate_limit' || /email rate limit exceeded/i.test(error.message)) {
+      return { error: 'Supabase’s invitation email limit has been reached. Wait for the email quota to reset, or configure a custom SMTP provider in Supabase Authentication → Email. If SMTP is already configured, check its sending quota and Supabase’s Auth rate limits. Repeated retries will not resolve this limit.' };
+    }
     return { error: error.message };
   }
 
