@@ -13,12 +13,12 @@ function refreshTasks(projectId: string) {
 async function taskAccess(taskId: string, projectId: string, mode: 'edit' | 'status' | 'comment' | 'delete') {
   const access = await projectAccess(projectId, false, mode === 'delete');
   if (access.error) return access;
-  const { data: task } = await access.supabase.from('tasks').select('id, created_by, assignee_id').eq('id', taskId).eq('project_id', projectId).single();
+  const { data: task } = await access.supabase.from('tasks').select('id, created_by, assignee_id, status').eq('id', taskId).eq('project_id', projectId).single();
   if (!task) return { error: 'Task not found or access denied.' } as const;
   if (mode !== 'comment' && !access.isAdmin && task.created_by !== access.user.id && !(mode === 'status' && task.assignee_id === access.user.id)) {
     return { error: mode === 'status' ? 'Only an admin, the task creator, or the assignee can change this status.' : 'Only an admin or the task creator can edit or delete this task.' } as const;
   }
-  return access;
+  return { ...access, taskStatus: task.status };
 }
 
 export async function createTask(projectId: string, formData: FormData) {
@@ -26,6 +26,7 @@ export async function createTask(projectId: string, formData: FormData) {
   if (access.error) return { error: access.error };
   const parsed = parseTaskForm(formData);
   if (parsed.error) return { error: parsed.error };
+  if (parsed.data.status === 'done' && !access.isAdmin) return { error: 'Submit for review. Only admins approve completion.' };
   const assignmentError = await checkAssignee(access.supabase, projectId, parsed.data.assignee_id);
   if (assignmentError) return { error: assignmentError };
   const { data, error } = await access.supabase.from('tasks').insert({ ...parsed.data, project_id: projectId, created_by: access.user.id }).select('id').single();
@@ -39,6 +40,7 @@ export async function updateTask(taskId: string, projectId: string, formData: Fo
   if (access.error) return { error: access.error };
   const parsed = parseTaskForm(formData);
   if (parsed.error) return { error: parsed.error };
+  if (parsed.data.status === 'done' && !access.isAdmin && access.taskStatus !== 'done') return { error: 'Submit for review. Only admins approve completion.' };
   const assignmentError = await checkAssignee(access.supabase, projectId, parsed.data.assignee_id);
   if (assignmentError) return { error: assignmentError };
   const { data, error } = await access.supabase.from('tasks').update(parsed.data).eq('id', taskId).eq('project_id', projectId).select('id').single();
@@ -48,9 +50,10 @@ export async function updateTask(taskId: string, projectId: string, formData: Fo
 }
 
 export async function updateTaskStatus(taskId: string, projectId: string, newStatus: TaskStatus) {
-  if (!['todo', 'in_progress', 'blocked', 'done'].includes(newStatus)) return { error: 'Choose a valid status.' };
+  if (!['todo', 'in_progress', 'blocked', 'in_review', 'done'].includes(newStatus)) return { error: 'Choose a valid status.' };
   const access = await taskAccess(taskId, projectId, 'status');
   if (access.error) return { error: access.error };
+  if (newStatus === 'done' && !access.isAdmin) return { error: 'Submit for review. Only admins approve completion.' };
   const { data, error } = await access.supabase.from('tasks').update({ status: newStatus }).eq('id', taskId).eq('project_id', projectId).select('id').single();
   if (error || !data) return { error: error?.message || 'The status could not be updated.' };
   refreshTasks(projectId);

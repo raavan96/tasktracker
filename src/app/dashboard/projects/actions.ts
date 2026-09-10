@@ -20,59 +20,32 @@ export async function deleteProject(projectId: string, confirmationName: string)
   return { success: true };
 }
 
-// 1. Create Project (Admin only)
 export async function createProject(formData: FormData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
-  const name = (formData.get('name') as string)?.trim();
-  const description = (formData.get('description') as string)?.trim();
-  const memberIds = formData.getAll('members') as string[];
-
-  if (!name) return { error: 'Project name is required' };
-
-  // Insert project
-  const { data: project, error: projectError } = await supabase
-    .from('projects')
-    .insert({
-      name,
-      description,
-      created_by: user?.id,
-    })
-    .select()
-    .single();
-
-  if (projectError) return { error: projectError.message };
-
-  // Assign members if selected
-  if (memberIds.length > 0) {
-    const memberRows = memberIds.map((userId) => ({
-      project_id: project.id,
-      user_id: userId,
-    }));
-    await supabase.from('project_members').insert(memberRows);
-  }
-
+  if (!user) return { error: 'Sign in before creating a project.' };
+  const name = String(formData.get('name') || '').trim();
+  if (!name || name.length > 200) return { error: 'Enter a project name between 1 and 200 characters.' };
+  const { data, error } = await supabase.rpc('create_workspace_project', {
+    p_name: name, p_description: String(formData.get('description') || '').trim(),
+    p_members: formData.getAll('members').map(String), p_private: formData.get('is_private') !== 'false',
+  });
+  if (error) return { error: error.message };
   revalidatePath('/dashboard');
-  return { success: true, projectId: project.id };
+  return { success: true, projectId: data };
 }
 
-// 2. Edit Project
 export async function updateProject(projectId: string, formData: FormData) {
-  const supabase = await createClient();
-  const name = (formData.get('name') as string)?.trim();
-  const description = (formData.get('description') as string)?.trim();
-  const isArchived = formData.get('is_archived') === 'true';
-
-  const { error } = await supabase
-    .from('projects')
-    .update({ name, description, is_archived: isArchived })
-    .eq('id', projectId);
-
-  if (error) return { error: error.message };
-
-  revalidatePath(`/dashboard/projects/${projectId}`);
-  revalidatePath('/dashboard');
+  const access = await projectAccess(projectId, true, true);
+  if (access.error) return { error: access.error };
+  const name = String(formData.get('name') || '').trim();
+  if (!name || name.length > 200) return { error: 'Enter a project name between 1 and 200 characters.' };
+  const { data, error } = await access.supabase.from('projects').update({ name,
+    description: String(formData.get('description') || '').trim(),
+    is_archived: formData.get('is_archived') === 'true', is_private: formData.get('is_private') !== 'false',
+  }).eq('id', projectId).select('id').single();
+  if (error || !data) return { error: error?.message || 'Project could not be updated.' };
+  revalidatePath(`/dashboard/projects/${projectId}`); revalidatePath('/dashboard');
   return { success: true };
 }
 

@@ -7,15 +7,16 @@ export async function projectAccess(projectId: string, adminOnly = false, allowA
   if (!user) return { error: 'Please sign in again.' } as const;
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
   const isAdmin = profile?.role === 'admin';
-  if (adminOnly && !isAdmin) return { error: 'Only admins can manage this project.' } as const;
-  const { data: project } = await supabase.from('projects').select('id, is_archived').eq('id', projectId).single();
+  const { data: project } = await supabase.from('projects').select('id, is_archived, created_by').eq('id', projectId).single();
   if (!project) return { error: 'Project not found or access denied.' } as const;
+  const isOwner = project.created_by === user.id;
+  if (adminOnly && !isAdmin && !isOwner) return { error: 'Only admins or the project creator can manage this project.' } as const;
   if (project.is_archived && !allowArchived) return { error: 'This project is archived.' } as const;
-  if (!isAdmin) {
+  if (!isAdmin && !isOwner) {
     const { data: member } = await supabase.from('project_members').select('user_id').eq('project_id', projectId).eq('user_id', user.id).maybeSingle();
     if (!member) return { error: 'You must belong to this project to make changes.' } as const;
   }
-  return { supabase, user, isAdmin } as const;
+  return { supabase, user, isAdmin, isOwner } as const;
 }
 
 export async function checkAssignee(supabase: Awaited<ReturnType<typeof createClient>>, projectId: string, assigneeId: string | null) {

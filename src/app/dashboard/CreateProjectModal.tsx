@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import type { Member } from '@/lib/task-types';
 import { createProject } from './projects/actions';
-import { Plus, X, Loader2 } from 'lucide-react';
+import Modal from '@/components/Modal';
+import { Plus, Loader2 } from 'lucide-react';
 
 export default function CreateProjectModal({ users }: { users: Member[] }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,6 +17,7 @@ export default function CreateProjectModal({ users }: { users: Member[] }) {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
+    try {
     const res = await createProject(formData);
 
     if (res?.error) {
@@ -25,6 +27,7 @@ export default function CreateProjectModal({ users }: { users: Member[] }) {
       setIsOpen(false);
       setIsLoading(false);
     }
+    } catch { setError('The project could not be saved. Please retry.'); setIsLoading(false); }
   }
 
   return (
@@ -37,18 +40,7 @@ export default function CreateProjectModal({ users }: { users: Member[] }) {
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-surface rounded-xl shadow-xl max-w-lg w-full p-6 border border-gray-200">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-gray-900">Create New Project</h2>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="text-gray-400 hover:text-gray-600 p-1"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
+        <Modal title="Create new project" busy={isLoading} onClose={() => setIsOpen(false)}>
             {error && (
               <div className="mb-4 p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md">
                 {error}
@@ -95,6 +87,7 @@ export default function CreateProjectModal({ users }: { users: Member[] }) {
                 </div>
               </div>
 
+              <label className="block text-sm">Visibility<select name="is_private" defaultValue="true" className="mt-1 w-full rounded-lg border p-2"><option value="true">Private — selected members and admins</option><option value="false">Workspace — all members can view</option></select></label>
               <div className="flex justify-end space-x-3 pt-4 border-t">
                 <button
                   type="button"
@@ -113,8 +106,7 @@ export default function CreateProjectModal({ users }: { users: Member[] }) {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </Modal>
       )}
     </>
   );

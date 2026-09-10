@@ -38,7 +38,7 @@ export default async function NotificationsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
-          <p className="text-sm text-gray-500">Task assignment alerts and workspace updates.</p>
+          <p className="text-sm text-gray-500">Assignments, deadline reminders, and review updates.</p>
         </div>
 
         {notifications && notifications.some((n) => !n.is_read) && (
@@ -84,7 +84,7 @@ export default async function NotificationsPage() {
 
               {n.task?.project_id && (
                 <Link
-                  href={`/dashboard/projects/${n.task.project_id}`}
+                  href={`/dashboard/projects/${n.task.project_id}?task=${n.task.id}`}
                   className="text-xs text-blue-600 hover:underline flex items-center font-medium self-center"
                 >
                   View Project <ExternalLink className="w-3 h-3 ml-1" />

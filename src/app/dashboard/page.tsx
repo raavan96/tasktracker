@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import { FolderKanban, Users, CheckCircle2 } from 'lucide-react';
+import TaskSummary from '@/components/TaskSummary';
+import { todayKey } from '@/lib/task-presentation';
 import CreateProjectModal from './CreateProjectModal';
 
 export default async function DashboardPage() {
@@ -18,11 +20,9 @@ export default async function DashboardPage() {
   const [{ data: projects }, { data: allUsers }] = await Promise.all([
     supabase.from('projects').select(`
       id, name, description, is_archived, created_at,
-      project_members(count), tasks(id, status)
+      project_members(count), tasks(id, status, due_date)
     `).order('created_at', { ascending: false }),
-    isAdmin
-      ? supabase.from('profiles').select('id, full_name, email').order('full_name')
-      : Promise.resolve({ data: [] }),
+    supabase.from('profiles').select('id, full_name, email').order('full_name'),
   ]);
 
   return (
@@ -35,9 +35,10 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        {isAdmin && <CreateProjectModal users={allUsers || []} />}
+        <CreateProjectModal users={allUsers || []} />
       </div>
 
+      <TaskSummary tasks={(projects || []).filter(p => !p.is_archived).flatMap(p => p.tasks || [])} today={todayKey()} />
       {/* Projects Grid */}
       {(!projects || projects.length === 0) ? (
         <div className="text-center py-16 bg-surface border border-gray-200 rounded-xl">

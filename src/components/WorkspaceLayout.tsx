@@ -42,7 +42,7 @@ export default async function WorkspaceLayout({
               <span>TaskTracker</span>
             </Link>
 
-            <div className="hidden md:block"><WorkspaceNav isAdmin={isAdmin} /></div>
+            <div className="hidden xl:block"><WorkspaceNav isAdmin={isAdmin} /></div>
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">
@@ -82,7 +82,7 @@ export default async function WorkspaceLayout({
             </div>
           </div>
         </div>
-        <div className="md:hidden px-4 pb-3"><WorkspaceNav isAdmin={isAdmin} /></div>
+        <div className="xl:hidden px-4 pb-3"><WorkspaceNav isAdmin={isAdmin} /></div>
       </header>
 
       {/* Main Content Area */}

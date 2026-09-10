@@ -171,3 +171,16 @@ export async function deleteUser(userId: string) {
   revalidatePath('/admin/users');
   return { success: 'User removed.' };
 }
+
+export async function updateMemberDetails(userId: string, formData: FormData) {
+  const access = await requireAdmin();
+  if (access.error) return { error: access.error };
+  const full_name = String(formData.get('fullName') || '').trim();
+  const job_title = String(formData.get('jobTitle') || '').trim();
+  const department = String(formData.get('department') || '').trim();
+  if (!full_name || full_name.length > 150 || job_title.length > 150 || department.length > 150) return { error: 'Name is required; each field may contain up to 150 characters.' };
+  const { data, error } = await createAdminClient().from('profiles').update({full_name,job_title,department}).eq('id',userId).select('id').single();
+  if(error || !data)return {error:error?.message || 'Member not found.'};
+  revalidatePath('/admin/users'); revalidatePath('/dashboard','layout');
+  return {success:'Member details updated.'};
+}

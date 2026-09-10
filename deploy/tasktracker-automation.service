@@ -1,0 +1,11 @@
+[Unit]
+Description=TaskTracker recurring tasks and in-app reminders
+Wants=network-online.target
+After=network-online.target
+[Service]
+Type=oneshot
+User=tasktracker
+Group=tasktracker
+WorkingDirectory=/home/public_html/task-tracker
+ExecStart=/usr/bin/env node scripts/workspace-automation.mjs
+NoNewPrivileges=true

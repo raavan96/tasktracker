@@ -14,10 +14,10 @@ import {
 
 export default function MyTasksClient({
   initialTasks,
-  projects,
+  projects, isAdmin = false,
 }: {
   initialTasks: (Omit<Task, 'task_comments' | 'assignee' | 'created_by'> & { project?: { name: string }; task_comments?: { count: number }[] })[];
-  projects: { id: string; name: string }[];
+  projects: { id: string; name: string }[]; isAdmin?: boolean;
 }) {
   const tasks = initialTasks;
   const [error, setError] = useState('');
@@ -89,7 +89,7 @@ export default function MyTasksClient({
             <option value="todo">To Do</option>
             <option value="in_progress">In Progress</option>
             <option value="blocked">Blocked</option>
-            <option value="done">Done</option>
+            <option value="in_review">Ready for review</option><option value="done">Completed</option>
           </select>
         </div>
 
@@ -175,7 +175,7 @@ export default function MyTasksClient({
                   <option value="todo">To Do</option>
                   <option value="in_progress">In Progress</option>
                   <option value="blocked">Blocked</option>
-                  <option value="done">Done</option>
+                  <option value="in_review">Ready for review</option><option value="done" disabled={!isAdmin}>Completed (admin approval)</option>
                 </select>
               </div>
             </div>

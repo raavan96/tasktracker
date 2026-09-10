@@ -1,12 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound, redirect } from 'next/navigation';
 import ProjectView from './ProjectView';
+import { todayKey } from '@/lib/task-presentation';
 import type { Member } from '@/lib/task-types';
 
 export default async function ProjectDetailPage({
-  params,
+  params, searchParams,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string }>; searchParams: Promise<{ task?: string }>;
 }) {
   const { id } = await params;
   const supabase = await createClient();
@@ -45,7 +46,7 @@ export default async function ProjectDetailPage({
     supabase.from('project_notes')
       .select('*, author:profiles!project_notes_author_id_fkey(id, full_name, email)')
       .eq('project_id', id).order('created_at', { ascending: false }),
-    isAdmin
+    (isAdmin || project.created_by === user.id)
       ? supabase.from('profiles').select('id, full_name, email').order('full_name')
       : Promise.resolve({ data: [] }),
   ]);
@@ -60,6 +61,7 @@ export default async function ProjectDetailPage({
 
   return (
     <ProjectView
+      today={todayKey()} initialTaskId={(await searchParams).task || null}
       project={project}
       tasks={tasks || []}
       notes={notes || []}

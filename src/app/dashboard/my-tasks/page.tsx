@@ -8,6 +8,7 @@ export default async function MyTasksPage() {
 
   if (!user) redirect('/login');
 
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
   // Fetch all tasks assigned to the current user across all projects
   const { data: tasks } = await supabase
     .from('tasks')
@@ -32,9 +33,9 @@ export default async function MyTasksPage() {
         <p className="text-sm text-gray-500">Track and update all tasks assigned to you across your active projects.</p>
       </div>
 
-      <MyTasksClient 
-        initialTasks={tasks || []} 
-        projects={userProjects || []} 
+      <MyTasksClient
+        isAdmin={profile?.role === 'admin'} initialTasks={(tasks || []).filter(task => !task.project?.is_archived)}
+        projects={userProjects || []}
       />
     </div>
   );

@@ -1,0 +1,64 @@
+import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
+const require=createRequire(import.meta.url);
+const { PGlite }=require(process.env.PGLITE_PATH || '/tmp/tasktracker-db-test/node_modules/@electric-sql/pglite');
+process.on('uncaughtException', e => { console.error(e.message, e.where || '', e.query || ''); process.exit(1); });
+const db=new PGlite();
+const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+await db.exec(read('tests/fixtures/base-schema.sql'));
+for(const f of ['202609100001_review_status.sql','202609100002_workspace.sql','202609100003_automation.sql'])await db.exec(read('supabase/migrations/'+f));
+const admin='00000000-0000-0000-0000-000000000001',owner='00000000-0000-0000-0000-000000000002',member='00000000-0000-0000-0000-000000000003',outsider='00000000-0000-0000-0000-000000000004';
+for(const [id,role] of [[admin,'admin'],[owner,'member'],[member,'member'],[outsider,'member']]){
+ await db.query('INSERT INTO auth.users(id,email) VALUES($1,$2)',[id,id+'@collegedunia.com']);
+ await db.query('INSERT INTO profiles(id,email,full_name,role) VALUES($1,$2,$3,$4)',[id,id+'@collegedunia.com',role,role]);
+}
+async function as(id){await db.exec('RESET ROLE');await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[id || '']);if(id)await db.exec('SET ROLE authenticated');}
+async function rows(sql,args=[]){return (await db.query(sql,args)).rows;}
+await as(owner);
+const p=(await rows("SELECT create_workspace_project('Private QA','',ARRAY[$1::uuid],true) id",[member]))[0].id;
+assert.equal((await rows('SELECT * FROM project_members WHERE project_id=$1',[p])).length,2);
+const t=(await rows("INSERT INTO tasks(project_id,title,created_by,assignee_id) VALUES($1,'Owner task',$2,$3) RETURNING id",[p,owner,member]))[0].id;
+await as(outsider);assert.equal((await rows('SELECT * FROM projects WHERE id=$1',[p])).length,0);
+await assert.rejects(()=>rows("INSERT INTO tasks(project_id,title,created_by) VALUES($1,'Forbidden',$2)",[p,outsider]));
+await as(member);
+assert.equal((await rows("UPDATE profiles SET role='admin' WHERE id=$1 RETURNING id",[member])).length,0);
+await assert.rejects(()=>rows("UPDATE tasks SET title='Hijack' WHERE id=$1",[t]));
+await rows("UPDATE tasks SET status='in_progress' WHERE id=$1",[t]);
+await assert.rejects(()=>rows("UPDATE tasks SET status='done' WHERE id=$1",[t]));
+await rows("UPDATE tasks SET status='in_review' WHERE id=$1",[t]);
+const filePath=t+'/qa/proof.txt';
+await rows("INSERT INTO storage.objects(bucket_id,name,owner_id) VALUES('task-files',$1,$2)",[filePath,member]);
+await as(outsider);assert.equal((await rows('SELECT * FROM storage.objects WHERE name=$1',[filePath])).length,0);
+await assert.rejects(()=>rows("INSERT INTO storage.objects(bucket_id,name,owner_id) VALUES('task-files',$1,$2)",[t+'/bad.txt',outsider]));
+await as(member);assert.equal((await rows('SELECT * FROM storage.objects WHERE name=$1',[filePath])).length,1);
+
+const own=(await rows("INSERT INTO tasks(project_id,title,created_by) VALUES($1,'Member own task',$2) RETURNING id",[p,member]))[0].id;
+await rows("UPDATE tasks SET title='Edited own task' WHERE id=$1",[own]);
+const checklist=(await rows("INSERT INTO task_checklist(task_id,title) VALUES($1,'Check result') RETURNING id",[t]))[0].id;
+await as(admin);await assert.rejects(()=>rows("UPDATE tasks SET status='done' WHERE id=$1",[t]));
+await rows('UPDATE task_checklist SET completed=true WHERE id=$1',[checklist]);await rows("UPDATE tasks SET status='done' WHERE id=$1",[t]);
+await as(owner);
+await assert.rejects(()=>rows("INSERT INTO task_checklist(task_id,title) VALUES($1,'Late item')",[t]));
+await assert.rejects(()=>rows('INSERT INTO task_dependencies(task_id,depends_on) VALUES($1,$2)',[t,own]));
+await rows("UPDATE tasks SET status='todo' WHERE id=$1",[t]);
+await rows('INSERT INTO task_dependencies(task_id,depends_on) VALUES($1,$2)',[t,own]);
+await as(member);await assert.rejects(()=>rows('INSERT INTO task_dependencies(task_id,depends_on) VALUES($1,$2)',[own,t]));
+await assert.rejects(()=>rows('SELECT run_workspace_automation()'));
+await as(admin);await rows('DELETE FROM task_dependencies WHERE task_id=$1',[t]);
+await as(owner);
+const recurring=(await rows("INSERT INTO tasks(project_id,title,created_by,assignee_id,due_date,recurrence) VALUES($1,'Repeat QA',$2,$3,(now() AT TIME ZONE 'Asia/Kolkata')::date-1,'daily') RETURNING id",[p,owner,member]))[0].id;
+await as(null);await db.exec('SET ROLE service_role');await rows('SELECT run_workspace_automation()');await rows('SELECT run_workspace_automation()');
+assert.equal((await rows('SELECT * FROM tasks WHERE recurrence_source=$1',[recurring])).length,1);
+const counts=await rows('SELECT dedupe_key,count(*) n FROM notifications WHERE dedupe_key IS NOT NULL GROUP BY dedupe_key HAVING count(*)>1');assert.equal(counts.length,0);
+assert.equal((await rows("SELECT next_task_date('2026-02-28','monthly','2026-01-31')::text d"))[0].d,'2026-03-31');
+await as(owner);assert.ok((await rows('SELECT * FROM task_history WHERE task_id=$1',[t])).length>=4);
+await assert.rejects(()=>rows("INSERT INTO task_history(task_id,field) VALUES($1,'fake')",[t]));
+await as(member);await rows('DELETE FROM tasks WHERE id=$1',[own]);
+await as(owner);await rows('UPDATE projects SET is_private=false WHERE id=$1',[p]);
+await as(outsider);assert.equal((await rows('SELECT * FROM projects WHERE id=$1',[p])).length,1);
+await assert.rejects(()=>rows("INSERT INTO tasks(project_id,title,created_by) VALUES($1,'Read only',$2)",[p,outsider]));
+await as(owner);await rows('DELETE FROM projects WHERE id=$1',[p]);
+await as(null);assert.equal((await rows('SELECT * FROM tasks WHERE project_id=$1',[p])).length,0);
+console.log('Database migration and permission, review, checklist, dependency, recurrence, reminder, privacy, history and cascade tests passed.');
+await db.close();

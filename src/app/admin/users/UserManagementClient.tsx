@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { createMember, resetMemberPassword, updateUserRole, deleteUser } from '@/app/auth/actions';
+import { createMember, resetMemberPassword, updateMemberDetails, updateUserRole, deleteUser } from '@/app/auth/actions';
+import Modal from '@/components/Modal';
 import { UserPlus, Trash2, Shield, User, Loader2 } from 'lucide-react';
 
 interface Profile {
@@ -9,16 +10,20 @@ interface Profile {
   email: string;
   full_name: string | null;
   role: 'admin' | 'member';
-  created_at: string;
+  created_at: string; job_title?: string; department?: string;
 }
 
 export default function UserManagementClient({
   users,
-  currentUserId,
+  currentUserId, counts,
 }: {
   users: Profile[];
-  currentUserId: string;
+  currentUserId: string; counts: Record<string,number>;
 }) {
+  const [search, setSearch] = useState('');
+  const [editMember, setEditMember] = useState<Profile | null>(null);
+  const [detailsBusy, setDetailsBusy] = useState(false);
+  const filteredUsers = users.filter(u => `${u.full_name} ${u.email} ${u.job_title || ''} ${u.department || ''}`.toLowerCase().includes(search.toLowerCase()));
   const [isCreating, setIsCreating] = useState(false);
   const [feedback, setFeedback] = useState<{ error?: string; success?: string } | null>(null);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
@@ -144,6 +149,17 @@ export default function UserManagementClient({
         </form>
       </section>}
 
+      {editMember && <Modal title="Edit member details" busy={detailsBusy} onClose={() => setEditMember(null)}>
+        {feedback?.error && <p role="alert" className="text-sm text-red-700">{feedback.error}</p>}
+        <form className="space-y-4" onSubmit={async e => { e.preventDefault(); const form = new FormData(e.currentTarget); setDetailsBusy(true); setFeedback(null); try {const result=await updateMemberDetails(editMember.id,form);setFeedback(result);if(result.success)setEditMember(null);}catch{setFeedback({error:'Member could not be updated.'});}finally{setDetailsBusy(false);} }}>
+          <p className="text-sm text-gray-500">{editMember.email}</p>
+          <label className="block text-sm">Full name<input name="fullName" required maxLength={150} defaultValue={editMember.full_name || ''} className="mt-1 w-full rounded-lg border p-3" /></label>
+          <label className="block text-sm">Job title<input name="jobTitle" maxLength={150} defaultValue={editMember.job_title || ''} className="mt-1 w-full rounded-lg border p-3" /></label>
+          <label className="block text-sm">Department<input name="department" maxLength={150} defaultValue={editMember.department || ''} className="mt-1 w-full rounded-lg border p-3" /></label>
+          <button disabled={detailsBusy} className="rounded-lg bg-blue-600 px-4 py-2 text-white">Save details</button>
+        </form>
+      </Modal>}
+      <input aria-label="Search members" placeholder="Search name, email, job title, or department" value={search} onChange={e=>setSearch(e.target.value)} className="w-full rounded-lg border px-4 py-3 text-sm" />
       {/* User Roster */}
       <div className="bg-surface rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
@@ -155,12 +171,12 @@ export default function UserManagementClient({
               <tr>
                 <th className="px-6 py-3 text-left font-medium">User</th>
                 <th className="px-6 py-3 text-left font-medium">Role</th>
-                <th className="px-6 py-3 text-left font-medium">Joined</th>
+                <th className="px-6 py-3 text-left font-medium">Open tasks</th>
                 <th className="px-6 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {users.map((u) => {
+              {filteredUsers.map((u) => {
                 const isSelf = u.id === currentUserId;
                 const isPending = pendingActionId === u.id;
 
@@ -173,7 +189,7 @@ export default function UserManagementClient({
                           <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">You</span>
                         )}
                       </div>
-                      <div className="text-gray-500 text-xs">{u.email}</div>
+                      <div className="text-gray-500 text-xs">{u.email}</div><div className="mt-1 text-xs text-gray-500">{[u.job_title,u.department].filter(Boolean).join(' · ')}</div>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -184,9 +200,10 @@ export default function UserManagementClient({
                       </span>
                     </td>
                     <td className="px-6 py-4 text-gray-500 text-xs">
-                      {new Date(u.created_at).toLocaleDateString()}
+                      {counts[u.id] || 0}
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">
+                      <button onClick={() => { setFeedback(null); setEditMember(u); }} className="text-xs text-blue-700 font-medium">Edit details</button>
                       {!isSelf && (
                         <>
                           <button onClick={() => { setResetTarget(u); setFeedback(null); }} disabled={resetBusy} className="text-xs text-blue-600 font-medium disabled:opacity-50">Reset password</button>
@@ -197,14 +214,14 @@ export default function UserManagementClient({
                           >
                             Make {u.role === 'admin' ? 'Member' : 'Admin'}
                           </button>
-                          <button
+                          <details className="inline-block text-left"><summary className="cursor-pointer text-xs text-gray-500">More actions</summary><button
                             onClick={() => handleDelete(u.id)}
                             disabled={isPending}
                             className="text-xs text-red-600 hover:text-red-800 p-1 inline-flex items-center disabled:opacity-50"
                             title="Remove User"
                           >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                            <Trash2 className="w-4 h-4 mr-1" />Remove member
+                          </button></details>
                         </>
                       )}
                     </td>

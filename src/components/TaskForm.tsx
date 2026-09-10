@@ -2,10 +2,10 @@
 
 import type { Member, Task } from '@/lib/task-types';
 
-export default function TaskForm({ task, members, busy, onSubmit, onCancel, onManageTeam }: {
+export default function TaskForm({ task, members, busy, onSubmit, onCancel, onManageTeam, isAdmin = false }: {
   task?: Task | null; members: Member[]; busy: boolean;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-  onCancel: () => void; onManageTeam?: () => void;
+  isAdmin?: boolean; onCancel: () => void; onManageTeam?: () => void;
 }) {
   const field = 'mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm';
   return <form onSubmit={onSubmit} className="space-y-5">
@@ -37,10 +37,14 @@ export default function TaskForm({ task, members, busy, onSubmit, onCancel, onMa
         </label>
         <label className="block text-sm font-medium">Status
           <select name="status" defaultValue={task?.status || 'todo'} className={field}>
-            <option value="todo">To Do</option><option value="in_progress">In Progress</option><option value="blocked">Blocked</option><option value="done">Done</option>
+            <option value="todo">To Do</option><option value="in_progress">In Progress</option><option value="blocked">Blocked</option><option value="in_review">Ready for review</option>{(isAdmin || task?.status === 'done') && <option value="done" disabled={!isAdmin}>Completed (approved)</option>}
           </select>
         </label>
       </div>
+      <label className="block text-sm font-medium">Repeat
+        <select name="recurrence" defaultValue={task?.recurrence || 'none'} className={field}><option value="none">Does not repeat</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select>
+        <span className="block mt-1 text-xs text-gray-500">Creates the next task on its due date; checklist items are copied unchecked.</span>
+      </label>
     </fieldset>
     <div className="flex justify-end gap-3 border-t border-slate-200 pt-5">
       <button type="button" onClick={onCancel} disabled={busy} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm">Cancel</button>

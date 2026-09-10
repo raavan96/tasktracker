@@ -79,7 +79,8 @@ test('successful edit persists all fields, scopes by project, and refreshes all 
 test('assignee may update status but cannot rewrite another creator’s task', async () => {
   const t = setup({user:{id:'member'},role:'member'});
   assert.ok((await t.actions.updateTask('task','project',form())).error);
-  assert.equal((await t.actions.updateTaskStatus('task','project','done')).success,true); assert.equal(t.writes.length,1);
+  assert.equal((await t.actions.updateTaskStatus('task','project','in_review')).success,true);
+  assert.ok((await t.actions.updateTaskStatus('task','project','done')).error); assert.equal(t.writes.length,1);
 });
 test('missing tasks and writes rejected by RLS never return success', async () => {
   const missing=setup({task:null}); assert.ok((await missing.actions.updateTask('task','project',form())).error); assert.equal(missing.writes.length,0);
