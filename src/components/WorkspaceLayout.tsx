@@ -22,20 +22,12 @@ export default async function WorkspaceLayout({
 
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
+  const [{ data: profile }, { count: unreadCount }] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).single(),
+    supabase.from('notifications').select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id).eq('is_read', false),
+  ]);
   const isAdmin = profile?.role === 'admin';
-
-  // Fetch unread notifications count
-  const { count: unreadCount } = await supabase
-    .from('notifications')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .eq('is_read', false);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

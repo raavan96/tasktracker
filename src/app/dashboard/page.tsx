@@ -15,24 +15,15 @@ export default async function DashboardPage() {
 
   const isAdmin = profile?.role === 'admin';
 
-  // Fetch projects
-  const { data: projects } = await supabase
-    .from('projects')
-    .select(`
-      id,
-      name,
-      description,
-      is_archived,
-      created_at,
-      project_members(count),
-      tasks(id, status)
-    `)
-    .order('created_at', { ascending: false });
-
-  // Fetch all registered users for the Admin project creation modal
-  const { data: allUsers } = isAdmin
-    ? await supabase.from('profiles').select('id, full_name, email').order('full_name')
-    : { data: [] };
+  const [{ data: projects }, { data: allUsers }] = await Promise.all([
+    supabase.from('projects').select(`
+      id, name, description, is_archived, created_at,
+      project_members(count), tasks(id, status)
+    `).order('created_at', { ascending: false }),
+    isAdmin
+      ? supabase.from('profiles').select('id, full_name, email').order('full_name')
+      : Promise.resolve({ data: [] }),
+  ]);
 
   return (
     <div className="space-y-6">

@@ -32,39 +32,31 @@ export default async function ProjectDetailPage({
 
   if (!project) notFound();
 
-  // Fetch Members
-  const { data: membersData } = await supabase
-    .from('project_members')
-    .select('user_id, joined_at, profiles(id, full_name, email, role)')
-    .eq('project_id', id);
-
+  // Independent reads start together after authentication and project visibility checks.
+  const [membersResult, tasksResult, notesResult, usersResult] = await Promise.all([
+    supabase.from('project_members')
+      .select('user_id, joined_at, profiles(id, full_name, email, role)')
+      .eq('project_id', id),
+    supabase.from('tasks').select(`
+      *,
+      assignee:profiles!tasks_assignee_id_fkey(id, full_name, email),
+      task_comments(*, author:profiles!task_comments_author_id_fkey(id, full_name, email))
+    `).eq('project_id', id).order('created_at', { ascending: false }),
+    supabase.from('project_notes')
+      .select('*, author:profiles!project_notes_author_id_fkey(id, full_name, email)')
+      .eq('project_id', id).order('created_at', { ascending: false }),
+    isAdmin
+      ? supabase.from('profiles').select('id, full_name, email').order('full_name')
+      : Promise.resolve({ data: [] }),
+  ]);
+  const { data: membersData } = membersResult;
+  const { data: tasks } = tasksResult;
+  const { data: notes } = notesResult;
+  const { data: allUsers } = usersResult;
   const projectMembers = membersData?.flatMap((row) => {
     const profile = (Array.isArray(row.profiles) ? row.profiles[0] : row.profiles) as Member | null;
     return profile ? [{ ...profile, joined_at: row.joined_at }] : [];
   }) || [];
-
-  // Fetch Tasks with Assignee & Comments
-  const { data: tasks } = await supabase
-    .from('tasks')
-    .select(`
-      *,
-      assignee:profiles!tasks_assignee_id_fkey(id, full_name, email),
-      task_comments(*, author:profiles!task_comments_author_id_fkey(id, full_name, email))
-    `)
-    .eq('project_id', id)
-    .order('created_at', { ascending: false });
-
-  // Fetch Notes
-  const { data: notes } = await supabase
-    .from('project_notes')
-    .select('*, author:profiles!project_notes_author_id_fkey(id, full_name, email)')
-    .eq('project_id', id)
-    .order('created_at', { ascending: false });
-
-  // If Admin, get all workspace users to allow adding members
-  const { data: allUsers } = isAdmin
-    ? await supabase.from('profiles').select('id, full_name, email').order('full_name')
-    : { data: [] };
 
   return (
     <ProjectView
