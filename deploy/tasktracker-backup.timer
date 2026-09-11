@@ -1,0 +1,9 @@
+[Unit]
+Description=Back up TaskTracker every six hours
+[Timer]
+OnCalendar=*-*-* 00,06,12,18:30:00 UTC
+Persistent=true
+RandomizedDelaySec=300
+Unit=tasktracker-backup.service
+[Install]
+WantedBy=timers.target

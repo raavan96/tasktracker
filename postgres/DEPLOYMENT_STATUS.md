@@ -1,4 +1,14 @@
-# Staging deployment — 11 September 2026
+# Production cutover — 11 September 2026
+
+**Current production:** https://168.144.155.51 now uses local PostgreSQL, local password/session authentication, and local attachment storage. The user approved up to ten minutes of maintenance; maintenance ran approximately 12:32–12:35 UTC. The old Supabase source was made read-only with 13 statement triggers before the final export, including protection against writes through the still-existing old Vercel deployment. Final export hash matched the earlier rehearsal. All 12 accounts, 3 projects, 10 memberships, 5 tasks, 3 comments, 8 notifications and 9 history entries were copied; there were no source attachments. All imported fields and 36 access checks passed before activation. All accounts received the explicitly requested local password, with independent salts; the password is not recorded in source.
+
+`tasktracker.service` now runs the verified standalone artifact in `/opt/tasktracker-staging` as OS user `tasktracker` on localhost:3000, using root-only `/etc/tasktracker-local.env`. Production database is `tasktracker_rehearsal_final_20260911` on localhost:55433; despite its historical name it is the live production database and must not be deleted as test data. Files are in `/var/lib/tasktracker-local/attachments`. `tasktracker-staging-db.service` and `tasktracker.service` are enabled for reboot. The previous Supabase service definitions and Nginx config are preserved in root-only `/etc/tasktracker-cutover-20260911`. Original staging services remain stopped; HTTPS port 8443 redirects to production.
+
+`tasktracker-automation.timer` now runs the local PostgreSQL automation every 15 minutes; a manual run passed. `tasktracker-backup.timer` is enabled every six hours, keeping 28 successful backup directories under root-only `/var/backups/tasktracker`. It captures database and referenced files consistently using an exported PostgreSQL snapshot and a short attachment metadata write lock. A backup restored successfully on the existing cluster with all imported data and access checks passing; a separate synthetic attachment backup passed byte/hash checks. An initial production recovery archive is also saved privately off-server in the user's local `deliverables/production-cutover-20260911` folder. Ongoing off-server copies are not automated. Certificate renewal remains scheduled.
+
+Live browser checks passed for admin and member authentication and their expected project visibility. Initial service checks showed no restarts or OOM events and about 327 MiB host memory available; there was one soft memory-high event during migration. No physical server reboot was performed. New local production writes must be preserved: do not switch back to the old source without reconciling changes. See `postgres/OPERATIONS.md` for recovery procedures.
+
+## Historical staging and rehearsal notes (superseded by current state above)
 
 The separate PostgreSQL staging app is running at https://168.144.155.51:8443/login.
 Production remains on HTTPS port 443, localhost port 3000, using Supabase. No production users, data, or files were migrated.

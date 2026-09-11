@@ -19,3 +19,6 @@ ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths=/var/lib/pgsql/tasktracker-staging
 PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

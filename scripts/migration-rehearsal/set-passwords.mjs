@@ -5,7 +5,7 @@ import { randomBytes, scrypt, timingSafeEqual, createHash } from 'node:crypto';
 import { promisify } from 'node:util';
 const derive = promisify(scrypt);
 const options = { N: 32768, r: 8, p: 3, maxmem: 64 * 1024 * 1024 };
-if (process.env.PGDATABASE !== 'tasktracker_rehearsal_20260911' || process.env.PGPORT !== '55433') throw new Error('Only the approved rehearsal database is allowed.');
+if (!['tasktracker_rehearsal_20260911','tasktracker_rehearsal_final_20260911'].includes(process.env.PGDATABASE) || process.env.PGPORT !== '55433') throw new Error('Only the approved migration databases are allowed.');
 let input = '';
 for await (const chunk of process.stdin) { input += chunk; if (input.length > 4096) throw new Error('Input too large.'); }
 const { password } = JSON.parse(input);
