@@ -117,6 +117,9 @@ body {
   --workspace-border: #293140;
   --workspace-gradient: linear-gradient(110deg, #4999ff, #9aeaf0);
 }
+@layer base {
+  :root[data-theme="dark"] :where(*) { border-color: var(--workspace-border); }
+}
 :root[data-theme="dark"] .workspace-shell {
   background: radial-gradient(ellipse 65rem 28rem at 78% -8rem, #08798724, transparent 75%), var(--background);
 }
@@ -124,6 +127,7 @@ body {
   background: #090e18f5;
   border-color: #253041;
 }
+:root[data-theme="dark"] .workspace-header-brand > div { background: var(--workspace-gradient); color: #091629; }
 :root[data-theme="dark"] .workspace-main { padding-top: 2.25rem; padding-bottom: 3rem; }
 :root[data-theme="dark"] .workspace-main h1 { font-size: clamp(1.5rem, 2.4vw, 2rem); font-weight: 600; letter-spacing: -.035em; line-height: 1.25; }
 :root[data-theme="dark"] .workspace-main h1 + p { margin-top: .5rem; line-height: 1.6; }
@@ -221,6 +225,9 @@ body {
   :root[data-theme="dark"] .workspace-main { padding-top: 1.5rem; }
   :root[data-theme="dark"] .summary-card { padding: 1rem; }
   :root[data-theme="dark"] .summary-card:last-child { grid-column: 1 / -1; }
+  :root[data-theme="dark"] .task-table-view > div:first-child > input { flex-basis: 100%; width: 100%; }
+  :root[data-theme="dark"] .task-table-view > div:first-child > select { flex: 1; min-width: 0; }
+  :root[data-theme="dark"] .workspace-header a[aria-label] { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
 }
 
 /* Mobile layout: keep actions reachable without widening the page. */
