@@ -13,7 +13,8 @@ MemoryMax=192M
 OOMPolicy=stop
 TimeoutStopSec=60
 KillSignal=SIGINT
-NoNewPrivileges=true
+# CentOS SELinux requires the PostgreSQL executable domain transition.
+# NoNewPrivileges prevents that transition; keep the other sandbox restrictions.
 ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths=/var/lib/pgsql/tasktracker-staging
