@@ -62,7 +62,7 @@ export default async function DashboardPage() {
               <Link
                 key={project.id}
                 href={`/dashboard/projects/${project.id}`}
-                className={`block bg-surface rounded-xl border p-6 hover:shadow-md transition ${
+                className={`project-card block bg-surface rounded-xl border p-6 hover:shadow-md transition ${
                   project.is_archived ? 'opacity-60 border-dashed border-gray-300' : 'border-gray-200'
                 }`}
               >

@@ -201,13 +201,13 @@ export default function ProjectView({
       {activeTab === 'tasks' && view === 'board' && <label className="block md:hidden text-sm font-medium">Filter by status<select value={mobileStatus} onChange={e=>setMobileStatus(e.target.value)} className="mt-2 w-full rounded-lg border p-3"><option value="all">All tasks ({tasks.length})</option>{statusColumns.map(col=><option key={col.id} value={col.id}>{col.title} ({tasks.filter(t=>t.status===col.id).length})</option>)}</select></label>}
       {activeTab === 'tasks' && view === 'board' && !tasks.length && <p className="md:hidden rounded-xl border p-6 text-sm text-gray-500">No tasks yet. Add a task to get started.</p>}
       {activeTab === 'tasks' && view === 'board' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="task-board grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {statusColumns.map((col) => {
             const columnTasks = tasks.filter((t: Task) => t.status === col.id);
             const Icon = col.icon;
 
             return (
-              <div key={col.id} className={`bg-gray-100/70 p-3 md:p-4 rounded-xl flex-col md:min-h-36 lg:h-[65vh] ${((mobileStatus === 'all' && !columnTasks.length) || (mobileStatus !== 'all' && mobileStatus !== col.id)) ? 'hidden md:flex' : 'flex'}`}>
+              <div key={col.id} data-status={col.id} className={`board-column bg-gray-100/70 p-3 md:p-4 rounded-xl flex-col md:min-h-36 lg:h-[65vh] ${((mobileStatus === 'all' && !columnTasks.length) || (mobileStatus !== 'all' && mobileStatus !== col.id)) ? 'hidden md:flex' : 'flex'}`}>
                 <div className="flex items-center justify-between mb-3 px-1">
                   <div className="flex items-center space-x-2">
                     <span className={`p-1 rounded-md ${col.color}`}>
@@ -229,7 +229,7 @@ export default function ProjectView({
                       aria-label={`Open task: ${task.title}`}
                       onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedTaskId(task.id); setDetailTab('details'); setFeedback(null); setCommentInput(''); } }}
                       onClick={() => { setSelectedTaskId(task.id); setDetailTab('details'); setFeedback(null); setCommentInput(''); }}
-                      className="bg-surface p-4 rounded-lg border border-gray-200 shadow-sm hover:border-blue-300 transition cursor-pointer space-y-3"
+                      className="task-card bg-surface p-4 rounded-lg border border-gray-200 shadow-sm hover:border-blue-300 transition cursor-pointer space-y-3"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <h4 className="text-base font-semibold text-gray-900 leading-snug">{task.title}</h4>

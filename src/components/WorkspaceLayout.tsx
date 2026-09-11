@@ -30,19 +30,28 @@ export default async function WorkspaceLayout({
   const isAdmin = profile?.role === 'admin';
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="workspace-shell min-h-screen bg-gray-50 flex flex-col">
+      <aside className="dark-workspace-sidebar" aria-label="Sidebar">
+        <Link href="/dashboard" className="workspace-brand flex items-center gap-3 font-semibold">
+          <span className="workspace-mark"><FolderKanban className="h-5 w-5" /></span>
+          <span>TaskTracker<span className="workspace-brand-caption">TEAM WORKSPACE</span></span>
+        </Link>
+        <p className="workspace-nav-caption">WORKSPACE</p>
+        <WorkspaceNav isAdmin={isAdmin} />
+      </aside>
       {/* Top Navigation */}
-      <header className="bg-surface border-b border-gray-200 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <header className="workspace-header bg-surface border-b border-gray-200 sticky top-0 z-30">
+        <div className="workspace-header-inner max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-8">
-            <Link href="/dashboard" className="flex items-center space-x-2 font-bold text-gray-900 text-base sm:text-lg">
+            <Link href="/dashboard" className="workspace-header-brand flex items-center space-x-2 font-bold text-gray-900 text-base sm:text-lg">
               <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center">
                 <FolderKanban className="w-5 h-5" />
               </div>
               <span>TaskTracker</span>
             </Link>
 
-            <div className="hidden xl:block"><WorkspaceNav isAdmin={isAdmin} /></div>
+            <div className="workspace-top-nav hidden xl:block"><WorkspaceNav isAdmin={isAdmin} /></div>
+            <span className="workspace-context">Your workspace</span>
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">
@@ -86,7 +95,7 @@ export default async function WorkspaceLayout({
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="workspace-main flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
     </div>
