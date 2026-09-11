@@ -27,6 +27,8 @@ await assert.rejects(()=>rows("UPDATE tasks SET title='Hijack' WHERE id=$1",[t])
 await rows("UPDATE tasks SET status='in_progress' WHERE id=$1",[t]);
 await assert.rejects(()=>rows("UPDATE tasks SET status='done' WHERE id=$1",[t]));
 await rows("UPDATE tasks SET status='in_review' WHERE id=$1",[t]);
+await as(owner);await assert.rejects(()=>rows("UPDATE tasks SET status='done' WHERE id=$1",[t]));
+await as(member);
 const filePath=t+'/qa/proof.txt';
 await rows("INSERT INTO storage.objects(bucket_id,name,owner_id) VALUES('task-files',$1,$2)",[filePath,member]);
 await as(outsider);assert.equal((await rows('SELECT * FROM storage.objects WHERE name=$1',[filePath])).length,0);

@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getTaskExtras, saveChecklist, setDependency, uploadAttachment, attachmentLink } from '@/app/dashboard/tasks/extras';
 import type { Task, Member } from '@/lib/task-types';
-export default function TaskExtras({ task, tasks, members, canEdit }: { task:Task; tasks:Task[]; members:Member[]; canEdit:boolean }) {
+export default function TaskExtras({ task, tasks, members, canEdit, view = 'details' }: { task:Task; tasks:Task[]; members:Member[]; canEdit:boolean; view?: 'details' | 'updates' }) {
   const [data,setData]=useState<Awaited<ReturnType<typeof getTaskExtras>> | null>(null);
   const [error,setError]=useState('');const [busy,setBusy]=useState(false);
   const load=useCallback(async()=>{const result=await getTaskExtras(task.id,task.project_id);setData(result);},[task.id,task.project_id]);
@@ -14,7 +14,7 @@ export default function TaskExtras({ task, tasks, members, canEdit }: { task:Tas
   if(data.error)return <p role="alert" className="py-4 text-sm text-red-700">{data.error}</p>;
   return <div className="space-y-6 border-t py-5">
     {error&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-    <section><h3 className="mb-3 font-semibold">Checklist <span className="text-sm text-gray-500">{data.checklist?.filter(c=>c.completed).length}/{data.checklist?.length}</span></h3>
+    <div hidden={view !== 'details'} className="space-y-6"><section><h3 className="mb-3 font-semibold">Checklist <span className="text-sm text-gray-500">{data.checklist?.filter(c=>c.completed).length}/{data.checklist?.length}</span></h3>
       {data.checklist?.map(c=><label key={c.id} className="flex gap-3 items-center py-2 text-sm"><input type="checkbox" checked={c.completed} disabled={busy||!canEdit||task.status==='done'} onChange={e=>run(()=>saveChecklist(task.id,task.project_id,'',c.id,e.target.checked))}/><span className={c.completed?'line-through text-gray-500':''}>{c.title}</span></label>)}
       {canEdit&&task.status!=='done'&&<form className="flex gap-2 mt-2" onSubmit={async e=>{e.preventDefault();const form=e.currentTarget;await run(()=>saveChecklist(task.id,task.project_id,String(new FormData(form).get('title')||'')));}}><input name="title" aria-label="Checklist item" required maxLength={300} placeholder="Add a checklist item" className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm"/><button disabled={busy} className="rounded-lg border px-3 text-sm">Add</button></form>}
     </section>
@@ -25,6 +25,6 @@ export default function TaskExtras({ task, tasks, members, canEdit }: { task:Tas
     <section><h3 className="mb-3 font-semibold">Attachments</h3>{data.attachments?.map(a=><button key={a.id} className="block py-2 text-left text-sm text-blue-700 underline break-all" onClick={()=>run(async()=>{const result=await attachmentLink(a.id);if(result.error)return {error:result.error};if(result.url)window.location.assign(result.url);return {};})}>{a.name} · {Math.ceil(a.size/1024)} KB</button>)}
       {canEdit&&<form className="space-y-2" onSubmit={e=>{e.preventDefault();const form=new FormData(e.currentTarget);void run(()=>uploadAttachment(task.id,task.project_id,form));}}><input type="file" name="file" required aria-label="Task attachment" className="w-full text-sm"/><p className="text-xs text-gray-500">Up to 10 MB. Visible only to people with project access.</p><button disabled={busy} className="rounded-lg border px-3 py-2 text-sm">Upload file</button></form>}
     </section>
-    <section><h3 className="mb-3 font-semibold">Task history</h3><p className="mb-2 text-xs text-gray-500">Latest 100 changes. History starts when this feature is enabled.</p>{data.history?.map(h=><div key={h.id} className="border-l-2 border-gray-200 pl-3 py-2 text-sm"><p className="font-medium">{h.field.replaceAll('_',' ')}: {h.field==='created'?'':`${value(h.field,h.old_value)} → `}{value(h.field,h.new_value)}</p><p className="mt-1 text-xs text-gray-500">{h.actor?.full_name || h.actor?.email || 'System'} · {new Date(h.created_at).toLocaleString()}</p></div>)}</section>
+    </div><section hidden={view !== 'updates'}><h3 className="mb-3 font-semibold">Task history</h3><p className="mb-2 text-xs text-gray-500">Latest 100 changes. History starts when this feature is enabled.</p>{data.history?.map(h=><div key={h.id} className="border-l-2 border-gray-200 pl-3 py-2 text-sm"><p className="font-medium">{h.field.replaceAll('_',' ')}: {h.field==='created'?'':`${value(h.field,h.old_value)} → `}{value(h.field,h.new_value)}</p><p className="mt-1 text-xs text-gray-500">{h.actor?.full_name || h.actor?.email || 'System'} · {new Date(h.created_at).toLocaleString()}</p></div>)}</section>
   </div>;
 }

@@ -21,12 +21,13 @@ export function matchesSummary(task: SummaryTask, filter: string, today: string)
   if (filter === 'overdue') return task.status !== 'done' && !!due && due < today;
   if (filter === 'today') return task.status !== 'done' && due === today;
   if (filter === 'in_progress') return task.status === 'in_progress';
+  if (filter === 'in_review') return task.status === 'in_review';
   if (filter === 'done') return task.status === 'done';
   return true;
 }
 export const summaryFilters = [
   { id: 'overdue', label: 'Overdue' }, { id: 'today', label: 'Due today' },
-  { id: 'in_progress', label: 'In progress' }, { id: 'done', label: 'Completed' },
+  { id: 'in_progress', label: 'In progress' }, { id: 'in_review', label: 'Awaiting review' }, { id: 'done', label: 'Completed' },
 ];
 export function csvCell(value: unknown) {
   let text = String(value ?? '');

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import RemarkText from '@/components/RemarkText';
 import TaskExtras from '@/components/TaskExtras';
 import TaskTable from '@/components/TaskTable';
 import { deadlineLabel, initials } from '@/lib/task-presentation';
@@ -55,6 +56,7 @@ export default function ProjectView({
   const router = useRouter();
   const [editingProject, setEditingProject] = useState(false);
   const [view, setView] = useState<'board' | 'table'>('board');
+  const [detailTab, setDetailTab] = useState<'details' | 'updates'>('details');
   const [mobileStatus, setMobileStatus] = useState('all');
   const canManage = isAdmin || project.created_by === currentUserId;
   const [deleteTarget, setDeleteTarget] = useState<{ kind: 'task' | 'project'; id: string; name: string } | null>(null);
@@ -143,8 +145,8 @@ export default function ProjectView({
           {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-2">
             {canManage && <button className="rounded-lg border px-3 py-2 text-sm" onClick={() => setEditingProject(true)}>Edit project</button>}
-            {canManage && <button type="button" onClick={() => { setFeedback(null); setDeleteTarget({ kind: 'project', id: project.id, name: project.name }); }}
-              className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete project</button>}
+            {canManage && <details className="relative"><summary className="cursor-pointer rounded-lg border px-3 py-2 text-sm">Project actions</summary><div className="absolute right-0 top-full z-20 mt-1 min-w-44 rounded-lg border bg-surface p-2 shadow-lg"><button type="button" onClick={() => { setFeedback(null); setDeleteTarget({ kind: 'project', id: project.id, name: project.name }); }}
+              className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete project</button></div></details>}
             {activeTab === 'tasks' && (isAdmin || members.some((m: Member) => m.id === currentUserId)) && (
               <button
                 onClick={() => { setFeedback(null); setEditingTask(null); setIsTaskModalOpen(true); }}
@@ -195,7 +197,7 @@ export default function ProjectView({
 
       {/* TAB 1: TASKS BOARD */}
       {activeTab === 'tasks' && <div className="flex gap-2"><button aria-pressed={view === 'board'} onClick={() => setView('board')} className="rounded-lg border px-4 py-2 text-sm"><span className="md:hidden">Tasks</span><span className="hidden md:inline">Board</span></button><button aria-pressed={view === 'table'} onClick={() => setView('table')} className="rounded-lg border px-4 py-2 text-sm">Table & export</button></div>}
-      {activeTab === 'tasks' && view === 'table' && <TaskTable tasks={tasks} today={today} onOpen={id => { setSelectedTaskId(id); setFeedback(null); }} />}
+      {activeTab === 'tasks' && view === 'table' && <TaskTable tasks={tasks} today={today} onOpen={id => { setSelectedTaskId(id); setDetailTab('details'); setFeedback(null); }} />}
       {activeTab === 'tasks' && view === 'board' && <label className="block md:hidden text-sm font-medium">Filter by status<select value={mobileStatus} onChange={e=>setMobileStatus(e.target.value)} className="mt-2 w-full rounded-lg border p-3"><option value="all">All tasks ({tasks.length})</option>{statusColumns.map(col=><option key={col.id} value={col.id}>{col.title} ({tasks.filter(t=>t.status===col.id).length})</option>)}</select></label>}
       {activeTab === 'tasks' && view === 'board' && !tasks.length && <p className="md:hidden rounded-xl border p-6 text-sm text-gray-500">No tasks yet. Add a task to get started.</p>}
       {activeTab === 'tasks' && view === 'board' && (
@@ -225,8 +227,8 @@ export default function ProjectView({
                       key={task.id}
                       role="button" tabIndex={0}
                       aria-label={`Open task: ${task.title}`}
-                      onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedTaskId(task.id); setFeedback(null); setCommentInput(''); } }}
-                      onClick={() => { setSelectedTaskId(task.id); setFeedback(null); setCommentInput(''); }}
+                      onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedTaskId(task.id); setDetailTab('details'); setFeedback(null); setCommentInput(''); } }}
+                      onClick={() => { setSelectedTaskId(task.id); setDetailTab('details'); setFeedback(null); setCommentInput(''); }}
                       className="bg-surface p-4 rounded-lg border border-gray-200 shadow-sm hover:border-blue-300 transition cursor-pointer space-y-3"
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -412,8 +414,10 @@ export default function ProjectView({
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
             <span>Assigned to <strong>{selectedTask.assignee?.full_name || selectedTask.assignee?.email || 'Unassigned'}</strong> · <span className="capitalize">{selectedTask.priority} priority</span></span>
             {(isAdmin || selectedTask.created_by === currentUserId) && <button type="button" disabled={isSubmitting} onClick={() => { setEditingTask(selectedTask); setSelectedTaskId(null); setFeedback(null); setIsTaskModalOpen(true); }} className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"><Pencil className="h-4 w-4" />Edit task</button>}
-            {(isAdmin || selectedTask.created_by === currentUserId) && <button type="button" disabled={isSubmitting} onClick={() => { setDeleteTarget({ kind: 'task', id: selectedTask.id, name: selectedTask.title }); setSelectedTaskId(null); setFeedback(null); }} className="flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete task</button>}
+            {(isAdmin || selectedTask.created_by === currentUserId) && <details className="relative"><summary className="cursor-pointer rounded-lg border px-3 py-2 text-sm">Task actions</summary><div className="absolute right-0 top-full z-20 mt-1 min-w-44 rounded-lg border bg-surface p-2 shadow-lg"><button type="button" disabled={isSubmitting} onClick={() => { setDeleteTarget({ kind: 'task', id: selectedTask.id, name: selectedTask.title }); setSelectedTaskId(null); setFeedback(null); }} className="flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete task</button></div></details>}
           </div>
+          <div aria-label="Task panel sections" className="flex gap-2 border-b py-3 mb-3">{(['details','updates'] as const).map(tab=><button key={tab} type="button" aria-pressed={detailTab===tab} onClick={()=>setDetailTab(tab)} className={`rounded-lg px-4 py-2 text-sm font-medium ${detailTab===tab?'bg-blue-600 text-white':'bg-gray-100 text-gray-700'}`}>{tab==='details'?'Details':`Updates (${selectedTask.task_comments?.length || 0})`}</button>)}</div>
+          <div hidden={detailTab !== 'details'}>
           {selectedTask.due_date && <p className="mb-3 text-sm text-slate-600">Due {new Date(selectedTask.due_date.slice(0, 10) + 'T00:00:00').toLocaleDateString()}</p>}
             {/* Quick Status Bar */}
             <div className="py-3 flex flex-wrap items-center gap-2 border-b border-slate-200 text-xs">
@@ -443,7 +447,9 @@ export default function ProjectView({
               </div>
             )}
 
-            <TaskExtras key={selectedTask.id} task={selectedTask} tasks={tasks} members={members} canEdit={isAdmin || selectedTask.created_by === currentUserId || selectedTask.assignee_id === currentUserId} />
+            </div>
+            <TaskExtras view={detailTab} key={selectedTask.id} task={selectedTask} tasks={tasks} members={members} canEdit={isAdmin || selectedTask.created_by === currentUserId || selectedTask.assignee_id === currentUserId} />
+            <div hidden={detailTab !== 'updates'}>
             {/* Comments Thread */}
             <div className="flex-1 overflow-y-auto py-4 space-y-3">
               <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Comments & Updates</h4>
@@ -456,7 +462,7 @@ export default function ProjectView({
                       <span className="font-semibold text-gray-800">{c.author?.full_name || c.author?.email}</span>
                       <span>{new Date(c.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span>
                     </div>
-                    <p className="text-gray-700 text-sm whitespace-pre-wrap break-words">{c.content}</p>
+                    <p className="text-gray-700 text-sm whitespace-pre-wrap break-words"><RemarkText text={c.content} /></p>
                   </div>
                 ))
               )}
@@ -480,6 +486,7 @@ export default function ProjectView({
                 <Send className="w-4 h-4" /><span className="sr-only">Post update</span>
               </button>
             </form>
+            </div>
         </Modal>
       )}
 
