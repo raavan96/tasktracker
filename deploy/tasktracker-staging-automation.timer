@@ -1,0 +1,8 @@
+[Unit]
+Description=Run staging automation every 15 minutes
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+Unit=tasktracker-staging-automation.service
+[Install]
+WantedBy=timers.target

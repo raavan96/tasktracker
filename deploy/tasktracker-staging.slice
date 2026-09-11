@@ -1,0 +1,8 @@
+[Unit]
+Description=Shared resource budget for isolated TaskTracker staging
+[Slice]
+MemoryHigh=320M
+MemoryMax=384M
+MemorySwapMax=0
+CPUQuota=75%
+TasksMax=128

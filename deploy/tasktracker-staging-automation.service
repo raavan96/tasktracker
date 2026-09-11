@@ -1,0 +1,18 @@
+[Unit]
+Description=Local staging reminders and recurring tasks
+After=tasktracker-staging-db.service
+Requires=tasktracker-staging-db.service
+[Service]
+Type=oneshot
+User=tasktracker-staging
+Group=tasktracker-staging
+Slice=tasktracker-staging.slice
+WorkingDirectory=/opt/tasktracker-staging
+EnvironmentFile=/etc/tasktracker-staging.env
+ExecStart=/usr/bin/node scripts/postgres/automation.mjs
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+MemoryMax=64M
+TimeoutStartSec=90

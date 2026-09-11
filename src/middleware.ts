@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
+  // Local sessions are checked at each server data boundary, never in Edge code.
+  if (process.env.DATA_BACKEND === 'postgres') return NextResponse.next();
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 

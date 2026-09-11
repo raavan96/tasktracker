@@ -64,7 +64,7 @@ async function requireAdmin() {
   if (!user) return { error: 'Sign in with an admin account.' };
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
   if (profile?.role !== 'admin') return { error: 'Admin privileges required.' };
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return { error: 'User management is not configured. Check the server settings.' };
+  if (process.env.DATA_BACKEND !== 'postgres' && !process.env.SUPABASE_SERVICE_ROLE_KEY) return { error: 'User management is not configured. Check the server settings.' };
   return { user };
 }
 
@@ -96,7 +96,7 @@ export async function createMember(formData: FormData) {
     id: data.user.id, email, full_name: fullName, role,
   }, { onConflict: 'id' });
   revalidatePath('/admin/users');
-  if (profileError) return { error: `The login for ${email} was created, but workspace setup failed. Ask the administrator to repair its profile in Supabase; do not create the account again.` };
+  if (profileError) return { error: `The login for ${email} was created, but workspace setup failed. Ask the administrator to repair its workspace profile; do not create the account again.` };
   return { success: `Account created for ${email}. Share the login details privately, then add the member to a project’s Team tab.` };
 }
 

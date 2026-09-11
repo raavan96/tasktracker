@@ -1,0 +1,26 @@
+[Unit]
+Description=TaskTracker PostgreSQL staging app
+After=network.target tasktracker-staging-db.service
+Requires=tasktracker-staging-db.service
+[Service]
+Type=simple
+User=tasktracker-staging
+Group=tasktracker-staging
+Slice=tasktracker-staging.slice
+WorkingDirectory=/opt/tasktracker-staging
+EnvironmentFile=/etc/tasktracker-staging.env
+Environment=NODE_ENV=production
+Environment=PORT=3104
+Environment=HOSTNAME=127.0.0.1
+Environment=NODE_OPTIONS=--max-old-space-size=128
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=10
+MemoryMax=256M
+OOMPolicy=stop
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/tasktracker-staging
+PrivateTmp=true
+UMask=0077

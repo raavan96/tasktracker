@@ -1,0 +1,20 @@
+[Unit]
+Description=Isolated TaskTracker staging PostgreSQL
+After=network.target
+[Service]
+Type=simple
+User=postgres
+Group=postgres
+Slice=tasktracker-staging.slice
+ExecStart=/usr/bin/postgres -D /var/lib/pgsql/tasktracker-staging/data
+Restart=on-failure
+RestartSec=10
+MemoryMax=192M
+OOMPolicy=stop
+TimeoutStopSec=60
+KillSignal=SIGINT
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/pgsql/tasktracker-staging
+PrivateTmp=true
