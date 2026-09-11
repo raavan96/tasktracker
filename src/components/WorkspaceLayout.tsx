@@ -35,7 +35,7 @@ export default async function WorkspaceLayout({
       <header className="bg-surface border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-8">
-            <Link href="/dashboard" className="flex items-center space-x-2 font-bold text-gray-900 text-lg">
+            <Link href="/dashboard" className="flex items-center space-x-2 font-bold text-gray-900 text-base sm:text-lg">
               <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center">
                 <FolderKanban className="w-5 h-5" />
               </div>
@@ -61,7 +61,7 @@ export default async function WorkspaceLayout({
             </Link>
 
             {/* Profile & Role Tag */}
-            <div className="flex items-center space-x-3 border-l pl-4 border-gray-200">
+            <div className="flex items-center space-x-3 sm:border-l sm:pl-4 border-gray-200">
               <div className="text-right hidden sm:block">
                 <div className="text-sm font-medium text-gray-900">{profile?.full_name || profile?.email}</div>
                 <div className="text-xs text-gray-500 flex items-center justify-end">
@@ -82,7 +82,7 @@ export default async function WorkspaceLayout({
             </div>
           </div>
         </div>
-        <div className="xl:hidden px-4 pb-3"><WorkspaceNav isAdmin={isAdmin} /></div>
+        <div className="xl:hidden px-4 pb-3"><WorkspaceNav isAdmin={isAdmin} mobile /></div>
       </header>
 
       {/* Main Content Area */}

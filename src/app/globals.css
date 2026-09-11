@@ -109,3 +109,29 @@ body {
 .task-drawer { margin: 0 0 0 auto; width: min(40rem, 100%); height: 100dvh; max-height: 100dvh; border-radius: 1rem 0 0 1rem; padding: 1.5rem; }
 .task-drawer::backdrop { background: #0f172a40; backdrop-filter: none; }
 @layer base { button, input, select { min-height: 2.25rem; } label { line-height: 1.5; } }
+
+/* Mobile layout: keep actions reachable without widening the page. */
+@media (max-width: 767px) {
+  button, summary, input:not([type="checkbox"]):not([type="radio"]), select { min-height: 44px; }
+  input:not([type="checkbox"]):not([type="radio"]), textarea, select { font-size: 16px; }
+  .task-dialog.task-drawer { width: 100%; max-width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; border-radius: 0; border: 0; padding: 0; overflow: hidden; }
+  .task-drawer[open] { display: flex; flex-direction: column; }
+  .task-drawer .dialog-heading { flex: none; margin: 0; padding: max(12px, env(safe-area-inset-top)) 16px 12px; border-bottom: 1px solid var(--field-border); align-items: center; }
+  .task-drawer .dialog-content { min-height: 0; flex: 1; overflow-y: auto; padding: 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+  .task-drawer .dialog-content:has(.task-edit-form) { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+  .task-edit-form { display: flex; min-height: 0; flex: 1; flex-direction: column; margin: 0; }
+  .task-edit-form > fieldset { min-height: 0; flex: 1; overflow-y: auto; padding: 16px; margin: 0; }
+  .task-edit-form .task-form-actions { flex: none; margin: 0; padding: 12px 16px max(12px, env(safe-area-inset-bottom)); background: var(--surface); }
+  .task-form-actions button { flex: 1; }
+  .member-roster { overflow: visible; }
+  .member-roster table, .member-roster tbody { display: block; width: 100%; }
+  .member-roster thead { display: none; }
+  .member-roster tr { display: grid; grid-template-columns: 1fr auto; padding: 16px; gap: 8px; }
+  .member-roster td { display: block; padding: 0; min-width: 0; }
+  .member-roster td:first-child, .member-roster td:last-child { grid-column: 1 / -1; }
+  .member-roster td:first-child { overflow-wrap: anywhere; }
+  .member-roster td[data-label]::before { content: attr(data-label) ': '; }
+  .member-roster td:last-child { display: flex; flex-wrap: wrap; gap: 8px; text-align: left; border-top: 1px solid var(--field-border); padding-top: 8px; }
+  .member-roster td:last-child > * { margin: 0; }
+  .member-roster button, .member-roster summary { padding: 8px; }
+}

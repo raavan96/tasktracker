@@ -8,7 +8,7 @@ export default function TaskForm({ task, members, busy, onSubmit, onCancel, onMa
   isAdmin?: boolean; onCancel: () => void; onManageTeam?: () => void;
 }) {
   const field = 'mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm';
-  return <form onSubmit={onSubmit} className="space-y-5">
+  return <form onSubmit={onSubmit} className="task-edit-form space-y-5">
     <fieldset disabled={busy} className="space-y-5 disabled:opacity-70">
       <label className="block text-sm font-medium">Title <span className="text-red-600">*</span>
         <input name="title" required maxLength={200} defaultValue={task?.title} placeholder="What needs to be done?" className={field} />
@@ -46,8 +46,8 @@ export default function TaskForm({ task, members, busy, onSubmit, onCancel, onMa
         <span className="block mt-1 text-xs text-gray-500">Creates the next task on its due date; checklist items are copied unchecked.</span>
       </label>
     </fieldset>
-    <div className="flex justify-end gap-3 border-t border-slate-200 pt-5">
-      <button type="button" onClick={onCancel} disabled={busy} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm">Cancel</button>
+    <div className="task-form-actions flex justify-end gap-3 border-t border-slate-200 pt-5">
+      <button type="button" onClick={e => { const dialog=e.currentTarget.closest('dialog'); const closeButton=dialog?.querySelector<HTMLButtonElement>('[aria-label="Close dialog"]'); if(closeButton) closeButton.click(); else onCancel(); }} disabled={busy} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm">Cancel</button>
       <button type="submit" disabled={busy} className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">{busy ? 'Saving…' : task ? 'Save changes' : 'Create task'}</button>
     </div>
   </form>;

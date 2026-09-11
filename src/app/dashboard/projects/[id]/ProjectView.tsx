@@ -55,6 +55,7 @@ export default function ProjectView({
   const router = useRouter();
   const [editingProject, setEditingProject] = useState(false);
   const [view, setView] = useState<'board' | 'table'>('board');
+  const [mobileStatus, setMobileStatus] = useState('all');
   const canManage = isAdmin || project.created_by === currentUserId;
   const [deleteTarget, setDeleteTarget] = useState<{ kind: 'task' | 'project'; id: string; name: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'tasks' | 'notes' | 'members'>('tasks');
@@ -193,8 +194,10 @@ export default function ProjectView({
       </div>
 
       {/* TAB 1: TASKS BOARD */}
-      {activeTab === 'tasks' && <div className="flex gap-2"><button aria-pressed={view === 'board'} onClick={() => setView('board')} className="rounded-lg border px-4 py-2 text-sm">Board</button><button aria-pressed={view === 'table'} onClick={() => setView('table')} className="rounded-lg border px-4 py-2 text-sm">Table & export</button></div>}
+      {activeTab === 'tasks' && <div className="flex gap-2"><button aria-pressed={view === 'board'} onClick={() => setView('board')} className="rounded-lg border px-4 py-2 text-sm"><span className="md:hidden">Tasks</span><span className="hidden md:inline">Board</span></button><button aria-pressed={view === 'table'} onClick={() => setView('table')} className="rounded-lg border px-4 py-2 text-sm">Table & export</button></div>}
       {activeTab === 'tasks' && view === 'table' && <TaskTable tasks={tasks} today={today} onOpen={id => { setSelectedTaskId(id); setFeedback(null); }} />}
+      {activeTab === 'tasks' && view === 'board' && <label className="block md:hidden text-sm font-medium">Filter by status<select value={mobileStatus} onChange={e=>setMobileStatus(e.target.value)} className="mt-2 w-full rounded-lg border p-3"><option value="all">All tasks ({tasks.length})</option>{statusColumns.map(col=><option key={col.id} value={col.id}>{col.title} ({tasks.filter(t=>t.status===col.id).length})</option>)}</select></label>}
+      {activeTab === 'tasks' && view === 'board' && !tasks.length && <p className="md:hidden rounded-xl border p-6 text-sm text-gray-500">No tasks yet. Add a task to get started.</p>}
       {activeTab === 'tasks' && view === 'board' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {statusColumns.map((col) => {
@@ -202,7 +205,7 @@ export default function ProjectView({
             const Icon = col.icon;
 
             return (
-              <div key={col.id} className="bg-gray-100/70 p-4 rounded-xl flex flex-col min-h-36 lg:h-[65vh]">
+              <div key={col.id} className={`bg-gray-100/70 p-3 md:p-4 rounded-xl flex-col md:min-h-36 lg:h-[65vh] ${((mobileStatus === 'all' && !columnTasks.length) || (mobileStatus !== 'all' && mobileStatus !== col.id)) ? 'hidden md:flex' : 'flex'}`}>
                 <div className="flex items-center justify-between mb-3 px-1">
                   <div className="flex items-center space-x-2">
                     <span className={`p-1 rounded-md ${col.color}`}>

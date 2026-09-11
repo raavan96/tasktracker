@@ -88,11 +88,11 @@ export default function UserManagementClient({
       )}
 
       {/* Create Member Form */}
-      <div className="bg-surface p-6 rounded-xl border border-gray-200 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+      <details className="bg-surface p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm">
+        <summary className="cursor-pointer text-lg font-semibold text-gray-900 flex items-center">
           <UserPlus className="w-5 h-5 mr-2 text-blue-600" /> Create New Member
-        </h2>
-        <p className="mb-5 text-sm text-slate-600">Create an account with an initial password and share the login details privately. No invitation email is sent. Then open a project’s Team tab to add the member and assign tasks.</p>
+        </summary>
+        <p className="mt-4 mb-5 text-sm text-slate-600">Create an account with an initial password and share the login details privately. No invitation email is sent. Then open a project’s Team tab to add the member and assign tasks.</p>
         <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label htmlFor="fullName" className="block text-xs font-medium text-gray-700 mb-1">Full Name</label>
@@ -135,7 +135,7 @@ export default function UserManagementClient({
             </button>
           </div>
         </form>
-      </div>
+      </details>
 
       {resetTarget && <section key={resetTarget.id} className="bg-surface p-6 rounded-xl border border-gray-200" aria-labelledby="reset-heading">
         <h2 id="reset-heading" className="text-lg font-semibold">Reset password for {resetTarget.full_name || resetTarget.email}</h2>
@@ -165,7 +165,7 @@ export default function UserManagementClient({
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Current Members ({users.length})</h2>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto member-roster">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50 text-gray-600">
               <tr>
@@ -199,7 +199,7 @@ export default function UserManagementClient({
                         {u.role.toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-500 text-xs">
+                    <td data-label="Open tasks" className="px-6 py-4 text-gray-500 text-xs">
                       {counts[u.id] || 0}
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">

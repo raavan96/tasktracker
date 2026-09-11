@@ -23,10 +23,10 @@ export default function Modal({ title, onClose, busy = false, side = false, chil
     onChangeCapture={() => setDirty(true)}
     onClick={(event) => { if (event.target === ref.current) { const bounds = ref.current.getBoundingClientRect(); if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) close(); } }}
     onCancel={(event) => { event.preventDefault(); close(); }}>
-    <div className="mb-5 flex items-start justify-between gap-4">
+    <div className="dialog-heading mb-5 flex items-start justify-between gap-4">
       <h2 id={headingId} className="text-xl font-semibold break-words min-w-0">{title}</h2>
       <button type="button" disabled={busy} onClick={close} aria-label="Close dialog" className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button>
     </div>
-    {children}
+    <div className="dialog-content">{children}</div>
   </dialog>;
 }
