@@ -16,7 +16,7 @@ The SQL adapter intentionally supports only the query syntax currently used by t
 
 `npm ci`; `npm run lint`; `node --test tests/*.test.cjs`; `node tests/postgres-staging.mjs`; `DATA_BACKEND=postgres npm run build -- --webpack`.
 
-The workflow template at `deploy/postgres-staging.workflow.yml` must first be installed as `.github/workflows/postgres-staging.yml` (the saved GitHub token currently lacks workflow permission). Once installed, the GitHub workflow builds on Linux with Node 22, starts a real PostgreSQL 16 service, and exercises eight browser sessions, assignment, approval and local file access before producing an artifact. These CI results are functional validation, not a repeat of the small-server capacity test. Test SQL/browser runners require a disposable database; never point them at live data.
+The GitHub workflow at `.github/workflows/postgres-staging.yml` builds on Linux with Node 22, starts a real PostgreSQL 16 service, and exercises eight browser sessions, assignment, approval and local file access before producing an artifact. These CI results are functional validation, not a repeat of the small-server capacity test. Test SQL/browser runners require a disposable database; never point them at live data.
 
 ## Server staging procedure
 
