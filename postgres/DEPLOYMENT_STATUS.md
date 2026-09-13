@@ -45,3 +45,14 @@ Current app: `/opt/tasktracker-releases/1e5d659` (commit `1e5d6594f38f4e5ee6588f
 Includes attention list, URL filters/sorting, remembered board/table preference, mobile filter/menu fixes, retained task drafts during Team-tab navigation, per-notification read/unread, linked workload counts and error recovery. No schema migration. Fresh backup Result=success before switch. Home/login return 200; authenticated dashboard, notifications, filtered workload navigation and mobile layouts verified. Tests used synthetic data; production walkthrough did not mutate workspace records.
 
 Previous unit `/etc/tasktracker-ui-1e5d659.service.previous` points to intermediate release `a62717d`. The pre-Release-2 unit `/etc/tasktracker-ui-a62717d.service.previous` points to `2fe1ffb` and is the preferred rollback for the entire daily-interaction bundle. Both use the same current database and archive schema. Copy the chosen unit to `/etc/systemd/system/tasktracker.service`, daemon-reload, restart and health-check; never restore an older database over new user writes. Preserve `/etc/tasktracker-local.env` and attachments. Automation and backup timers are unchanged.
+
+
+## Member search and matching themes — 14 September 2026
+
+Live release `42815b3` (`42815b3340871e7ba83161b85665e2c006e58a33`) adds case-insensitive name/email search to New Project member selection and the existing-project Team tab. Checked members remain selected/submitted when hidden by a different query; existing members are excluded from the add selector, and a changed query clears an old pending selection. Matching/selected counts and empty states explain results.
+
+Light and dark themes now share sidebar layout, typography, spacing, board/card/table geometry and status pills. The light palette uses white, pale blue/cyan surfaces, subtle borders and readable dark text. Theme switching was tested for identical settled geometry at 1440px and 430px.
+
+GitHub run 34780855694 passed lint, 28 unit/action tests, database/adapter/archive checks, Linux build and eight-session browser workflows, including member search and selection retention. Live read-only checks verified both selectors, the phone Team tab and the final light dashboard. No real project or membership was created/changed for verification. No schema migration. A successful fresh backup preceded this bundle; environment/database/attachments are preserved. Artifact SHA-256 `8a0f4037466690e539155f350472f08efbfa6922c70ac520ed99f41e50b8ee05`.
+
+Current app directory: `/opt/tasktracker-releases/42815b3`. Previous unit `/etc/tasktracker-ui-42815b3.service.previous` points to `61458b5`; the pre-bundle unit `/etc/tasktracker-ui-61458b5.service.previous` points to `1e5d659`. Restore only the selected app unit, daemon-reload, restart and health-check if needed; retain the live database and files.

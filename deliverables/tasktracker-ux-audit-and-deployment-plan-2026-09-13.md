@@ -26,6 +26,10 @@ Production checks were read-only: dashboard, notifications, workload-to-task nav
 
 No database migration was needed. Fresh backups succeeded before deployment; a verified Linux artifact was staged separately and the service switched with automatic health-check rollback. Existing database, environment and attachments were preserved. Review-role policy, member deactivation, notification grouping/snooze, named presets, persistent drafts, historical reporting and the other unimplemented backlog items remain future work.
 
+## Additional UI follow-up — 14 September 2026
+
+Release `42815b3` adds name/email search in both project-member selectors, with checked selections retained across filtering. Light mode now shares dark mode’s layout, typography, spacing, sidebar and component geometry, with a pale blue/white/cyan palette. Eight-user browser checks include member selection retention and matching theme geometry at desktop and phone widths; live visual and read-only search checks passed. No schema changes or real membership changes were needed.
+
 ## Recommended direction
 
 Make the app answer three questions quickly: **What needs my attention? Who is responsible? What should I do next?** The strongest next release would improve daily navigation, review clarity, saved views, and recovery from mistakes. Add more reporting and planning features after these interactions are dependable.
