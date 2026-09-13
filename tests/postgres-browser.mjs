@@ -75,6 +75,13 @@ try{
   await expect(admin.locator('dialog')).toHaveCount(0);
   for (const width of [1440,430]) {
     await admin.setViewportSize({width,height:932});
+    const geometry=()=>admin.evaluate(()=>[...document.querySelectorAll('.workspace-main,.workspace-main h1,.dark-workspace-sidebar,.workspace-header-inner,.board-column,.task-card')].map(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return [el.className,Math.round(r.x),Math.round(r.y),Math.round(r.width),Math.round(r.height),s.fontSize,s.padding,s.borderRadius,s.display];}));
+    await admin.evaluate(()=>document.fonts.ready);
+    const beforeTheme=await geometry();
+    await admin.getByRole('button',{name:/Switch to (light|dark) mode/}).click();
+    assert.deepEqual(await geometry(),beforeTheme,'Theme changes must preserve layout and typography');
+    await admin.getByRole('button',{name:/Switch to (light|dark) mode/}).click();
+
     await admin.getByText('Project actions',{exact:true}).click();
     await expect.poll(async()=>{const box=await admin.locator('[data-actions-menu]').boundingBox();return box.x>=0&&box.x+box.width<=width;}).toBe(true);
     await admin.keyboard.press('Escape');
