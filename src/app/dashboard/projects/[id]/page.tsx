@@ -46,14 +46,14 @@ export default async function ProjectDetailPage({
     supabase.from('project_notes')
       .select('*, author:profiles!project_notes_author_id_fkey(id, full_name, email)')
       .eq('project_id', id).order('created_at', { ascending: false }),
-    (isAdmin || project.created_by === user.id)
-      ? supabase.from('profiles').select('id, full_name, email').order('full_name')
-      : Promise.resolve({ data: [] }),
+    supabase.from('profiles').select('id, full_name, email').order('full_name'),
   ]);
   const { data: membersData } = membersResult;
   const { data: tasks } = tasksResult;
   const { data: notes } = notesResult;
   const { data: allUsers } = usersResult;
+  if (usersResult.error) throw new Error('Creator information could not be loaded. Please retry.');
+  const creators = new Map((allUsers || []).map(person => [person.id, person]));
   const projectMembers = membersData?.flatMap((row) => {
     const profile = (Array.isArray(row.profiles) ? row.profiles[0] : row.profiles) as Member | null;
     return profile ? [{ ...profile, joined_at: row.joined_at }] : [];
@@ -62,8 +62,8 @@ export default async function ProjectDetailPage({
   return (
     <ProjectView
       today={todayKey()} initialTaskId={(await searchParams).task || null}
-      project={project}
-      tasks={tasks || []}
+      project={{...project, creator: creators.get(project.created_by) || null}}
+      tasks={(tasks || []).map(task => ({...task, creator: creators.get(task.created_by) || null}))}
       notes={notes || []}
       members={projectMembers}
       allWorkspaceUsers={allUsers || []}

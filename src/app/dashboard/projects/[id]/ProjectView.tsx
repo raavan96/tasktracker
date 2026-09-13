@@ -50,7 +50,7 @@ export default function ProjectView({
   currentUserId,
   isAdmin, today, initialTaskId = null,
 }: {
-  project: { id: string; name: string; description: string | null; is_archived: boolean; completed_at?:string|null; created_by: string | null; is_private: boolean };
+  project: { creator?: Pick<Member, 'full_name' | 'email'> | null; id: string; name: string; description: string | null; is_archived: boolean; completed_at?:string|null; created_by: string | null; is_private: boolean };
   tasks: Task[]; notes: { id: string; title: string; content: string; author_id: string; updated_at: string; author: Member | null }[];
   members: Member[]; allWorkspaceUsers: Member[]; currentUserId: string; isAdmin: boolean; today: string; initialTaskId?: string | null;
 }) {
@@ -145,6 +145,7 @@ export default function ProjectView({
               )}
             </div>
             <p className="text-sm text-gray-500 mt-1">{project.description || 'No description provided.'}</p>
+            <p className="mt-2 text-sm text-gray-500 break-words">Created by {project.creator?.full_name || project.creator?.email || 'Unavailable'}</p>
           </div>
 
           {/* Action buttons */}
@@ -425,6 +426,7 @@ export default function ProjectView({
       {selectedTask && (
         <Modal side title={selectedTask.title} busy={isSubmitting} onClose={() => setSelectedTaskId(null)}>
           {errorNotice}
+          <p className="mb-3 text-sm text-gray-500 break-words">Created by {selectedTask.creator?.full_name || selectedTask.creator?.email || 'Unavailable'}</p>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
             <span>Assigned to <strong>{selectedTask.assignee?.full_name || selectedTask.assignee?.email || 'Unassigned'}</strong> · <span className="capitalize">{selectedTask.priority} priority</span></span>
 

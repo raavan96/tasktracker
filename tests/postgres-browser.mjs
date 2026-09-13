@@ -35,6 +35,7 @@ try{
   await admin.getByRole('link').filter({hasText:'Private staging workflow'}).click();
   await admin.waitForURL('**/dashboard/projects/*');
   const projectURL=admin.url();
+  await expect(admin.getByText('Created by Staging 0',{exact:true})).toBeVisible();
   await admin.getByRole('button',{name:'Add Task',exact:true}).click();
   await admin.locator('dialog input[name=title]').fill('Verify local task workflow');
   await admin.locator('dialog select[name=assigneeId]').selectOption(users[1].id);
@@ -50,6 +51,9 @@ try{
     await admin.setViewportSize({width,height:932});
     await admin.getByRole('button',{name:'Table & export',exact:true}).click();
     await expect(admin.getByRole('region',{name:'Table view',exact:true})).toBeVisible();
+    await admin.getByLabel('Show Created by column').check();
+    await expect(admin.getByRole('columnheader',{name:'Created by',exact:true})).toBeVisible();
+    await expect(admin.getByRole('cell',{name:'Staging 0',exact:true})).toBeVisible();
     await expect(admin.getByRole('region',{name:'Board view',exact:true})).toHaveCount(0);
     await admin.getByRole('button',{name:'Board',exact:true}).click();
     await expect(admin.getByRole('region',{name:'Board view',exact:true})).toBeVisible();
@@ -72,6 +76,7 @@ try{
   }),true);
 
   await member.goto(projectURL+'?task='+task);
+  await expect(member.getByText('Created by Staging 0',{exact:true}).last()).toBeVisible();
   await member.getByLabel('Task attachment').setInputFiles({name:'proof.txt',mimeType:'text/plain',buffer:Buffer.from('Synthetic task attachment')});
   await member.getByRole('button',{name:'Upload file',exact:true}).click();
   await expect(member.getByRole('button',{name:/proof.txt/})).toBeVisible();

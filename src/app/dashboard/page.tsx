@@ -20,11 +20,13 @@ export default async function DashboardPage({searchParams}:{searchParams:Promise
 
   const [{ data: projects }, { data: allUsers }] = await Promise.all([
     supabase.from('projects').select(`
-      id, name, description, is_archived, created_at,
+      id, name, description, is_archived, created_at, created_by,
       project_members(count), tasks(id, status, due_date, is_archived)
     `).order('created_at', { ascending: false }),
     supabase.from('profiles').select('id, full_name, email').order('full_name'),
   ]);
+
+  const creators = new Map((allUsers || []).map(person => [person.id, person]));
 
   return (
     <div className="space-y-6">
@@ -81,6 +83,7 @@ export default async function DashboardPage({searchParams}:{searchParams:Promise
                   {project.description || 'No description provided.'}
                 </p>
 
+                <p className="mt-3 text-xs text-gray-500 break-words">Created by {creators.get(project.created_by)?.full_name || creators.get(project.created_by)?.email || 'Unavailable'}</p>
                 {/* Progress bar */}
                 <div className="mt-6">
                   <div className="flex justify-between text-xs text-gray-500 mb-1">
