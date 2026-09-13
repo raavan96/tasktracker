@@ -114,7 +114,7 @@ body {
 .dark-workspace-sidebar, .workspace-context { display: none; }
 :root[data-theme="dark"] { --workspace-accent: #7ddfea; --workspace-border: #293140; --workspace-gradient: linear-gradient(110deg, #4999ff, #9aeaf0); }
 @layer base {
-  :root[data-theme="dark"] :where(*) { border-color: var(--workspace-border); }
+  :root :where(*) { border-color: var(--workspace-border); }
 }
 :root[data-theme="dark"] .workspace-shell { background: radial-gradient(ellipse 65rem 28rem at 78% -8rem, #08798724, transparent 75%), var(--background); }
 :root[data-theme="dark"] .workspace-header { background: #090e18f5; border-color: #253041; }
