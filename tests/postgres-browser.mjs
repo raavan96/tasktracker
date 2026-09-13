@@ -79,6 +79,17 @@ try{
     await expect(admin.getByRole('region',{name:'Table view',exact:true})).toHaveCount(0);
     assert.equal(await admin.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   }
+  await admin.getByRole('button',{name:'Add Task',exact:true}).click();
+  await admin.locator('dialog input[name=title]').fill('Separate unsaved draft');
+  await admin.getByRole('button',{name:'Add a teammate from the Team tab'}).click();
+  await admin.getByRole('button',{name:/^Tasks \(/}).click();
+  await admin.getByRole('button',{name:'Open task: Verify local task workflow',exact:true}).click();
+  await admin.getByText('Task actions',{exact:true}).click();
+  const draftDiscard=admin.waitForEvent('dialog');
+  const editExisting=admin.getByRole('button',{name:'Edit task',exact:true}).click();
+  await (await draftDiscard).accept();await editExisting;
+  await expect(admin.locator('dialog input[name=title]')).toHaveValue('Verify local task workflow');
+  await admin.keyboard.press('Escape');
   await admin.goto(projectURL+'?task='+task);
   await expect(admin.getByRole('button',{name:'Edit task',exact:true})).toBeHidden();
   await admin.getByText('Task actions',{exact:true}).click();
