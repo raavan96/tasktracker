@@ -2,17 +2,35 @@
 
 Prepared 13 September 2026. Scope: the existing Next.js app, its local PostgreSQL backend, and the DigitalOcean deployment. This is a functional walkthrough and source review, not a penetration test or a physical iPhone Safari certification.
 
-**Release status:** Archive release `91afad7` deployed successfully. Production row counts were preserved; home/login and archive settings were verified, including the 430px layout. Automatic processing completed successfully. The broader UX backlog below remains proposed.
+**Release status:** Archive release `91afad7` deployed successfully. Production row counts were preserved; home/login and archive settings were verified, including the 430px layout. Automatic processing completed successfully. Release 2 daily interaction improvements are also live; see the follow-up below for their scope.
 
 ## Completed follow-up — 14 September 2026
 
-Created by labels are live on project cards, project details and task details. Task tables have an optional Created by column; enabling it includes the creator in CSV export. Creator search is supported and stays separate from assignee attribution. Release `2fe1ffb`; no schema changes. The remaining recommendations below are still proposed.
+Created by labels are live on project cards, project details and task details. Task tables have an optional Created by column; enabling it includes the creator in CSV export. Creator search is supported and stays separate from assignee attribution. Release `2fe1ffb`; no schema changes. The remaining recommendations are tracked below, with Release 2 implementation status recorded separately.
+
+## Release 2 implemented — 14 September 2026
+
+Live app release `1e5d659` adds:
+
+- **Needs my attention:** the signed-in member’s overdue, due-today and blocked tasks, plus awaiting-review work for admins, with direct task links.
+- **Linkable filters:** task-table search, status, assignee and sorting persist in the URL; My Tasks filters and project tabs/mobile status do too. Board/table preference and the optional creator column are remembered on this browser. Reset filters clears table search/filter/sort. These are bookmarkable URLs, not named saved-view presets.
+- **Menus:** project/task action menus close on outside click or Escape, restore focus on Escape, and remain inside the phone viewport. Confirmation dialogs render independently from closed menus.
+- **Drafts:** Add a teammate retains the task form while visiting the Team tab, with Resume/Discard controls. Editing a different task asks before discarding a retained draft. Dialog close checks current form values; reverting an edit is clean. Successful checklist additions, dependency additions and uploads reset their forms. Drafts are held in page memory, not durable storage; closing/reloading or navigating away from the project can lose a retained draft.
+- **Notifications:** individual read/unread actions, unread filter, mark-all-read, error feedback and refreshed layout counts. Actions are scoped to the signed-in user.
+- **Workload:** pending, overdue, in-review and completed counts open the corresponding assignee/status task list.
+- **Recovery:** failed member role/delete requests release their pending state and show an error. Dashboard and notification fetch failures no longer masquerade as empty results.
+
+Validation: GitHub run **34779891807** passed lint, 28 unit/action tests, schema/adapter/privacy/archiving tests, the Linux production build and eight-session browser workflows against PostgreSQL 16. New browser checks cover draft retention, rejecting a discard prompt, reverting edits, switching from a retained draft to another task, notification toggles, workload filters, filter persistence after reload, 430px dropdown widths and action-menu boundaries. Existing review, archive/restore, private access, attachment, creator, notes and CSV checks also passed.
+
+Production checks were read-only: dashboard, notifications, workload-to-task navigation, and screenshots of the final 430px filters/menu. No production tasks, accounts or notification states were altered for tests. Physical iPhone Safari keyboard/landscape testing still requires the user’s device; viewport testing does not certify those behaviours.
+
+No database migration was needed. Fresh backups succeeded before deployment; a verified Linux artifact was staged separately and the service switched with automatic health-check rollback. Existing database, environment and attachments were preserved. Review-role policy, member deactivation, notification grouping/snooze, named presets, persistent drafts, historical reporting and the other unimplemented backlog items remain future work.
 
 ## Recommended direction
 
 Make the app answer three questions quickly: **What needs my attention? Who is responsible? What should I do next?** The strongest next release would improve daily navigation, review clarity, saved views, and recovery from mistakes. Add more reporting and planning features after these interactions are dependable.
 
-The archiving release implements the first improvement. The other recommendations below are a proposed backlog, not a claim that they are already implemented.
+The archiving release implements the first improvement. The backlog below preserves the original recommendations; the release status sections identify which parts are implemented.
 
 ## Archive structure implemented in this release
 

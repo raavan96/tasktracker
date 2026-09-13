@@ -64,3 +64,12 @@ A fresh production backup preceded migration. Profiles, projects, tasks, remarks
 ## Creator labels — 14 September 2026
 
 Current app release `2fe1ffb` adds project/task creator labels and an optional task-table/CSV creator column. No schema changes. GitHub run 34778669981 passed the full Linux and browser workflow, including member-visible creators and desktop/mobile column checks. Live project cards/details, task details and All Tasks were verified. A fresh backup preceded the switch; previous app `91afad7` can be restored through `/etc/tasktracker-ui-2fe1ffb.service.previous` without reverting the archive schema. Artifact SHA-256: `ef00019aa83df507c34fcc4a8a47eaba1537f8f2bf362e5afb2ac42d948aa0b9`.
+
+
+## Daily interaction release — 14 September 2026
+
+Current app: `/opt/tasktracker-releases/1e5d659` (commit `1e5d6594f38f4e5ee6588f488c77bf8c76a6f8b5`). GitHub run 34779891807 passed lint, unit/action tests, database/adapter/archive checks, Linux build and eight-user browser flows. Artifact SHA-256: `2bbcf0ba9e09fe077a18aee3ac33d2a9bc07e896ab6df9556d43e3def5af2fc0`.
+
+Includes attention list, URL filters/sorting, remembered board/table preference, mobile filter/menu fixes, retained task drafts during Team-tab navigation, per-notification read/unread, linked workload counts and error recovery. No schema migration. Fresh backup Result=success before switch. Home/login return 200; authenticated dashboard, notifications, filtered workload navigation and mobile layouts verified. Tests used synthetic data; production walkthrough did not mutate workspace records.
+
+Previous unit `/etc/tasktracker-ui-1e5d659.service.previous` points to intermediate release `a62717d`. The pre-Release-2 unit `/etc/tasktracker-ui-a62717d.service.previous` points to `2fe1ffb` and is the preferred rollback for the entire daily-interaction bundle. Both use the same current database and archive schema. Copy the chosen unit to `/etc/systemd/system/tasktracker.service`, daemon-reload, restart and health-check; never restore an older database over new user writes. Preserve `/etc/tasktracker-local.env` and attachments. Automation and backup timers are unchanged.
