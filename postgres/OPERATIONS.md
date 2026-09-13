@@ -6,7 +6,7 @@ Live URL: https://168.144.155.51. Data, authentication, files, and scheduled rem
 
 | Component | Location |
 | --- | --- |
-| Running standalone app | `/opt/tasktracker-releases/80c1b1a` |
+| Running standalone app | `/opt/tasktracker-releases/91afad7` |
 | Production service | `tasktracker.service`, localhost:3000 |
 | Private environment | `/etc/tasktracker-local.env`, root-only |
 | Production database | `tasktracker_rehearsal_final_20260911` (LIVE, not disposable) |
@@ -18,7 +18,7 @@ Live URL: https://168.144.155.51. Data, authentication, files, and scheduled rem
 
 The PostgreSQL and app units are enabled for boot. The automation timer runs every 15 minutes and the backup timer every six hours. The old staging web service is stopped; port 8443 redirects to the live app. The previous Supabase app checkout remains at `/home/public_html/task-tracker` for recovery, but is not the running deployment. Pulling code there does not update the live standalone app.
 
-The workspace UI release `80c1b1a` passed Linux build, lint, unit/database tests and the existing eight-session browser workflow before deployment. The original PostgreSQL app artifact remains at `/opt/tasktracker-staging`, which also continues to supply the scheduled automation/backup scripts. UI-only rollback can restore `/etc/tasktracker-ui-80c1b1a.service.previous` to the app service definition and restart after daemon-reload; this retains the live PostgreSQL database and all new work. Do not use the Supabase migration rollback for a UI rollback. Old hashed static assets were retained in the new release for already-open tabs.
+The archive release `91afad7` passed Linux build, lint, unit/database tests and the existing eight-session browser workflow before deployment. The original PostgreSQL app artifact remains at `/opt/tasktracker-staging`, which also continues to supply the scheduled automation/backup scripts. UI-only rollback can restore `/etc/tasktracker-archive-91afad7.service.previous` to the app service definition and restart after daemon-reload; this retains the live PostgreSQL database and all new work. Do not use the Supabase migration rollback for a UI rollback. Old hashed static assets were retained in the new release for already-open tabs.
 
 ## Routine checks
 
@@ -48,3 +48,14 @@ The old source is protected by `tasktracker_cutover_readonly_20260911` triggers 
 Before new local production writes, the old service/config copies could restore the previous app and the Supabase SQL guards could be removed. Now that production is open, do not perform that simple rollback: first freeze local writes, take a fresh backup, and reconcile any new tasks, updates, accounts, and files. Otherwise users' post-migration work would be lost. Prefer repairing/restoring the local deployment while retaining PostgreSQL as the authoritative data source.
 
 Future application deployments must preserve `/etc/tasktracker-local.env`, the database, and attachment directories. Build on Linux outside this small server, stage a separate release, validate it, and switch the service with a rollback artifact retained. Never package `.env` files into distributable artifacts.
+
+
+## Archive release — 13 September 2026
+
+Migration `006_archiving.sql` is installed in the live database. Do not apply it twice or run the empty-database initialization script against production. The migration was rehearsed in a separate copy of production and passed the synthetic PostgreSQL/browser CI workflow (run 34772412518). Current application: `/opt/tasktracker-releases/91afad7`. Tar SHA-256: `9ac600de9a8c0321f07b87ce85f7c2dcce69822317f813c46696f4de23a65e67`.
+
+The existing `run_workspace_automation()` now calls archive automation, so the existing 15-minute timer supplies recurrence, reminders and archiving. Defaults: tasks 30 days, projects 90 days, both enabled. Admins may change/disable the rules from Archive. Explicit project completion is separate and requires all tasks done. Existing completed tasks start their retention clock at migration; restoring restarts the window. Automated archiving is non-destructive.
+
+A fresh production backup preceded migration. Profiles, projects, tasks, remarks and attachment row counts were compared while the app was stopped and preserved. The app and automation resumed successfully. Existing environment and storage paths were unchanged. The previous service unit points to release `80c1b1a` at `/etc/tasktracker-archive-91afad7.service.previous`.
+
+**Rollback caution:** This release includes schema and permission changes. Prefer a forward fix. If reverting the app, first pause the automation timer and disable both automatic archive settings via owner SQL; preserve all archive fields and events. The older app does not filter individually archived tasks, so rollback needs an explicit UI/access check. Do not restore an old whole-database backup over newer user work. Keep the additive schema intact.
