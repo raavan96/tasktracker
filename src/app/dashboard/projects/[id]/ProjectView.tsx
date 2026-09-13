@@ -10,6 +10,8 @@ import TaskTable from '@/components/TaskTable';
 import { deadlineLabel, initials } from '@/lib/task-presentation';
 import DeleteConfirmation from '@/components/DeleteConfirmation';
 import Modal from '@/components/Modal';
+import ActionsMenu from '@/components/ActionsMenu';
+import {useUrlState} from '@/lib/use-url-state';
 import TaskForm from '@/components/TaskForm';
 import type { Task, Member } from '@/lib/task-types';
 import {
@@ -56,15 +58,16 @@ export default function ProjectView({
 }) {
   const router = useRouter();
   const [editingProject, setEditingProject] = useState(false);
-  const [view, setView] = useState<'board' | 'table'>('board');
+  const [view, setView] = useUrlState<'board' | 'table'>('view','board',{allowed:['board','table'],remember:'project-view'});
   const [detailTab, setDetailTab] = useState<'details' | 'updates'>('details');
-  const [mobileStatus, setMobileStatus] = useState('all');
+  const [mobileStatus, setMobileStatus] = useUrlState<string>('boardStatus','all');
   const canArchive = isAdmin || project.created_by === currentUserId;
   const canManage = canArchive && !project.is_archived;
   const [showArchived,setShowArchived]=useState(false);
   const tasks=allTasks.filter(t=>project.is_archived || Boolean(t.is_archived)===showArchived);
   const [deleteTarget, setDeleteTarget] = useState<{ kind: 'task' | 'project'; id: string; name: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'tasks' | 'notes' | 'members'>('tasks');
+  const [activeTab, setActiveTab] = useUrlState<'tasks' | 'notes' | 'members'>('tab','tasks',{allowed:['tasks','notes','members']});
+  const [taskDraft,setTaskDraft]=useState<Record<string,string>|null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(initialTaskId);
@@ -104,7 +107,7 @@ export default function ProjectView({
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const saved = await runAction(() => editingTask ? updateTask(editingTask.id, project.id, formData) : createTask(project.id, formData), editingTask ? 'Task updated.' : 'Task created.');
-    if (saved) { setIsTaskModalOpen(false); setEditingTask(null); }
+    if (saved) { setActiveTab('tasks'); setTaskDraft(null); setIsTaskModalOpen(false); setEditingTask(null); }
   }
 
   async function handleCreateNote(e: React.FormEvent<HTMLFormElement>) {
@@ -132,6 +135,7 @@ export default function ProjectView({
     <div className="space-y-6">
       {errorNotice}
       {feedback?.success && <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{feedback.success}</div>}
+      {taskDraft && !isTaskModalOpen && <div role="status" className="rounded-xl border bg-surface p-4 text-sm">Your task draft is kept while this page is open. <button className="ml-2 font-semibold text-blue-600 underline" onClick={()=>setIsTaskModalOpen(true)}>Resume task draft</button><button className="ml-4 text-red-600" onClick={()=>{if(window.confirm('Discard this task draft?')){setTaskDraft(null);setEditingTask(null);}}}>Discard draft</button></div>}
       {/* Project Header */}
       <div className="bg-surface border border-gray-200 rounded-xl p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -152,11 +156,11 @@ export default function ProjectView({
           <div className="flex flex-wrap items-center gap-2">
             {canArchive && project.is_archived && <ArchiveAction kind="project" id={project.id} archived/>}
             {project.is_archived && <p className="text-sm text-gray-500">{project.completed_at?'Completed project':'Archived project'} · Restore to make changes.</p>}
-            {canManage && <details className="relative"><summary className="cursor-pointer rounded-lg border px-3 py-2 text-sm">Project actions</summary><div className="absolute right-0 top-full z-20 mt-1 min-w-44 rounded-lg border bg-surface p-2 shadow-lg"><button type="button" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-gray-100" onClick={event => { event.currentTarget.closest("details")?.removeAttribute("open"); setEditingProject(true); }}><Pencil className="h-4 w-4" />Edit project</button><ArchiveAction kind="project" id={project.id} complete/><ArchiveAction kind="project" id={project.id} unfinished={allTasks.filter(t=>t.status!=='done').length} recurring={allTasks.some(t=>t.recurrence&&t.recurrence!=='none')}/><div className="my-2 border-t" /><button type="button" onClick={event => { event.currentTarget.closest("details")?.removeAttribute("open"); setFeedback(null); setDeleteTarget({ kind: 'project', id: project.id, name: project.name }); }}
-              className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete project</button></div></details>}
+            {canManage && <ActionsMenu label="Project actions"><button type="button" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-gray-100" onClick={event => { event.currentTarget.closest("details")?.removeAttribute("open"); setEditingProject(true); }}><Pencil className="h-4 w-4" />Edit project</button><ArchiveAction kind="project" id={project.id} complete/><ArchiveAction kind="project" id={project.id} unfinished={allTasks.filter(t=>t.status!=='done').length} recurring={allTasks.some(t=>t.recurrence&&t.recurrence!=='none')}/><div className="my-2 border-t" /><button type="button" onClick={event => { event.currentTarget.closest("details")?.removeAttribute("open"); setFeedback(null); setDeleteTarget({ kind: 'project', id: project.id, name: project.name }); }}
+              className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete project</button></ActionsMenu>}
             {!project.is_archived && activeTab === 'tasks' && (isAdmin || members.some((m: Member) => m.id === currentUserId)) && (
               <button
-                onClick={() => { setFeedback(null); setEditingTask(null); setIsTaskModalOpen(true); }}
+                onClick={() => { setFeedback(null); if(!taskDraft)setEditingTask(null); setIsTaskModalOpen(true); }}
                 className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center shadow-sm"
               >
                 <Plus className="w-4 h-4 mr-1.5" /> Add Task
@@ -405,8 +409,8 @@ export default function ProjectView({
       {isTaskModalOpen && (
         <Modal side title={editingTask ? 'Edit task' : 'Create new task'} busy={isSubmitting} onClose={() => setIsTaskModalOpen(false)}>
           {errorNotice}
-          <TaskForm isAdmin={isAdmin} task={editingTask} members={members} busy={isSubmitting} onSubmit={handleSaveTask} onCancel={() => setIsTaskModalOpen(false)}
-            onManageTeam={canManage ? () => { setIsTaskModalOpen(false); setActiveTab('members'); } : undefined} />
+          <TaskForm draft={taskDraft} isAdmin={isAdmin} task={editingTask} members={members} busy={isSubmitting} onSubmit={handleSaveTask} onCancel={() => setIsTaskModalOpen(false)}
+            onManageTeam={canManage ? draft => { setTaskDraft(draft); setIsTaskModalOpen(false); setActiveTab('members'); } : undefined} />
         </Modal>
       )}
 
@@ -430,7 +434,7 @@ export default function ProjectView({
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
             <span>Assigned to <strong>{selectedTask.assignee?.full_name || selectedTask.assignee?.email || 'Unassigned'}</strong> · <span className="capitalize">{selectedTask.priority} priority</span></span>
 
-            {!taskReadOnly && (isAdmin || selectedTask.created_by === currentUserId) && <details className="relative"><summary className="cursor-pointer rounded-lg border px-3 py-2 text-sm">Task actions</summary><div className="absolute right-0 top-full z-20 mt-1 min-w-44 rounded-lg border bg-surface p-2 shadow-lg"><button type="button" disabled={isSubmitting} onClick={() => { setEditingTask(selectedTask); setSelectedTaskId(null); setFeedback(null); setIsTaskModalOpen(true); }} className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"><Pencil className="h-4 w-4" />Edit task</button>{selectedTask.status==='done'&&<ArchiveAction kind="task" id={selectedTask.id} recurring={selectedTask.recurrence!=='none'}/> }<div className="my-2 border-t" /><button type="button" disabled={isSubmitting} onClick={() => { setDeleteTarget({ kind: 'task', id: selectedTask.id, name: selectedTask.title }); setSelectedTaskId(null); setFeedback(null); }} className="flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete task</button></div></details>}
+            {!taskReadOnly && (isAdmin || selectedTask.created_by === currentUserId) && <ActionsMenu label="Task actions"><button type="button" disabled={isSubmitting} onClick={() => { setEditingTask(selectedTask); setSelectedTaskId(null); setFeedback(null); setIsTaskModalOpen(true); }} className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"><Pencil className="h-4 w-4" />Edit task</button>{selectedTask.status==='done'&&<ArchiveAction kind="task" id={selectedTask.id} recurring={selectedTask.recurrence!=='none'}/> }<div className="my-2 border-t" /><button type="button" disabled={isSubmitting} onClick={() => { setDeleteTarget({ kind: 'task', id: selectedTask.id, name: selectedTask.title }); setSelectedTaskId(null); setFeedback(null); }} className="flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete task</button></ActionsMenu>}
           </div>
           {taskReadOnly&&<div className="mb-3 rounded-lg border p-3 text-sm">Archived · read-only. {project.is_archived?'Restore the project first.':(isAdmin||selectedTask.created_by===currentUserId)&&<ArchiveAction kind="task" id={selectedTask.id} archived/>}</div>}
           <div aria-label="Task panel sections" className="flex gap-2 border-b py-3 mb-3">{(['details','updates'] as const).map(tab=><button key={tab} type="button" aria-pressed={detailTab===tab} onClick={()=>setDetailTab(tab)} className={`rounded-lg px-4 py-2 text-sm font-medium ${detailTab===tab?'bg-blue-600 text-white':'bg-gray-100 text-gray-700'}`}>{tab==='details'?'Details':`Updates (${selectedTask.task_comments?.length || 0})`}</button>)}</div>

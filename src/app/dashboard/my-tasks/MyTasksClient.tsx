@@ -1,5 +1,6 @@
 'use client';
 
+import { useUrlState } from '@/lib/use-url-state';
 import { useState } from 'react';
 import type { TaskStatus, Task } from '@/lib/task-types';
 import Link from 'next/link';
@@ -22,10 +23,10 @@ export default function MyTasksClient({
   const tasks = initialTasks;
   const [error, setError] = useState('');
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [projectFilter, setProjectFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useUrlState<string>('q','',{replace:true});
+  const [statusFilter, setStatusFilter] = useUrlState<string>('status','all');
+  const [projectFilter, setProjectFilter] = useUrlState<string>('project','all');
+  const [priorityFilter, setPriorityFilter] = useUrlState<string>('priority','all');
 
   // Filter logic
   const filteredTasks = tasks.filter((t) => {

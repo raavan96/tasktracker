@@ -60,18 +60,22 @@ export default function UserManagementClient({
   async function handleRoleChange(userId: string, newRole: 'admin' | 'member') {
     setPendingActionId(userId);
     setFeedback(null);
-    const res = await updateUserRole(userId, newRole);
+    try { const res = await updateUserRole(userId, newRole);
     if (res?.error) setFeedback({ error: res.error });
-    setPendingActionId(null);
+    else setFeedback({success:'Member updated.'});
+    } catch { setFeedback({error:'The change could not be confirmed. Please refresh and retry.'}); }
+    finally { setPendingActionId(null); }
   }
 
   async function handleDelete(userId: string) {
     if (!confirm('Are you sure you want to remove this user from the workspace?')) return;
     setPendingActionId(userId);
     setFeedback(null);
-    const res = await deleteUser(userId);
+    try { const res = await deleteUser(userId);
     if (res?.error) setFeedback({ error: res.error });
-    setPendingActionId(null);
+    else setFeedback({success:'Member updated.'});
+    } catch { setFeedback({error:'The change could not be confirmed. Please refresh and retry.'}); }
+    finally { setPendingActionId(null); }
   }
 
   return (
