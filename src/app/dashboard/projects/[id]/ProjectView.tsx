@@ -75,6 +75,9 @@ export default function ProjectView({
   const taskReadOnly=project.is_archived || !!selectedTask?.is_archived;
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [feedback, setFeedback] = useState<{ error?: string; success?: string } | null>(null);
+  const [memberSearch,setMemberSearch]=useState('');
+  const availableMembers=allWorkspaceUsers.filter(u=>!members.some(m=>m.id===u.id));
+  const matchingMembers=availableMembers.filter(u=>`${u.full_name||''} ${u.email}`.toLowerCase().includes(memberSearch.trim().toLowerCase()));
   const [newMemberId, setNewMemberId] = useState('');
   const [commentInput, setCommentInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -333,14 +336,15 @@ export default function ProjectView({
             <div className="bg-surface border border-gray-200 rounded-xl p-5 shadow-sm">
               <h3 className="font-semibold text-gray-900 text-sm mb-2">Add Teammate to This Project</h3>
               <p className="mb-4 text-sm text-slate-600">Add a workspace teammate here to make them available in the task assignee list. <Link href="/admin/users" className="font-medium text-blue-700 underline">Create a new member</Link></p>
+              <input type="search" aria-label="Search teammates to add" placeholder="Search by name or email…" value={memberSearch} onChange={e=>{setMemberSearch(e.target.value);setNewMemberId('');}} className="mb-3 w-full rounded-lg border px-3 py-2 text-sm"/>
+              <p role="status" className="mb-3 text-xs text-gray-500">{!availableMembers.length?'All workspace members are already in this project.':!matchingMembers.length?'No teammates match your search.':`${matchingMembers.length} teammates available`}</p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <select
-                  id="newProjectMemberSelect" aria-label="Teammate to add" value={newMemberId} onChange={(event) => setNewMemberId(event.target.value)}
-                  className="flex-1 px-3 py-2 border rounded-lg text-sm bg-surface focus:ring-2 focus:ring-blue-500"
+                  disabled={isSubmitting||!matchingMembers.length} id="newProjectMemberSelect" aria-label="Teammate to add" value={newMemberId} onChange={(event) => setNewMemberId(event.target.value)}
+                  className="min-w-0 flex-1 px-3 py-2 border rounded-lg text-sm bg-surface focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="" disabled>Select a team member to add...</option>
-                  {allWorkspaceUsers
-                    .filter((u: Member) => !members.some((m: Member) => m.id === u.id))
+                  {matchingMembers
                     .map((u: Member) => (
                       <option key={u.id} value={u.id}>
                         {u.full_name || u.email} ({u.email})
@@ -351,7 +355,7 @@ export default function ProjectView({
                   type="button"
                   onClick={async () => {
                     if (!newMemberId) return;
-                    if (await runAction(() => addProjectMember(project.id, newMemberId), 'Teammate added. You can now assign tasks to them.')) setNewMemberId('');
+                    if (await runAction(() => addProjectMember(project.id, newMemberId), 'Teammate added. You can now assign tasks to them.')) {setNewMemberId('');setMemberSearch('');}
                   }}
                   disabled={isSubmitting || !newMemberId}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 flex items-center justify-center"

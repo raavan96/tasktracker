@@ -30,7 +30,11 @@ try{
   const admin=pages[0],member=pages[1],outsider=pages[2];
   await admin.getByRole('button',{name:'New Project'}).click();
   await admin.locator('dialog input[name=name]').fill('Private staging workflow');
+  await admin.getByLabel('Search team members',{exact:true}).fill(users[1].email.toUpperCase());
   await admin.locator(`input[name=members][value="${users[1].id}"]`).check();
+  await admin.getByLabel('Search team members',{exact:true}).fill('No matching person');
+  await expect(admin.getByText('No members match your search.',{exact:true})).toBeVisible();
+  await expect(admin.getByText('0 matching members · 1 selected',{exact:true})).toBeVisible();
   await admin.getByRole('button',{name:'Create Project',exact:true}).click();
   await admin.getByRole('link').filter({hasText:'Private staging workflow'}).click();
   await admin.waitForURL('**/dashboard/projects/*');
@@ -39,6 +43,13 @@ try{
   await admin.getByRole('button',{name:'Add Task',exact:true}).click();
   await admin.locator('dialog input[name=title]').fill('Retained task draft');
   await admin.getByRole('button',{name:'Add a teammate from the Team tab'}).click();
+  await admin.getByLabel('Search teammates to add',{exact:true}).fill(users[2].email.toUpperCase());
+  await expect(admin.locator('#newProjectMemberSelect option')).toHaveCount(2);
+  await admin.getByLabel('Teammate to add',{exact:true}).selectOption(users[2].id);
+  await admin.getByLabel('Search teammates to add',{exact:true}).fill('No matching person');
+  await expect(admin.getByRole('button',{name:'Add to Project',exact:true})).toBeDisabled();
+  await expect(admin.getByText('No teammates match your search.',{exact:true})).toBeVisible();
+  await admin.getByLabel('Search teammates to add',{exact:true}).fill('');
   await expect(admin.getByRole('button',{name:'Resume task draft'})).toBeVisible();
   await admin.getByRole('button',{name:'Resume task draft'}).click();
   await expect(admin.locator('dialog input[name=title]')).toHaveValue('Retained task draft');

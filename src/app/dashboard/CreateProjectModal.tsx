@@ -7,6 +7,9 @@ import Modal from '@/components/Modal';
 import { Plus, Loader2 } from 'lucide-react';
 
 export default function CreateProjectModal({ users }: { users: Member[] }) {
+  const [memberSearch,setMemberSearch]=useState('');
+  const [selectedMembers,setSelectedMembers]=useState<string[]>([]);
+  const matchesMember=(member:Member)=>`${member.full_name||''} ${member.email}`.toLowerCase().includes(memberSearch.trim().toLowerCase());
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +36,7 @@ export default function CreateProjectModal({ users }: { users: Member[] }) {
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={() => {setMemberSearch('');setSelectedMembers([]);setError(null);setIsOpen(true);}}
         className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition"
       >
         <Plus className="w-4 h-4 mr-1.5" /> New Project
@@ -71,19 +74,23 @@ export default function CreateProjectModal({ users }: { users: Member[] }) {
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Assign Team Members</label>
+                <div data-instant-save className="mb-2"><input type="search" aria-label="Search team members" placeholder="Search by name or email…" value={memberSearch} onChange={e=>setMemberSearch(e.target.value)} className="w-full rounded-lg border px-3 py-2 text-sm"/></div>
+                <p className="mb-2 text-xs text-gray-500" role="status">{users.filter(matchesMember).length} matching members · {selectedMembers.length} selected</p>
                 <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2 space-y-1.5 divide-y divide-gray-50">
                   {users.map((u) => (
-                    <label key={u.id} className="flex items-center space-x-2 pt-1.5 text-sm cursor-pointer hover:bg-gray-50 p-1 rounded">
+                    <label key={u.id} style={{display:matchesMember(u)?undefined:'none'}} className="flex items-center space-x-2 pt-1.5 text-sm cursor-pointer hover:bg-gray-50 p-1 rounded">
                       <input
                         type="checkbox"
                         name="members"
                         value={u.id}
+                        checked={selectedMembers.includes(u.id)} onChange={e=>setSelectedMembers(current=>e.target.checked?[...current,u.id]:current.filter(id=>id!==u.id))}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="text-gray-900 font-medium">{u.full_name || u.email}</span>
                       <span className="text-xs text-gray-400">({u.email})</span>
                     </label>
                   ))}
+                  {!users.some(matchesMember)&&<p className="p-3 text-sm text-gray-500">No members match your search.</p>}
                 </div>
               </div>
 
