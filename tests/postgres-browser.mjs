@@ -54,11 +54,19 @@ try{
   await admin.getByText('Project actions',{exact:true}).click();
   await admin.getByRole('button',{name:'Edit project',exact:true}).click();
   await expect(admin.locator('dialog')).toBeVisible();
+  await admin.locator('dialog input[name=name]').fill('Unsaved project title');
+  const discardPrompt=admin.waitForEvent('dialog');
+  const escape=admin.keyboard.press('Escape');
+  await (await discardPrompt).dismiss();await escape;
+  await expect(admin.locator('dialog input[name=name]')).toHaveValue('Unsaved project title');
+  await admin.locator('dialog input[name=name]').fill('Private staging workflow');
   await admin.keyboard.press('Escape');
+  await expect(admin.locator('dialog')).toHaveCount(0);
   for (const width of [1440,430]) {
     await admin.setViewportSize({width,height:932});
     await admin.getByRole('button',{name:'Table & export',exact:true}).click();
     await expect(admin.getByRole('region',{name:'Table view',exact:true})).toBeVisible();
+    if(width===430)for(const select of await admin.locator('.task-table-view select').all())assert.ok((await select.boundingBox()).width>=140,'Mobile filters must keep their selected values readable');
     await admin.getByLabel('Show Created by column').check();
     await expect(admin.getByRole('columnheader',{name:'Created by',exact:true})).toBeVisible();
     await expect(admin.getByRole('cell',{name:'Staging 0',exact:true})).toBeVisible();

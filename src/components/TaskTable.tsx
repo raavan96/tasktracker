@@ -23,8 +23,8 @@ export default function TaskTable({ tasks, today, onOpen }: { tasks: TableTask[]
     const a = document.createElement('a'); a.href = url; a.download = 'tasktracker-tasks.csv'; a.click(); URL.revokeObjectURL(url);
   }
   return <div className="task-table-view space-y-4">
-    <div className="flex flex-wrap gap-3">
-      <input aria-label="Search task table" placeholder="Search tasks, people, projects…" value={search} onChange={e => setSearch(e.target.value)} className="min-w-0 flex-1 rounded-lg border px-3 py-2.5 text-sm" />
+    <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+      <input aria-label="Search task table" placeholder="Search tasks, people, projects…" value={search} onChange={e => setSearch(e.target.value)} className="col-span-2 min-w-0 flex-1 rounded-lg border px-3 py-2.5 text-sm" />
       <select aria-label="Task summary filter" value={summary} onChange={e => setSummary(e.target.value)} className="rounded-lg border px-3 py-2.5 text-sm"><option value="all">All tasks</option>{summaryFilters.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}</select>
       <select aria-label="Filter by assignee" value={assignee} onChange={e=>setAssignee(e.target.value)} className="min-w-0 rounded-lg border px-3 py-2.5 text-sm"><option value="all">All assignees</option><option value="unassigned">Unassigned</option>{[...people].sort((a,b)=>a[1].localeCompare(b[1])).map(([id,name])=><option key={id} value={id}>{name}</option>)}{assignee!=='all'&&assignee!=='unassigned'&&!people.has(assignee)&&<option value={assignee}>Selected member — no tasks</option>}</select>
       <select aria-label="Sort tasks" value={sort} onChange={e=>setSort(e.target.value)} className="rounded-lg border px-3 py-2.5 text-sm"><option value="deadline">Deadline</option><option value="priority">Priority</option><option value="title">Title</option><option value="assignee">Assignee</option></select>
