@@ -255,3 +255,17 @@ body {
   .member-roster td:last-child > * { margin: 0; }
   .member-roster button, .member-roster summary { padding: 8px; }
 }
+
+/* One mounted view; the selector glides independently of its content. */
+.task-view-switch { position: relative; display: inline-grid; grid-template-columns: 1fr 1fr; padding: 4px; border: 1px solid var(--field-border); border-radius: 12px; background: var(--surface); isolation: isolate; }
+.task-view-switch button { position: relative; min-height: 40px; padding: 8px 18px; border-radius: 8px; font-size: 14px; font-weight: 500; background: transparent !important; transition: color 180ms ease; }
+.task-view-switch button[aria-pressed="true"] { color: #fff; }
+.task-view-indicator { position: absolute; z-index: -1; inset: 4px auto 4px 4px; width: calc((100% - 8px) / 2); border-radius: 8px; background: #2563eb; transition: transform 200ms ease; }
+.task-view-indicator.is-table { transform: translateX(100%); }
+:root[data-theme="dark"] .task-view-indicator { background: var(--workspace-gradient); }
+:root[data-theme="dark"] .task-view-switch button[aria-pressed="true"] { color: #071423; }
+.task-view-enter { animation: task-view-enter 180ms ease-out; }
+@keyframes task-view-enter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+.workspace-home { background: radial-gradient(ellipse at 55% 0%, #dbeafe 0%, transparent 65%), var(--background); }
+:root[data-theme="dark"] .workspace-home { background: radial-gradient(ellipse at 55% 0%, #073743 0%, transparent 60%), var(--background); }
+@media (prefers-reduced-motion: reduce) { .task-view-enter { animation: none; } .task-view-indicator, .task-view-switch button { transition: none; } }

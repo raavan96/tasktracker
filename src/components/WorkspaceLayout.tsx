@@ -34,7 +34,7 @@ export default async function WorkspaceLayout({
       <aside className="dark-workspace-sidebar" aria-label="Sidebar">
         <Link href="/dashboard" className="workspace-brand flex items-center gap-3 font-semibold">
           <span className="workspace-mark"><FolderKanban className="h-5 w-5" /></span>
-          <span>TaskTracker<span className="workspace-brand-caption">TEAM WORKSPACE</span></span>
+          <span>TaskTracker<span className="workspace-brand-caption">collegedunia.com</span></span>
         </Link>
         <p className="workspace-nav-caption">WORKSPACE</p>
         <WorkspaceNav isAdmin={isAdmin} />
@@ -51,7 +51,7 @@ export default async function WorkspaceLayout({
             </Link>
 
             <div className="workspace-top-nav hidden xl:block"><WorkspaceNav isAdmin={isAdmin} /></div>
-            <span className="workspace-context">Your workspace</span>
+            <span className="workspace-context">Central Team Workspace</span>
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">

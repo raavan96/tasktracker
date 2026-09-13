@@ -21,6 +21,11 @@ try{
     const context=await browser.newContext();contexts.push(context);const page=await context.newPage();pages.push(page);
     page.on('request',request=>{if(request.url().includes('supabase.co'))external.push(request.url());});
   }
+  const homeResponse=await pages[0].goto(base+'/');
+  assert.equal(homeResponse.status(),200);
+  await expect(pages[0].getByRole('heading',{level:1})).toContainText('Great work starts');
+  await pages[0].getByRole('link',{name:'Open workspace'}).click();
+  await pages[0].waitForURL('**/login');
   await Promise.all(pages.map(async(page,n)=>{await page.goto(base+'/login');await page.locator('input[name=email]').fill(users[n].email);await page.locator('input[name=password]').fill(password);await page.getByRole('button',{name:'Sign In',exact:true}).click();await page.waitForURL('**/dashboard',{timeout:30000});}));
   const admin=pages[0],member=pages[1],outsider=pages[2];
   await admin.getByRole('button',{name:'New Project'}).click();
@@ -36,6 +41,36 @@ try{
   await admin.getByRole('button',{name:'Create task',exact:true}).click();
   await expect.poll(async()=>Number((await db.query('SELECT count(*) FROM tasks')).rows[0].count)).toBe(1);
   const task=(await db.query('SELECT id FROM tasks')).rows[0].id;
+  await expect(admin.getByRole('button',{name:'Edit project',exact:true})).toBeHidden();
+  await admin.getByText('Project actions',{exact:true}).click();
+  await admin.getByRole('button',{name:'Edit project',exact:true}).click();
+  await expect(admin.locator('dialog')).toBeVisible();
+  await admin.keyboard.press('Escape');
+  for (const width of [1440,430]) {
+    await admin.setViewportSize({width,height:932});
+    await admin.getByRole('button',{name:'Table & export',exact:true}).click();
+    await expect(admin.getByRole('region',{name:'Table view',exact:true})).toBeVisible();
+    await expect(admin.getByRole('region',{name:'Board view',exact:true})).toHaveCount(0);
+    await admin.getByRole('button',{name:'Board',exact:true}).click();
+    await expect(admin.getByRole('region',{name:'Board view',exact:true})).toBeVisible();
+    await expect(admin.getByRole('region',{name:'Table view',exact:true})).toHaveCount(0);
+    assert.equal(await admin.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  }
+  await admin.goto(projectURL+'?task='+task);
+  await expect(admin.getByRole('button',{name:'Edit task',exact:true})).toBeHidden();
+  await admin.getByText('Task actions',{exact:true}).click();
+  await admin.getByRole('button',{name:'Edit task',exact:true}).click();
+  await expect(admin.locator('dialog input[name=title]')).toHaveValue('Verify local task workflow');
+  await admin.keyboard.press('Escape');
+  await admin.goto(projectURL+'?task='+task);
+  await admin.getByRole('button',{name:/^Updates \(/}).click();
+  await expect(admin.getByRole('heading',{name:'Task history',exact:true})).toBeVisible();
+  assert.equal(await admin.evaluate(()=>{
+    const notes=document.querySelector('input[aria-label="Write a task update"]');
+    const history=[...document.querySelectorAll('h3')].find(el=>el.textContent==='Task history');
+    return !!(notes.compareDocumentPosition(history)&Node.DOCUMENT_POSITION_FOLLOWING);
+  }),true);
+
   await member.goto(projectURL+'?task='+task);
   await member.getByLabel('Task attachment').setInputFiles({name:'proof.txt',mimeType:'text/plain',buffer:Buffer.from('Synthetic task attachment')});
   await member.getByRole('button',{name:'Upload file',exact:true}).click();

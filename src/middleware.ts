@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/reset-password');
   const isPublicAuthRoute = pathname.startsWith('/auth');
 
-  if (!user && !isAuthPage && !isPublicAuthRoute) {
+  if (!user && pathname !== '/' && !isAuthPage && !isPublicAuthRoute) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
