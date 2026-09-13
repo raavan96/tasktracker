@@ -6,7 +6,7 @@ Live URL: https://168.144.155.51. Data, authentication, files, and scheduled rem
 
 | Component | Location |
 | --- | --- |
-| Running standalone app | `/opt/tasktracker-releases/135f515` |
+| Running standalone app | `/opt/tasktracker-releases/80c1b1a` |
 | Production service | `tasktracker.service`, localhost:3000 |
 | Private environment | `/etc/tasktracker-local.env`, root-only |
 | Production database | `tasktracker_rehearsal_final_20260911` (LIVE, not disposable) |
@@ -18,7 +18,7 @@ Live URL: https://168.144.155.51. Data, authentication, files, and scheduled rem
 
 The PostgreSQL and app units are enabled for boot. The automation timer runs every 15 minutes and the backup timer every six hours. The old staging web service is stopped; port 8443 redirects to the live app. The previous Supabase app checkout remains at `/home/public_html/task-tracker` for recovery, but is not the running deployment. Pulling code there does not update the live standalone app.
 
-The dark-theme release `135f515` passed Linux build, lint, unit/database tests and the existing eight-session browser workflow before deployment. The original PostgreSQL app artifact remains at `/opt/tasktracker-staging`, which also continues to supply the scheduled automation/backup scripts. UI-only rollback can restore `/etc/tasktracker-ui-135f515.service.previous` to the app service definition and restart after daemon-reload; this retains the live PostgreSQL database and all new work. Do not use the Supabase migration rollback for a UI rollback. Old hashed static assets were retained in the new release for already-open tabs.
+The workspace UI release `80c1b1a` passed Linux build, lint, unit/database tests and the existing eight-session browser workflow before deployment. The original PostgreSQL app artifact remains at `/opt/tasktracker-staging`, which also continues to supply the scheduled automation/backup scripts. UI-only rollback can restore `/etc/tasktracker-ui-80c1b1a.service.previous` to the app service definition and restart after daemon-reload; this retains the live PostgreSQL database and all new work. Do not use the Supabase migration rollback for a UI rollback. Old hashed static assets were retained in the new release for already-open tabs.
 
 ## Routine checks
 
