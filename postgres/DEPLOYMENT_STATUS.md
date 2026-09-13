@@ -1,6 +1,8 @@
 # Production cutover — 11 September 2026
 
-**Latest release:** `91afad7` is live from `/opt/tasktracker-releases/91afad7`. Manual and automatic archiving, a separate completed-project archive, restore, bulk completed-task archiving, and admin retention settings are enabled. Migration `006_archiving.sql` was rehearsed on a separate database copy, then applied after a fresh backup with live row counts preserved. GitHub run 34772412518 passed lint, unit/database checks, Linux build and the expanded eight-session browser workflow. The live archive/settings page was checked at 430px and automation executed successfully. Previous service definition: `/etc/tasktracker-archive-91afad7.service.previous`. See OPERATIONS.md for schema-aware rollback precautions.
+**Latest release:** `2fe1ffb` is live at `/opt/tasktracker-releases/2fe1ffb`, adding Created by labels on project cards/details and task details, with an optional task-table/CSV creator column. CI run 34778669981 and live checks passed. No database migration. Rollback unit: `/etc/tasktracker-ui-2fe1ffb.service.previous` (archive-capable release `91afad7`).
+
+**Archive release:** `91afad7` is live from `/opt/tasktracker-releases/91afad7`. Manual and automatic archiving, a separate completed-project archive, restore, bulk completed-task archiving, and admin retention settings are enabled. Migration `006_archiving.sql` was rehearsed on a separate database copy, then applied after a fresh backup with live row counts preserved. GitHub run 34772412518 passed lint, unit/database checks, Linux build and the expanded eight-session browser workflow. The live archive/settings page was checked at 430px and automation executed successfully. Previous service definition: `/etc/tasktracker-archive-91afad7.service.previous`. See OPERATIONS.md for schema-aware rollback precautions.
 
 
 

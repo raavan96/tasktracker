@@ -6,7 +6,7 @@ Live URL: https://168.144.155.51. Data, authentication, files, and scheduled rem
 
 | Component | Location |
 | --- | --- |
-| Running standalone app | `/opt/tasktracker-releases/91afad7` |
+| Running standalone app | `/opt/tasktracker-releases/2fe1ffb` |
 | Production service | `tasktracker.service`, localhost:3000 |
 | Private environment | `/etc/tasktracker-local.env`, root-only |
 | Production database | `tasktracker_rehearsal_final_20260911` (LIVE, not disposable) |
@@ -59,3 +59,8 @@ The existing `run_workspace_automation()` now calls archive automation, so the e
 A fresh production backup preceded migration. Profiles, projects, tasks, remarks and attachment row counts were compared while the app was stopped and preserved. The app and automation resumed successfully. Existing environment and storage paths were unchanged. The previous service unit points to release `80c1b1a` at `/etc/tasktracker-archive-91afad7.service.previous`.
 
 **Rollback caution:** This release includes schema and permission changes. Prefer a forward fix. If reverting the app, first pause the automation timer and disable both automatic archive settings via owner SQL; preserve all archive fields and events. The older app does not filter individually archived tasks, so rollback needs an explicit UI/access check. Do not restore an old whole-database backup over newer user work. Keep the additive schema intact.
+
+
+## Creator labels — 14 September 2026
+
+Current app release `2fe1ffb` adds project/task creator labels and an optional task-table/CSV creator column. No schema changes. GitHub run 34778669981 passed the full Linux and browser workflow, including member-visible creators and desktop/mobile column checks. Live project cards/details, task details and All Tasks were verified. A fresh backup preceded the switch; previous app `91afad7` can be restored through `/etc/tasktracker-ui-2fe1ffb.service.previous` without reverting the archive schema. Artifact SHA-256: `ef00019aa83df507c34fcc4a8a47eaba1537f8f2bf362e5afb2ac42d948aa0b9`.

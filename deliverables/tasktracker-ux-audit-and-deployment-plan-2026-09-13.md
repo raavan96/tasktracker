@@ -4,6 +4,10 @@ Prepared 13 September 2026. Scope: the existing Next.js app, its local PostgreSQ
 
 **Release status:** Archive release `91afad7` deployed successfully. Production row counts were preserved; home/login and archive settings were verified, including the 430px layout. Automatic processing completed successfully. The broader UX backlog below remains proposed.
 
+## Completed follow-up — 14 September 2026
+
+Created by labels are live on project cards, project details and task details. Task tables have an optional Created by column; enabling it includes the creator in CSV export. Creator search is supported and stays separate from assignee attribution. Release `2fe1ffb`; no schema changes. The remaining recommendations below are still proposed.
+
 ## Recommended direction
 
 Make the app answer three questions quickly: **What needs my attention? Who is responsible? What should I do next?** The strongest next release would improve daily navigation, review clarity, saved views, and recovery from mistakes. Add more reporting and planning features after these interactions are dependable.
