@@ -17,7 +17,7 @@ export default async function MyTasksPage() {
       project:projects!tasks_project_id_fkey(id, name, is_archived),
       task_comments(count)
     `)
-    .eq('assignee_id', user.id)
+    .eq('assignee_id', user.id).eq('is_archived',false)
     .order('due_date', { ascending: true, nullsFirst: false });
 
   // Get list of distinct projects the user has tasks in

@@ -11,7 +11,7 @@ export function createLocalClient(privileged=false):SupabaseClient {
   const local={auth:localAuth(),from:(table:string)=>new Query(table,run),storage:localStorage(run),
     rpc:async(name:string,args:Record<string,unknown>)=>{
       try {
-        const functions:Record<string,string[]>={create_workspace_project:['p_name','p_description','p_members','p_private'],remove_member_and_reassign_tasks:['p_project_id','p_member_id','p_new_assignee_id']};
+        const functions:Record<string,string[]>={set_archive:['p_kind','p_id','p_archived','p_confirm_unfinished','p_complete'],bulk_archive_tasks:['p_project_id','p_days'],create_workspace_project:['p_name','p_description','p_members','p_private'],remove_member_and_reassign_tasks:['p_project_id','p_member_id','p_new_assignee_id']};
         const fields=functions[name];if(!fields)throw new Error('Unsupported database function.');
         const data=await run(async db=>(await db.query(`SELECT public.${name}(${fields.map((_,n)=>`$${n+1}`).join(',')}) value`,fields.map(f=>args[f]??null))).rows[0].value);
         return {data,error:null};

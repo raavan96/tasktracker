@@ -5,7 +5,7 @@ import { projectAccess } from '@/lib/project-access';
 import { createClient } from '@/lib/supabase/server';
 
 export async function deleteProject(projectId: string, confirmationName: string) {
-  const access = await projectAccess(projectId, true, true);
+  const access = await projectAccess(projectId, true);
   if (access.error) return { error: access.error };
   const { data: project, error: lookupError } = await access.supabase.from('projects').select('name').eq('id', projectId).single();
   if (lookupError || !project) return { error: 'Project not found or access denied.' };
@@ -36,13 +36,13 @@ export async function createProject(formData: FormData) {
 }
 
 export async function updateProject(projectId: string, formData: FormData) {
-  const access = await projectAccess(projectId, true, true);
+  const access = await projectAccess(projectId, true);
   if (access.error) return { error: access.error };
   const name = String(formData.get('name') || '').trim();
   if (!name || name.length > 200) return { error: 'Enter a project name between 1 and 200 characters.' };
   const { data, error } = await access.supabase.from('projects').update({ name,
     description: String(formData.get('description') || '').trim(),
-    is_archived: formData.get('is_archived') === 'true', is_private: formData.get('is_private') !== 'false',
+    is_private: formData.get('is_private') !== 'false',
   }).eq('id', projectId).select('id').single();
   if (error || !data) return { error: error?.message || 'Project could not be updated.' };
   revalidatePath(`/dashboard/projects/${projectId}`); revalidatePath('/dashboard');

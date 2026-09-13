@@ -2,7 +2,7 @@
 // query syntax is accepted from an HTTP client; values always use parameters.
 import type { PoolClient } from 'pg';
 export type Run = <T>(work: (db: PoolClient) => Promise<T>) => Promise<T>;
-const tables = new Set(['profiles','projects','project_members','tasks','project_notes','task_comments','notifications','task_checklist','task_history','task_dependencies','task_attachments']);
+const tables = new Set(['archive_settings','archive_events','profiles','projects','project_members','tasks','project_notes','task_comments','notifications','task_checklist','task_history','task_dependencies','task_attachments']);
 const id = (value: string) => { if (!/^[a-z_][a-z_0-9]*$/.test(value)) throw new Error('Invalid query identifier'); return `"${value}"`; };
 type Relation = [string, string, string, boolean];
 const relations: Record<string, Record<string, Relation>> = {

@@ -3,7 +3,7 @@
 import { useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FolderKanban, CheckSquare, Users, Menu } from 'lucide-react';
+import { FolderKanban, CheckSquare, Users, Menu, Archive } from 'lucide-react';
 
 export default function WorkspaceNav({ isAdmin, mobile = false }: { isAdmin: boolean; mobile?: boolean }) {
   const menu = useRef<HTMLDetailsElement>(null);
@@ -12,6 +12,7 @@ export default function WorkspaceNav({ isAdmin, mobile = false }: { isAdmin: boo
     { href: '/dashboard', label: 'Projects', icon: FolderKanban, active: pathname === '/dashboard' || pathname.startsWith('/dashboard/projects') },
     { href: '/dashboard/my-tasks', label: 'My Tasks', icon: CheckSquare, active: pathname === '/dashboard/my-tasks' },
     { href: '/dashboard/tasks', label: 'All Tasks', icon: CheckSquare, active: pathname === '/dashboard/tasks' },
+    {href:'/dashboard/archive',label:'Archive',icon:Archive,active:pathname==='/dashboard/archive'},
     ...(isAdmin ? [{ href: '/dashboard/workload', label: 'Workload', icon: Users, active: pathname === '/dashboard/workload' }, { href: '/admin/users', label: 'Team Users', icon: Users, active: pathname.startsWith('/admin') }] : []),
   ];
   const navigation = <nav aria-label="Workspace" className={mobile ? "grid gap-1 py-2 text-sm font-medium" : "flex items-center gap-1 text-sm font-medium"}>

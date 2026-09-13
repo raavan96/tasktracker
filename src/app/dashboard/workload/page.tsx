@@ -4,7 +4,7 @@ import { todayKey, matchesSummary } from '@/lib/task-presentation';
 export default async function WorkloadPage() {
   const db=await createClient();const {data:{user}}=await db.auth.getUser();if(!user)redirect('/login');
   const {data:profile}=await db.from('profiles').select('role').eq('id',user.id).single();if(profile?.role!=='admin')redirect('/dashboard');
-  const [people,result]=await Promise.all([db.from('profiles').select('id,full_name,email').order('full_name'),db.from('tasks').select('assignee_id,status,due_date,project:projects!inner(is_archived)').eq('project.is_archived',false)]);
+  const [people,result]=await Promise.all([db.from('profiles').select('id,full_name,email').order('full_name'),db.from('tasks').select('assignee_id,status,due_date,project:projects!inner(is_archived)').eq('project.is_archived',false).eq('is_archived',false)]);
   if(people.error||result.error)throw new Error('Workload report could not load.');
   const today=todayKey();
   return <div className="space-y-6"><div><h1 className="text-2xl font-bold">Team workload</h1><p className="mt-1 text-sm text-gray-500">Task counts across active projects. Counts indicate volume, not effort.</p></div>

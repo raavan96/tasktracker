@@ -11,9 +11,10 @@ function refreshTasks(projectId: string) {
 }
 
 async function taskAccess(taskId: string, projectId: string, mode: 'edit' | 'status' | 'comment' | 'delete') {
-  const access = await projectAccess(projectId, false, mode === 'delete');
+  const access = await projectAccess(projectId);
   if (access.error) return access;
-  const { data: task } = await access.supabase.from('tasks').select('id, created_by, assignee_id, status').eq('id', taskId).eq('project_id', projectId).single();
+  const { data: task } = await access.supabase.from('tasks').select('id, created_by, assignee_id, status, is_archived').eq('id', taskId).eq('project_id', projectId).single();
+  if (task?.is_archived) return {error:'Restore this task before making changes.'} as const;
   if (!task) return { error: 'Task not found or access denied.' } as const;
   if (mode !== 'comment' && !access.isAdmin && task.created_by !== access.user.id && !(mode === 'status' && task.assignee_id === access.user.id)) {
     return { error: mode === 'status' ? 'Only an admin, the task creator, or the assignee can change this status.' : 'Only an admin or the task creator can edit or delete this task.' } as const;

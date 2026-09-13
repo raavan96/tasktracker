@@ -5,7 +5,8 @@ import TaskSummary from '@/components/TaskSummary';
 import { todayKey } from '@/lib/task-presentation';
 import CreateProjectModal from './CreateProjectModal';
 
-export default async function DashboardPage() {
+export default async function DashboardPage({searchParams}:{searchParams:Promise<{archive?:string}>}) {
+  const archived=(await searchParams).archive==='true';
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -20,7 +21,7 @@ export default async function DashboardPage() {
   const [{ data: projects }, { data: allUsers }] = await Promise.all([
     supabase.from('projects').select(`
       id, name, description, is_archived, created_at,
-      project_members(count), tasks(id, status, due_date)
+      project_members(count), tasks(id, status, due_date, is_archived)
     `).order('created_at', { ascending: false }),
     supabase.from('profiles').select('id, full_name, email').order('full_name'),
   ]);
@@ -38,9 +39,10 @@ export default async function DashboardPage() {
         <CreateProjectModal users={allUsers || []} />
       </div>
 
-      <TaskSummary tasks={(projects || []).filter(p => !p.is_archived).flatMap(p => p.tasks || [])} today={todayKey()} />
+      <TaskSummary tasks={(projects || []).filter(p => !p.is_archived).flatMap(p => (p.tasks || []).filter(t=>!t.is_archived))} today={todayKey()} />
+      <nav className="flex gap-3" aria-label="Project visibility"><Link className="rounded-lg border px-4 py-2" aria-current={!archived?'page':undefined} href="/dashboard">Active projects</Link><Link className="rounded-lg border px-4 py-2" href="/dashboard/archive">Archived projects</Link></nav>
       {/* Projects Grid */}
-      {(!projects || projects.length === 0) ? (
+      {(!projects || projects.filter(p=>p.is_archived===archived).length === 0) ? (
         <div className="text-center py-16 bg-surface border border-gray-200 rounded-xl">
           <FolderKanban className="w-12 h-12 text-gray-400 mx-auto mb-3" />
           <h3 className="text-base font-semibold text-gray-900">No projects found</h3>
@@ -52,7 +54,7 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => {
+          {projects.filter(p=>p.is_archived===archived).map((project) => {
             const memberCount = project.project_members?.[0]?.count || 0;
             const totalTasks = project.tasks?.length || 0;
             const completedTasks = project.tasks?.filter((t) => t.status === 'done').length || 0;

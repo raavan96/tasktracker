@@ -122,10 +122,10 @@ test('project deletion is one atomic parent deletion', async () => {
   assert.deepEqual(t.writes[0].filters,[['id','project']]);
   assert.ok(t.invalidated.includes('/dashboard')); assert.ok(t.invalidated.includes('/dashboard/my-tasks'));
 });
-test('archived projects and their tasks can be deleted', async () => {
+test('archived projects and tasks must be restored before deletion', async () => {
   const t=setup({archived:true});
-  assert.equal((await t.projects.deleteProject('project','Launch')).success,true);
-  assert.equal((await t.actions.deleteTask('task','project')).success,true);
+  assert.ok((await t.projects.deleteProject('project','Launch')).error);
+  assert.ok((await t.actions.deleteTask('task','project')).error);
   assert.ok((await t.actions.createTask('project',form())).error);
 });
 test('foreign key failures and zero-row deletions do not report success', async () => {

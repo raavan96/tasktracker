@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { signOut } from '@/app/auth/actions';
+import ArchiveNotice from './ArchiveNotice';
 import WorkspaceNav from './WorkspaceNav';
 import { ThemeToggle } from './ThemeProvider';
 import { 
@@ -94,6 +95,7 @@ export default async function WorkspaceLayout({
         <div className="xl:hidden px-4 pb-3"><WorkspaceNav isAdmin={isAdmin} mobile /></div>
       </header>
 
+      <ArchiveNotice />
       {/* Main Content Area */}
       <main className="workspace-main flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
