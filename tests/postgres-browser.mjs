@@ -64,6 +64,9 @@ try{
   await expect(admin.locator('dialog')).toHaveCount(0);
   for (const width of [1440,430]) {
     await admin.setViewportSize({width,height:932});
+    await admin.getByText('Project actions',{exact:true}).click();
+    await expect.poll(async()=>{const box=await admin.locator('[data-actions-menu]').boundingBox();return box.x>=0&&box.x+box.width<=width;}).toBe(true);
+    await admin.keyboard.press('Escape');
     await admin.getByRole('button',{name:'Table & export',exact:true}).click();
     await expect(admin.getByRole('region',{name:'Table view',exact:true})).toBeVisible();
     if(width===430)for(const select of await admin.locator('.task-table-view select').all())assert.ok((await select.boundingBox()).width>=140,'Mobile filters must keep their selected values readable');
