@@ -134,3 +134,8 @@ test('foreign key failures and zero-row deletions do not report success', async 
   const empty=setup({zeroRows:true}); assert.ok((await empty.projects.deleteProject('project','Launch')).error);
   assert.ok((await empty.actions.deleteTask('task','project')).error);
 });
+
+test('unversioned task edits and status changes cannot overwrite newer work',async()=>{
+ const t=setup();const missing=form();missing.delete('reviewVersion');assert.ok((await t.actions.updateTask('task','project',missing)).error);assert.ok((await t.actions.updateTaskStatus('task','project','in_progress')).error);assert.equal(t.writes.length,0);
+ const stale=setup({zeroRows:true});assert.match((await stale.actions.updateTask('task','project',form())).error,/changed|reload/i);assert.equal(stale.invalidated.length,0);
+});

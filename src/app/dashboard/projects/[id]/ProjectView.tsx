@@ -470,7 +470,7 @@ export default function ProjectView({
             <div hidden={detailTab !== 'updates'}>
             <TaskDiscussion taskId={selectedTask.id} userId={currentUserId} members={members} readOnly={taskReadOnly} onBusyChange={setIsSubmitting}/>
             </div>
-            <TaskExtras view={detailTab} key={selectedTask.id} task={selectedTask} tasks={allTasks} members={members} canEdit={!taskReadOnly && (isAdmin || selectedTask.created_by === currentUserId || selectedTask.assignee_id === currentUserId)} />
+            <TaskExtras onBusyChange={setIsSubmitting} view={detailTab} key={selectedTask.id} task={selectedTask} tasks={allTasks} members={members} canEdit={!taskReadOnly && (isAdmin || selectedTask.created_by === currentUserId || selectedTask.assignee_id === currentUserId)} />
         </Modal>
       )}
 

@@ -253,6 +253,7 @@ try{
   await db.query("UPDATE profiles SET role='admin' WHERE id=$1",[users[0].id]);
   console.log('Real PostgreSQL concurrency: one winning approval per task version; competing admin demotions preserve an active administrator.');
 
+  await member.goto(base+'/login');await member.locator('input[name=email]').fill(users[1].email);await member.locator('input[name=password]').fill(password);await member.getByRole('button',{name:'Sign In',exact:true}).click();await member.waitForURL('**/dashboard');
   // Release 4: synthetic collaboration, discovery, reporting and scale.
   const r4project=projectURL.split('/').pop();
   const r4task=(await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_id,due_date,recurrence) VALUES($1,'Discovery specimen',$2,$3,current_date+1,'weekly') RETURNING id",[r4project,users[0].id,users[3].id])).rows[0].id;
