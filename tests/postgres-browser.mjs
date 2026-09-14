@@ -241,7 +241,7 @@ try{
   // Real PostgreSQL row locks: two eligible reviewers cannot approve one version twice.
   await db.query('INSERT INTO project_members(project_id,user_id) VALUES($1,$2)',[projectURL.split('/').pop(),users[3].id]);
   const raceTask=(await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_id,status) VALUES($1,'Concurrent review QA',$2,$3,'in_review') RETURNING id",[projectURL.split('/').pop(),users[1].id,users[3].id])).rows[0].id;
-  async function concurrentAs(id,sql,args){const c=new pg.Client({connectionString:process.env.DATABASE_ADMIN_URL});await c.connect();try{await c.query('BEGIN');await c.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[id]);await c.query('SET LOCAL ROLE authenticated');await c.query(sql,args);await c.query('COMMIT');}catch(e){await c.query('ROLLBACK');throw e;}finally{await c.end();}}
+  async function concurrentAs(id,sql,args){const c=new pg.Client({connectionString:process.env.DATABASE_ADMIN_URL});await c.connect();try{await c.query('BEGIN');await c.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[id]);await c.query('SET LOCAL ROLE authenticated');const result=await c.query(sql,args);if(sql.startsWith('UPDATE')&&result.rowCount!==1)throw new Error('The actor no longer has permission to change this profile.');await c.query('COMMIT');}catch(e){await c.query('ROLLBACK');throw e;}finally{await c.end();}}
   const approvals=await Promise.allSettled([users[0],users[1]].map(u=>concurrentAs(u.id,"SELECT review_task($1,0,'approve','')",[raceTask])));
   assert.equal(approvals.filter(r=>r.status==='fulfilled').length,1);
   assert.equal(approvals.filter(r=>r.status==='rejected').length,1);
