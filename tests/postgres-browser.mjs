@@ -150,7 +150,7 @@ try{
   await admin.goto(base+'/dashboard/archive?section=completed');
   await expect(admin.getByRole('link',{name:'Private staging workflow',exact:true})).toBeVisible();
   await member.goto(projectURL+'?task='+task);
-  await expect(member.getByRole('button',{name:'Ready for review',exact:true})).toBeDisabled();
+  await expect(member.getByRole('button',{name:'Ready for review',exact:true})).toBeHidden();
   await expect(member.getByLabel('Task attachment')).toHaveCount(0);
   assert.equal((await contexts[1].request.get(base+'/api/attachments/'+attachment)).status(),200);
   await admin.getByRole('button',{name:'Restore project',exact:true}).click();
