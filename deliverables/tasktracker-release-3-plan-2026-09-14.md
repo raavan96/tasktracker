@@ -1,6 +1,6 @@
 # Release 3 — People and review controls
 
-Prepared 14 September 2026 against production release `42815b3` and repository HEAD `417cb61`. Status: implementation plan; no Release 3 application or database changes have been made.
+Prepared 14 September 2026 against production release `42815b3` and repository HEAD `417cb61`. Status: implemented in Release 3. See `tasktracker-release-3-2026-09-14.md` for validation, deployment evidence and final rollback behavior.
 
 ## Outcomes
 
@@ -15,7 +15,7 @@ Prepared 14 September 2026 against production release `42815b3` and repository H
 
 A separate designated-reviewer role is outside this release. Reviewer eligibility is derived from task creator, current assignee, active-account state, project visibility and admin role.
 
-Existing completed tasks stay completed. Historical approvals are not retroactively invalidated. New approval rules apply to new review decisions after rollout. Initial rollout uses an admin-controlled setting so the current policy remains active until the new flow and migration pass verification.
+Existing completed tasks stay completed. Historical approvals are not retroactively invalidated. New approval rules apply to new review decisions after rollout. Initial rollout uses an admin-controlled setting to enable creator approval after application and migration verification. Self-approval and direct completion bypasses remain blocked even when creator review is disabled.
 
 ## 3A — Member lifecycle
 
@@ -98,8 +98,8 @@ Add a dedicated **Review** block, separate from ordinary progress buttons:
 2. Implement 3A and 3B as separately reviewable commits, with their database operations and tests. Build the combined candidate on Linux outside the constrained Droplet.
 3. Restore a fresh production snapshot into a disposable database. Apply only the new migration and verify record counts, historical attribution, enabled accounts, archive rules and automation. Test with synthetic accounts there; do not disable or approve real production work as a demonstration.
 4. Take a fresh production database/attachment backup. Stage the verified app in a separate release directory. Preserve `/etc/tasktracker-local.env`, attachments and live database paths.
-5. Arrange a brief maintenance window for the coordinated app/schema switch. The prior migration-window approval applied to that earlier cutover; confirm availability for this new rollout once the release is concrete and verified.
-6. Pause app/automation, apply the additive migration transactionally, switch the service, verify health, then resume automation. Initially keep the legacy review policy selected; activate the agreed policy only after compatible app/schema checks pass.
+5. Pause briefly for the coordinated app/schema switch. The user explicitly authorized Release 3 deployment on 14 September 2026.
+6. Pause app/automation, apply the additive migration transactionally, switch the service, verify health, then resume automation. Initially keep the admin-only review policy selected; activate the agreed policy only after compatible app/schema checks pass.
 7. Check login, private visibility, team status, review controls, archive reads and job health. Compare production counts and inspect errors without changing real work for tests.
 8. Retain the previous app and service unit. Prefer disabling the new review setting and a forward fix if needed. Before app rollback, verify the previous app still respects disabled accounts and the new database guards. Preserve disabled states, review events and all new work; never restore an old whole-database backup over live updates.
 
