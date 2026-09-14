@@ -152,6 +152,7 @@ await as(admin);await rows('UPDATE tasks SET assignee_id=$1 WHERE id=$2',[admin,
 await rows('SELECT set_review_policy(false)');await assert.rejects(()=>rows("UPDATE tasks SET status='done' WHERE id=$1",[rt]));await rows('SELECT set_review_policy(true)');
 await as(owner);await review('approve');await review('reopen','Reassign work');
 await as(admin);await rows('UPDATE tasks SET assignee_id=$1 WHERE id=$2',[member,rt]);
+const heldSource=(await rows("INSERT INTO tasks(project_id,title,created_by,assignee_id,due_date,recurrence) VALUES($1,'Inactive recurrence QA',$2,$3,(now() AT TIME ZONE 'Asia/Kolkata')::date-1,'daily') RETURNING id",[rp,admin,member]))[0].id;
 await as(null);await rows("INSERT INTO auth.sessions(token_hash,user_id,expires_at) VALUES('r3-synthetic',$1,now()+interval '1 hour')",[member]);
 await as(admin);await rows("SELECT set_member_active($1,false,'Departed team')",[member]);
 assert.equal((await rows('SELECT is_active FROM profiles WHERE id=$1',[member]))[0].is_active,false);
@@ -161,11 +162,13 @@ await as(admin);await assert.rejects(()=>rows('SELECT set_member_active($1,false
 await assert.rejects(()=>rows("UPDATE profiles SET role='member' WHERE id=$1",[admin]));
 await assert.rejects(()=>rows("INSERT INTO tasks(project_id,title,created_by,assignee_id) VALUES($1,'Inactive target',$2,$3)",[rp,admin,member]));
 await assert.rejects(()=>rows('SELECT reassign_member_tasks($1,$2,$3,$4)',[member,rp,owner,'[]']));
+await as(null);const held=(await rows('SELECT next_occurrence::text FROM tasks WHERE id=$1',[heldSource]))[0].next_occurrence;const notices=(await rows('SELECT count(*) FROM notifications WHERE user_id=$1',[member]))[0].count;await db.exec('SET ROLE service_role');await rows('SELECT run_workspace_automation()');assert.equal((await rows('SELECT next_occurrence::text FROM tasks WHERE id=$1',[heldSource]))[0].next_occurrence,held);assert.equal((await rows('SELECT count(*) FROM notifications WHERE user_id=$1',[member]))[0].count,notices);
+assert.equal((await rows('SELECT count(*) FROM tasks WHERE recurrence_source=$1',[heldSource]))[0].count,0);await as(admin);
 const preview=await rows("SELECT id,review_version::int version FROM tasks WHERE project_id=$1 AND assignee_id=$2 AND status<>'done' AND NOT is_archived ORDER BY id",[rp,member]);
 await rows('SELECT reassign_member_tasks($1,$2,$3,$4)',[member,rp,owner,JSON.stringify(preview)]);
 assert.equal((await rows('SELECT created_by,assignee_id FROM tasks WHERE id=$1',[rt]))[0].created_by,owner);
 assert.equal((await rows('SELECT assignee_id FROM tasks WHERE id=$1',[rt]))[0].assignee_id,owner);
-await as(null);const held=(await rows('SELECT next_occurrence FROM tasks WHERE id=$1',[recurring]))[0].next_occurrence;const notices=(await rows('SELECT count(*) FROM notifications WHERE user_id=$1',[member]))[0].count;await db.exec('SET ROLE service_role');await rows('SELECT run_workspace_automation()');assert.equal((await rows('SELECT next_occurrence FROM tasks WHERE id=$1',[recurring]))[0].next_occurrence,held);assert.equal((await rows('SELECT count(*) FROM notifications WHERE user_id=$1',[member]))[0].count,notices);
+
 await as(admin);await rows("SELECT set_member_active($1,true,'Returned to team')",[member]);
 await as(member);assert.ok((await rows('SELECT * FROM tasks WHERE id=$1',[rt])).length);
 await as(admin);assert.ok((await rows('SELECT * FROM member_events WHERE member_id=$1',[member])).length>=3);
