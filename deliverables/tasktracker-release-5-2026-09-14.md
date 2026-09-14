@@ -35,4 +35,17 @@ Passed on application commit `18af5c6e4c558191df4874960ab76c3db2e5d96b`:
 - 375px and 430px overflow checks; saved light/dark previews visually reviewed. These are Chromium viewport checks, not certification on physical iPhone Safari.
 - Existing review, member lifecycle, archive, search, reporting, CSV and 1,000-task pagination checks also passed.
 
-Production has not been changed for Release 5. Migration rehearsal, fresh backup and the app switch remain deployment steps. The migration is additive; existing approval and assignment policies remain in force.
+## Production deployment — 14 September 2026, 10:21 UTC
+
+Release `d77ad789d47538aff805cbf15ae482bbd1b88b8a` is live at https://168.144.155.51. [Exact release CI](https://github.com/raavan96/tasktracker/actions/runs/34832472522) passed all build, database and browser steps.
+
+- Artifact SHA-256: `50d829b9f3f1006cf23ffe0317c3fd95f7bf567f97098ef2d5935dadbb828132`.
+- Rehearsal on a disposable production snapshot preserved all existing row fingerprints. The rehearsal database was removed afterwards.
+- Fresh consistent backup: `/var/backups/tasktracker/20260914T102137537397Z`; database SHA-256 `2f0a5e27804443b28422a0bba7cf67da57ed3049b52bbf58b79d6208f8c3c11a`.
+- Migration 010 applied; all 22 compared table fingerprints remained unchanged, including 12 accounts, four projects and seven tasks.
+- App now runs from `/opt/tasktracker-releases/d77ad78`. Backup, migration, switch and automation verification completed in 4.9 seconds.
+- HTTPS login returned 200. Signed-in calendar, template library, project actions and project-copy preview loaded successfully. No test work was saved in production.
+- App active with zero automatic restarts; reminders/recurrence, backup and certificate timers active. Creator/admin review and no-self-approval policies remain enabled.
+- Deployment record: `/var/backups/tasktracker/release5-deployment.json`. Previous unit: `/etc/tasktracker-release5-d77ad78.service.previous`, pointing to `/opt/tasktracker-releases/fbbf7b3`.
+
+For an app rollback, restore the previous service unit and restart the service. Retain migration 010 and all newer user work; do not overwrite the database with the pre-deployment snapshot.
