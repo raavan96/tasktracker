@@ -172,6 +172,7 @@ assert.equal((await rows('SELECT assignee_id FROM tasks WHERE id=$1',[rt]))[0].a
 await as(admin);await rows("SELECT set_member_active($1,true,'Returned to team')",[member]);
 await as(member);assert.ok((await rows('SELECT * FROM tasks WHERE id=$1',[rt])).length);
 await as(admin);assert.ok((await rows('SELECT * FROM member_events WHERE member_id=$1',[member])).length>=3);
+await as(null);await db.exec('SET SESSION AUTHORIZATION tasktracker_runtime');await assert.rejects(()=>rows('DELETE FROM auth.users WHERE id=$1',[member]));await db.exec('RESET SESSION AUTHORIZATION');
 console.log('Release 3: creator review, no self-approval, stale decisions, required reasons, immutable submissions, lifecycle/session revocation, inactive RLS, protected admins, and reassignment passed.');
 
 await db.close();

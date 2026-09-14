@@ -44,7 +44,7 @@ CREATE FUNCTION public.lifecycle_lock() RETURNS trigger LANGUAGE plpgsql AS $$ B
 CREATE TRIGGER a_lifecycle_lock BEFORE UPDATE OR DELETE ON public.profiles FOR EACH STATEMENT EXECUTE FUNCTION public.lifecycle_lock();
 CREATE TRIGGER a_lifecycle_lock BEFORE UPDATE OR DELETE ON auth.users FOR EACH STATEMENT EXECUTE FUNCTION public.lifecycle_lock();
 CREATE FUNCTION public.profile_lifecycle_guard() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN
- IF TG_OP='DELETE' AND auth.uid() IS NOT NULL THEN RAISE EXCEPTION 'Deactivate the member to preserve their history'; END IF;
+ IF TG_OP='DELETE' AND (auth.uid() IS NOT NULL OR session_user='tasktracker_runtime') THEN RAISE EXCEPTION 'Deactivate the member to preserve their history'; END IF;
  IF TG_OP='UPDATE' THEN
   IF new.is_active IS DISTINCT FROM public.member_active(new.id) THEN RAISE EXCEPTION 'Use the deactivate or reactivate action'; END IF;
   IF new.role IS DISTINCT FROM old.role THEN
@@ -56,7 +56,7 @@ CREATE FUNCTION public.profile_lifecycle_guard() RETURNS trigger LANGUAGE plpgsq
 END $$;
 CREATE TRIGGER profile_lifecycle_guard BEFORE UPDATE OR DELETE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.profile_lifecycle_guard();
 CREATE FUNCTION public.auth_lifecycle_guard() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN
- IF TG_OP='DELETE' AND auth.uid() IS NOT NULL THEN RAISE EXCEPTION 'Deactivate the member to preserve their history'; END IF;
+ IF TG_OP='DELETE' AND (auth.uid() IS NOT NULL OR session_user='tasktracker_runtime') THEN RAISE EXCEPTION 'Deactivate the member to preserve their history'; END IF;
  IF TG_OP='UPDATE' AND new.disabled IS DISTINCT FROM old.disabled THEN
   IF auth.uid() IS NOT NULL AND (NOT public.is_admin() OR old.id=auth.uid()) THEN RAISE EXCEPTION 'Another active admin is required'; END IF;
   IF new.disabled AND EXISTS(SELECT 1 FROM profiles WHERE id=old.id AND role='admin') AND NOT EXISTS(SELECT 1 FROM profiles p JOIN auth.users u ON u.id=p.id WHERE p.id<>old.id AND p.role='admin' AND NOT u.disabled) THEN RAISE EXCEPTION 'Keep at least one active admin'; END IF;
