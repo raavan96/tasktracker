@@ -44,18 +44,20 @@ export async function updateTask(taskId: string, projectId: string, formData: Fo
   if (parsed.data.status === 'done' && !access.isAdmin && access.taskStatus !== 'done') return { error: 'Submit for review. Only admins approve completion.' };
   const assignmentError = await checkAssignee(access.supabase, projectId, parsed.data.assignee_id);
   if (assignmentError) return { error: assignmentError };
-  const { data, error } = await access.supabase.from('tasks').update(parsed.data).eq('id', taskId).eq('project_id', projectId).select('id').single();
-  if (error || !data) return { error: error?.message || 'The task could not be updated. Refresh and try again.' };
+  const version=Number(formData.get('reviewVersion'));if(!formData.has('reviewVersion')||!Number.isSafeInteger(version)||version<0)return {error:'This task changed. Load the latest version before editing.'};
+  const { data, error } = await access.supabase.from('tasks').update(parsed.data).eq('id', taskId).eq('project_id', projectId).eq('review_version',version).select('id').single();
+  if (error || !data) return { error: error?.message&&!error.message.includes('Record not found')?error.message:'This task changed or access was removed. Your draft is kept; load the latest version before retrying.' };
   refreshTasks(projectId);
   return { success: true };
 }
 
-export async function updateTaskStatus(taskId: string, projectId: string, newStatus: TaskStatus) {
+export async function updateTaskStatus(taskId: string, projectId: string, newStatus: TaskStatus, version?:number) {
+  if(version===undefined||!Number.isSafeInteger(version)||version<0)return {error:'This task changed. Load the latest version before updating.'};
   if (!['todo', 'in_progress', 'blocked', 'in_review', 'done'].includes(newStatus)) return { error: 'Choose a valid status.' };
   const access = await taskAccess(taskId, projectId, 'status');
   if (access.error) return { error: access.error };
   if (newStatus === 'done' || newStatus === 'in_review') return { error: 'Use the task’s Review section to submit or approve.' };
-  const { data, error } = await access.supabase.from('tasks').update({ status: newStatus }).eq('id', taskId).eq('project_id', projectId).select('id').single();
+  const { data, error } = await access.supabase.from('tasks').update({ status: newStatus }).eq('id', taskId).eq('project_id', projectId).eq('review_version',version).select('id').single();
   if (error || !data) return { error: error?.message || 'The status could not be updated.' };
   refreshTasks(projectId);
   return { success: true };

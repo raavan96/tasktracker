@@ -42,7 +42,7 @@ export default function MyTasksClient({
   async function handleQuickStatusChange(taskId: string, projectId: string, newStatus: TaskStatus) {
     setPendingId(taskId); setError('');
     try {
-      const result = await updateTaskStatus(taskId, projectId, newStatus);
+      const result = await updateTaskStatus(taskId, projectId, newStatus, Number(tasks.find(t=>t.id===taskId)?.review_version));
       if (result.error) setError(result.error);
     } catch { setError('The status could not be saved. Please try again.'); }
     finally { setPendingId(null); }

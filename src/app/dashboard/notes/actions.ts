@@ -31,12 +31,13 @@ export async function updateNote(noteId: string, projectId: string, formData: Fo
   const title = (formData.get('title') as string)?.trim();
   const content = (formData.get('content') as string)?.trim();
 
-  const { error } = await supabase
+  const version=String(formData.get('updatedAt')||'');if(!version)return {error:'This note changed. Load the latest version.'};
+  const { data, error } = await supabase
     .from('project_notes')
     .update({ title, content })
-    .eq('id', noteId);
+    .eq('id', noteId).eq('project_id',projectId).eq('updated_at',version).select('id').single();
 
-  if (error) return { error: error.message };
+  if(error||!data)return {error:'This note changed or access was removed. Reload before editing.'};
 
   revalidatePath(`/dashboard/projects/${projectId}`);
   return { success: true };

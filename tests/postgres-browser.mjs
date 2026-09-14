@@ -121,7 +121,7 @@ try{
   await admin.getByRole('button',{name:/^Updates \(/}).click();
   await expect(admin.getByRole('heading',{name:'Task history',exact:true})).toBeVisible();
   assert.equal(await admin.evaluate(()=>{
-    const notes=document.querySelector('input[aria-label="Write a task update"]');
+    const notes=document.querySelector('textarea[aria-label="Write a task update"]');
     const history=[...document.querySelectorAll('h3')].find(el=>el.textContent==='Task history');
     return !!(notes.compareDocumentPosition(history)&Node.DOCUMENT_POSITION_FOLLOWING);
   }),true);
@@ -130,7 +130,7 @@ try{
   await expect(member.getByText('Created by Staging 0',{exact:true}).last()).toBeVisible();
   await member.getByLabel('Task attachment').setInputFiles({name:'proof.txt',mimeType:'text/plain',buffer:Buffer.from('Synthetic task attachment')});
   await member.getByRole('button',{name:'Upload file',exact:true}).click();
-  await expect(member.getByRole('button',{name:/proof.txt/})).toBeVisible();
+  await expect(member.getByRole('button',{name:/^proof.txt/})).toBeVisible();
   const attachment=(await db.query('SELECT id FROM task_attachments')).rows[0].id;
   const download=await contexts[1].request.get(base+'/api/attachments/'+attachment);assert.equal(download.status(),200);assert.equal(await download.text(),'Synthetic task attachment');
   assert.equal((await contexts[2].request.get(base+'/api/attachments/'+attachment)).status(),404);
@@ -252,6 +252,46 @@ try{
   assert.equal(Number((await db.query("SELECT count(*) FROM profiles WHERE role='admin' AND is_active")).rows[0].count),1);
   await db.query("UPDATE profiles SET role='admin' WHERE id=$1",[users[0].id]);
   console.log('Real PostgreSQL concurrency: one winning approval per task version; competing admin demotions preserve an active administrator.');
+
+  // Release 4: synthetic collaboration, discovery, reporting and scale.
+  const r4project=projectURL.split('/').pop();
+  const r4task=(await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_id,due_date,recurrence) VALUES($1,'Discovery specimen',$2,$3,current_date+1,'weekly') RETURNING id",[r4project,users[0].id,users[3].id])).rows[0].id;
+  await admin.goto(projectURL+'?task='+r4task+'&discussion=true');
+  await admin.getByLabel('Write a task update').fill('Please check @Staging 3');
+  await admin.getByRole('button',{name:'Mention Staging 3',exact:true}).click();
+  await admin.getByRole('button',{name:'Post update',exact:true}).click();
+  await expect(admin.getByRole('button',{name:'Edit remark',exact:true})).toBeVisible();
+  await admin.getByRole('button',{name:'Edit remark',exact:true}).click();
+  await admin.getByLabel('Write a task update').fill('Discovery remark revised');
+  await admin.getByRole('button',{name:'Save remark',exact:true}).click();
+  await expect(admin.getByText('Discovery remark revised',{exact:true})).toBeVisible();
+  await admin.getByRole('button',{name:'Edit history',exact:true}).click();
+  await expect(admin.getByRole('heading',{name:'Previous remark versions'})).toBeVisible();
+  assert.equal(Number((await db.query("SELECT count(*) FROM notifications WHERE user_id=$1 AND task_id=$2 AND dedupe_key LIKE 'mention:%'",[users[3].id,r4task])).rows[0].count),1);
+  await admin.goto(projectURL+'?task='+r4task);
+  await admin.getByText('Edit future occurrences',{exact:true}).click();
+  await admin.getByLabel('Future task title',{exact:true}).fill('Next specimen');
+  await admin.getByLabel('Pause schedule',{exact:true}).check();
+  await admin.getByRole('button',{name:'Preview future schedule',exact:true}).click();
+  await admin.getByRole('button',{name:'Confirm future schedule',exact:true}).click();
+  await expect.poll(async()=>(await db.query('SELECT paused FROM task_schedules WHERE task_id=$1',[r4task])).rows[0].paused).toBe(true);
+  assert.equal((await db.query('SELECT title FROM tasks WHERE id=$1',[r4task])).rows[0].title,'Discovery specimen');
+  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII=','base64');
+  await admin.getByLabel('Task attachment').setInputFiles({name:'preview.png',mimeType:'image/png',buffer:png});
+  await admin.getByRole('button',{name:'Upload file',exact:true}).click();
+  await expect.poll(async()=>Number((await db.query('SELECT count(*) FROM task_attachments WHERE task_id=$1',[r4task])).rows[0].count)).toBe(1);
+  const previewId=(await db.query('SELECT id FROM task_attachments WHERE task_id=$1',[r4task])).rows[0].id;
+  const previewResponse=await contexts[0].request.get(base+'/api/attachments/'+previewId+'?preview=1');assert.equal(previewResponse.status(),200);assert.equal(previewResponse.headers()['content-type'],'image/png');assert.equal((await contexts[2].request.get(base+'/api/attachments/'+previewId+'?preview=1')).status(),404);
+  await admin.goto(base+'/dashboard/search?q=Discovery');await expect(admin.getByText('Discovery specimen',{exact:true}).first()).toBeVisible();await expect(admin.getByText('Discovery remark revised',{exact:true})).toBeVisible();
+  await outsider.goto(base+'/dashboard/search?q=Discovery');await expect(outsider.getByText('No accessible results match these words.',{exact:true})).toBeVisible();
+  await admin.goto(base+'/dashboard/reports');await expect(admin.getByRole('heading',{level:1})).toBeVisible();assert.equal((await contexts[0].request.get(base+'/api/reports/export?from=2020-01-01&to=2029-12-31')).status(),200);
+  await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_id,due_date) SELECT $1,'Scale specimen '||lpad(n::text,4,'0'),$2,$3,current_date+(n%30) FROM generate_series(1,1000)n",[r4project,users[0].id,users[3].id]);
+  await admin.goto(base+'/dashboard/tasks?q=Scale&sort=title');await expect(admin.getByText('1000 matching tasks',{exact:false})).toBeVisible();await expect(admin.locator('tbody tr')).toHaveCount(25);
+  const first=await admin.locator('tbody tr').first().innerText();await admin.getByRole('button',{name:'Next',exact:true}).click();await expect(admin.getByText('Page 2 of 40',{exact:true})).toBeVisible();assert.notEqual(await admin.locator('tbody tr').first().innerText(),first);
+  const allDownload=admin.waitForEvent('download');await admin.getByRole('button',{name:'Export CSV',exact:true}).click();const exported=await allDownload;const stream=await exported.createReadStream();let csv='';for await(const chunk of stream)csv+=chunk;assert.equal((csv.match(/Scale specimen/g)||[]).length,1000);
+  for(const width of [375,430]){await admin.setViewportSize({width,height:932});await expect.poll(()=>admin.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);}
+  const timings=await Promise.all(pages.map(async p=>{const start=Date.now();await p.goto(base+'/dashboard/search?q=Scale');return Date.now()-start;}));console.log('Release 4 eight-session search timings (ms): '+JSON.stringify(timings));
+  console.log('Release 4 browser: own remark editing/history, one mention alert, private search, schedule pause/future-only template, content-sniffed private preview, reports/export, 1,000 task pagination/full CSV and 375/430px overflow checks passed.');
 
   assert.equal(external.length,0,'Staging must not contact Supabase');
   console.log('Eight browser logins, private project, task assignment, local upload/download, outsider denial, review and admin approval passed against PostgreSQL 16.');

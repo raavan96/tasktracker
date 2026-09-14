@@ -7,7 +7,7 @@ import type { Member } from '@/lib/task-types';
 export default async function ProjectDetailPage({
   params, searchParams,
 }: {
-  params: Promise<{ id: string }>; searchParams: Promise<{ task?: string }>;
+  params: Promise<{ id: string }>; searchParams: Promise<{ task?: string; discussion?:string }>;
 }) {
   const { id } = await params;
   const supabase = await createClient();
@@ -41,7 +41,7 @@ export default async function ProjectDetailPage({
     supabase.from('tasks').select(`
       *,
       assignee:profiles!tasks_assignee_id_fkey(id, full_name, email, is_active),
-      task_comments(*, author:profiles!task_comments_author_id_fkey(id, full_name, email, is_active))
+      task_comments(count)
     `).eq('project_id', id).order('created_at', { ascending: false }),
     supabase.from('project_notes')
       .select('*, author:profiles!project_notes_author_id_fkey(id, full_name, email, is_active)')
@@ -62,9 +62,9 @@ export default async function ProjectDetailPage({
 
   return (
     <ProjectView
-      today={todayKey()} initialTaskId={(await searchParams).task || null}
+      today={todayKey()} initialTaskId={(await searchParams).task || null} initialDiscussion={(await searchParams).discussion==='true'}
       project={{...project, creator: creators.get(project.created_by) || null}}
-      tasks={(tasks || []).map(task => ({...task, creator: creators.get(task.created_by) || null}))}
+      tasks={(tasks || []).map(task => ({...task,comment_count:task.task_comments?.[0]?.count||0,task_comments:[], creator: creators.get(task.created_by) || null}))}
       notes={notes || []}
       members={projectMembers}
       allWorkspaceUsers={allUsers || []}

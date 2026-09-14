@@ -2,7 +2,7 @@ export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'in_review' | 'don
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type Member = { id: string; full_name: string | null; email: string; is_active?: boolean; role?: string };
 export type Task = {
-  review_version?: number; updated_at?: string; is_archived?: boolean; completed_at?: string | null; archived_at?: string | null; restored_at?: string | null;
+  comment_count?:number; review_version?: number; updated_at?: string; is_archived?: boolean; completed_at?: string | null; archived_at?: string | null; restored_at?: string | null;
   id: string; project_id: string; title: string; description: string | null;
   assignee_id: string | null; created_by: string; status: TaskStatus; priority: TaskPriority;
   creator?: Pick<Member, 'full_name' | 'email'> | null;

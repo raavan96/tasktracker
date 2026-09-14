@@ -10,7 +10,7 @@ export default function TaskForm({ task, draft, members, busy, onSubmit, onCance
   const field = 'mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm';
   return <form onSubmit={onSubmit} className="task-edit-form space-y-5">
     <fieldset disabled={busy} className="space-y-5 disabled:opacity-70">
-      <label className="block text-sm font-medium">Title <span className="text-red-600">*</span>
+      <input type="hidden" name="reviewVersion" value={task?.review_version??0}/><label className="block text-sm font-medium">Title <span className="text-red-600">*</span>
         <input name="title" required maxLength={200} defaultValue={draft?.title ?? (task?.title)} placeholder="What needs to be done?" className={field} />
       </label>
       <label className="block text-sm font-medium">Description
@@ -41,10 +41,11 @@ export default function TaskForm({ task, draft, members, busy, onSubmit, onCance
           </select>
         </label>
       </div>
-      <label className="block text-sm font-medium">Repeat
-        <select name="recurrence" defaultValue={draft?.recurrence ?? (task?.recurrence || 'none')} className={field}><option value="none">Does not repeat</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select>
+      {task?<><input type="hidden" name="recurrence" value={task.recurrence||'none'}/><p className="text-xs text-gray-500">This edits the current task. Use Recurring schedule → Edit future occurrences to change future assignments.</p></>:<>      <label className="block text-sm font-medium">Repeat
+        <select name="recurrence" defaultValue={draft?.recurrence ?? 'none'} className={field}><option value="none">Does not repeat</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select>
         <span className="block mt-1 text-xs text-gray-500">Creates the next task on its due date; checklist items are copied unchecked.</span>
       </label>
+</>}
     </fieldset>
     <div className="task-form-actions flex justify-end gap-3 border-t border-slate-200 pt-5">
       <button type="button" onClick={e => { const dialog=e.currentTarget.closest('dialog'); const closeButton=dialog?.querySelector<HTMLButtonElement>('[aria-label="Close dialog"]'); if(closeButton) closeButton.click(); else onCancel(); }} disabled={busy} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm">Cancel</button>

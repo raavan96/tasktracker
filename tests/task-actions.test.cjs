@@ -19,7 +19,7 @@ function load(filename, mocks) {
 const types = load('src/lib/task-types.ts', {});
 function form(values = {}) {
   const data = new FormData();
-  for (const [k,v] of Object.entries({ title: 'Review launch', description: 'Confirm details', priority: 'high', status: 'todo', assigneeId: '', dueDate: '', ...values })) data.set(k,v);
+  for (const [k,v] of Object.entries({ title: 'Review launch', description: 'Confirm details', priority: 'high', status: 'todo', assigneeId: '', dueDate: '', reviewVersion:'0', ...values })) data.set(k,v);
   return data;
 }
 function setup({ user = { id: 'admin' }, role = 'admin', member = true, assignee = true, task = { id: 'task', created_by: 'creator', assignee_id: 'member' }, writeError = null, zeroRows = false, archived = false } = {}) {
@@ -73,18 +73,18 @@ test('assignees must belong to the target project', async () => {
 test('successful edit persists all fields, scopes by project, and refreshes all task views', async () => {
   const t = setup(); const result = await t.actions.updateTask('task','project',form({title:'  Revised task  ',status:'blocked',dueDate:'2026-10-01'}));
   assert.equal(result.success,true); assert.equal(t.writes[0].payload.title,'Revised task'); assert.equal(t.writes[0].payload.status,'blocked');
-  assert.deepEqual(t.writes[0].filters,[['id','task'],['project_id','project']]);
+  assert.deepEqual(t.writes[0].filters,[['id','task'],['project_id','project'],['review_version',0]]);
   assert.deepEqual(t.invalidated,['/dashboard/projects/project','/dashboard/my-tasks','/dashboard']);
 });
 test('assignee may update status but cannot rewrite another creator’s task', async () => {
   const t = setup({user:{id:'member'},role:'member'});
   assert.ok((await t.actions.updateTask('task','project',form())).error);
-  assert.equal((await t.actions.updateTaskStatus('task','project','in_progress')).success,true);
-  assert.ok((await t.actions.updateTaskStatus('task','project','done')).error); assert.equal(t.writes.length,1);
+  assert.equal((await t.actions.updateTaskStatus('task','project','in_progress',0)).success,true);
+  assert.ok((await t.actions.updateTaskStatus('task','project','done',0)).error); assert.equal(t.writes.length,1);
 });
 test('missing tasks and writes rejected by RLS never return success', async () => {
   const missing=setup({task:null}); assert.ok((await missing.actions.updateTask('task','project',form())).error); assert.equal(missing.writes.length,0);
-  const rejected=setup({zeroRows:true}); assert.ok((await rejected.actions.updateTaskStatus('task','project','done')).error); assert.equal(rejected.invalidated.length,0);
+  const rejected=setup({zeroRows:true}); assert.ok((await rejected.actions.updateTaskStatus('task','project','done',0)).error); assert.equal(rejected.invalidated.length,0);
 });
 test('database failures are returned to the form', async () => {
   const t=setup({writeError:{message:'Permission denied'}}); assert.equal((await t.actions.createTask('project',form())).error,'Permission denied'); assert.equal(t.invalidated.length,0);

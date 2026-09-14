@@ -40,11 +40,12 @@ export async function updateProject(projectId: string, formData: FormData) {
   if (access.error) return { error: access.error };
   const name = String(formData.get('name') || '').trim();
   if (!name || name.length > 200) return { error: 'Enter a project name between 1 and 200 characters.' };
+  const version=String(formData.get('updatedAt')||'');if(!version)return {error:'This project changed. Load the latest version.'};
   const { data, error } = await access.supabase.from('projects').update({ name,
     description: String(formData.get('description') || '').trim(),
     is_private: formData.get('is_private') !== 'false',
-  }).eq('id', projectId).select('id').single();
-  if (error || !data) return { error: error?.message || 'Project could not be updated.' };
+  }).eq('id', projectId).eq('updated_at',version).select('id').single();
+  if (error || !data) return { error: 'This project changed or access was removed. Your draft is kept; load the latest version.' };
   revalidatePath(`/dashboard/projects/${projectId}`); revalidatePath('/dashboard');
   return { success: true };
 }

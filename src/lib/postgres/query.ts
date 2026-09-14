@@ -52,12 +52,14 @@ function projection(table: string, fields: string, alias: string, depth=0): stri
 export class Query implements PromiseLike<unknown> {
   private fields='*'; private operation='select'; private values: Record<string,unknown> = {};
   private filters: [string,unknown][]=[];private sort?: [string,boolean,boolean];private maximum?: number;
+  private offset=0;
   private cardinality='many';private head=false;private count=false;private returning=false;
   constructor(private table: string,private run: Run){if(!tables.has(table))throw new Error('Unsupported table');}
   select(fields='*',options?: {head?:boolean;count?:string}) {this.fields=fields.replace(/\s+/g,' ').trim();this.head=!!options?.head;this.count=!!options?.count;this.returning=true;return this;}
   eq(column:string,value:unknown){this.filters.push([column,value]);return this;}
   order(column:string,options?:{ascending?:boolean;nullsFirst?:boolean}){this.sort=[column,options?.ascending!==false,options?.nullsFirst===true];return this;}
   limit(n:number){if(!Number.isInteger(n)||n<0||n>10000)throw new Error('Invalid limit');this.maximum=n;return this;}
+  range(from:number,to:number){if(!Number.isInteger(from)||from<0||!Number.isInteger(to)||to<from||to-from>=10000)throw new Error('Invalid range');this.offset=from;this.maximum=to-from+1;return this;}
   single(){this.cardinality='one';return this;}
   maybeSingle(){this.cardinality='optional';return this;}
   insert(values:Record<string,unknown>){this.operation='insert';this.values=values;return this;}
@@ -87,7 +89,7 @@ export class Query implements PromiseLike<unknown> {
         } else sql=`DELETE FROM ${source} t${clause}`;
         prefix=`WITH changed AS (${sql} RETURNING *) `;source='changed';
       }
-      const result=await db.query(`${prefix}SELECT ${projection(this.table,this.fields,'t')} AS row FROM ${source} t${this.operation==='select'?clause:''}${this.sort?` ORDER BY t.${id(this.sort[0])} ${this.sort[1]?'ASC':'DESC'} NULLS ${this.sort[2]?'FIRST':'LAST'}`:''}${this.maximum!==undefined?` LIMIT ${this.maximum}`:''}`,args);
+      const result=await db.query(`${prefix}SELECT ${projection(this.table,this.fields,'t')} AS row FROM ${source} t${this.operation==='select'?clause:''}${this.sort?` ORDER BY t.${id(this.sort[0])} ${this.sort[1]?'ASC':'DESC'} NULLS ${this.sort[2]?'FIRST':'LAST'},t.id` : ''}${this.maximum!==undefined?` LIMIT ${this.maximum}`:''}${this.offset?` OFFSET ${this.offset}`:''}`,args);
       const rows=result.rows.map(r=>r.row);
       if(this.cardinality==='one'&&rows.length!==1 || this.cardinality==='optional'&&rows.length>1)throw new Error('Record not found or access denied.');
       return {data:this.head||this.operation!=='select'&&!this.returning?null:this.cardinality==='many'?rows:rows[0]||null,error:null,count:this.count?rows.length:null};
