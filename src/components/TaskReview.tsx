@@ -2,11 +2,11 @@
 import {useState} from 'react';
 import {reviewTask} from '@/app/dashboard/tasks/review';
 import type {Task} from '@/lib/task-types';
-export default function TaskReview({task,userId,isAdmin,readOnly,reviewEnabled}:{task:Task;userId:string;isAdmin:boolean;readOnly:boolean;reviewEnabled:boolean}){
+export default function TaskReview({task,userId,isAdmin,readOnly,reviewEnabled,onBusyChange}:{task:Task;userId:string;isAdmin:boolean;readOnly:boolean;reviewEnabled:boolean;onBusyChange?:(busy:boolean)=>void}){
  const [reason,setReason]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const reviewer=(isAdmin||(reviewEnabled&&task.created_by===userId))&&task.assignee_id!==userId;
  const submitter=isAdmin||task.assignee_id===userId;
- async function run(action:string){setBusy(true);setError('');try{const r=await reviewTask(task.id,task.project_id,Number(task.review_version||0),action,reason);if(r.error)setError(r.error);else setReason('');}catch{setError('Could not confirm the review. Refresh and try again.');}finally{setBusy(false);}}
+ async function run(action:string){setBusy(true);onBusyChange?.(true);setError('');try{const r=await reviewTask(task.id,task.project_id,Number(task.review_version||0),action,reason);if(r.error)setError(r.error);else setReason('');}catch{setError('Could not confirm the review. Refresh and try again.');}finally{setBusy(false);onBusyChange?.(false);}}
  return <section className="my-4 rounded-xl border bg-surface p-4 space-y-3" aria-label="Task review"><h3 className="font-semibold">Review</h3><p className="text-sm text-gray-500">{reviewEnabled?'The task creator or an admin can review delegated work.':'An admin can review delegated work.'} You cannot approve a task assigned to yourself.</p>{task.assignee?.is_active===false&&<p className="text-sm text-orange-700">The assignee is inactive. Ask an admin to reassign this work.</p>}
  {error&&<p role="alert" className="text-sm text-red-700">{error}</p>}
  {(task.status==='in_review'||task.status==='done')&&!readOnly&&<form onSubmit={e=>e.preventDefault()}><label className="block text-sm">Review feedback / reason<textarea value={reason} onChange={e=>setReason(e.target.value)} maxLength={2000} className="mt-1 w-full rounded-lg border p-3" placeholder="Required when requesting changes, withdrawing or reopening."/></label></form>}

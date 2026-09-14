@@ -51,7 +51,7 @@ export function localAuth(){return {
   admin:{
     createUser:({email,password,user_metadata}:{email:string;password:string;user_metadata:{full_name:string}})=>wrap(async()=>{
       const caller=await assertAdmin();const passwordHash=await hashPassword(password);const db=await pool().connect();
-      try{await db.query('BEGIN');await db.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[caller.id]);await db.query('SELECT public.assert_active()');if(!(await db.query('SELECT public.is_admin() allowed')).rows[0].allowed)throw new Error('Admin privileges required.');await db.query('SET LOCAL ROLE service_role');const {rows}=await db.query('INSERT INTO auth.users(id,email,password_hash,raw_user_meta_data) VALUES(gen_random_uuid(),$1,$2,$3) RETURNING id,email',[email,passwordHash,user_metadata]);
+      try{await db.query('BEGIN');await db.query('SELECT pg_advisory_xact_lock(90261007)');await db.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[caller.id]);await db.query('SELECT public.assert_active()');if(!(await db.query('SELECT public.is_admin() allowed')).rows[0].allowed)throw new Error('Admin privileges required.');await db.query('SET LOCAL ROLE service_role');const {rows}=await db.query('INSERT INTO auth.users(id,email,password_hash,raw_user_meta_data) VALUES(gen_random_uuid(),$1,$2,$3) RETURNING id,email',[email,passwordHash,user_metadata]);
         await db.query('INSERT INTO profiles(id,email,full_name) VALUES($1,$2,$3)',[rows[0].id,email,user_metadata.full_name]);await db.query('COMMIT');return {user:rows[0]};
       }catch(error){await db.query('ROLLBACK');throw error;}finally{db.release();}
     }),

@@ -467,7 +467,7 @@ export default function ProjectView({
               ))}
             </div>
 
-            <TaskReview key={selectedTask.id} task={selectedTask} userId={currentUserId} isAdmin={isAdmin} reviewEnabled={reviewEnabled} readOnly={taskReadOnly || (!isAdmin&&!members.some(m=>m.id===currentUserId))}/>
+            <TaskReview key={selectedTask.id} task={selectedTask} userId={currentUserId} isAdmin={isAdmin} reviewEnabled={reviewEnabled} onBusyChange={setIsSubmitting} readOnly={taskReadOnly || (!isAdmin&&!members.some(m=>m.id===currentUserId))}/>
             {selectedTask.description && (
               <div className="py-3 text-sm text-gray-700 border-b">
                 {selectedTask.description}

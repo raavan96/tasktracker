@@ -64,7 +64,7 @@ export default function UserManagementClient({
   }
 
   async function handleRoleChange(userId: string, newRole: 'admin' | 'member') {
-    if(!window.confirm(`Change this member’s role to ${newRole}? This changes workspace access.`))return;
+    if(!window.confirm(`Change ${users.find(u=>u.id===userId)?.full_name||'this member'} from ${users.find(u=>u.id===userId)?.role} to ${newRole}? ${newRole==='admin'?'Admins can manage all projects and members.':'Admin access will be removed.'}`))return;
     setPendingActionId(userId);
     setFeedback(null);
     try { const res = await updateUserRole(userId, newRole);

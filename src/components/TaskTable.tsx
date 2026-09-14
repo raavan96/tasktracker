@@ -2,7 +2,7 @@
 import { useUrlState } from '@/lib/use-url-state';
 import Link from 'next/link';
 import { deadlineLabel, initials, makeCsv, matchesSummary, summaryFilters } from '@/lib/task-presentation';
-export type TableTask = { assignee_id?: string|null; id: string; project_id: string; title: string; status: string; priority: string; due_date: string | null; assignee?: { full_name: string | null; email: string } | null; creator?: { full_name: string | null; email: string } | null; project?: { name: string } | null };
+export type TableTask = { assignee_id?: string|null; id: string; project_id: string; title: string; status: string; priority: string; due_date: string | null; assignee?: { is_active?: boolean; full_name: string | null; email: string } | null; creator?: { full_name: string | null; email: string } | null; project?: { name: string } | null };
 export default function TaskTable({ tasks, today, onOpen }: { tasks: TableTask[]; today: string; onOpen?: (id: string) => void; initialSummary?: string }) {
   const [creatorColumn,setCreatorColumn]=useUrlState<string>('creator','off',{allowed:['off','on'],remember:'creator-column'});
   const showCreator=creatorColumn==='on';

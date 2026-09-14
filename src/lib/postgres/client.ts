@@ -7,7 +7,7 @@ import { localStorage } from './storage';
 // Keep the existing server callers stable during staging. The compatibility
 // boundary is internal; unsupported operations have no fallback to Supabase.
 export function createLocalClient(privileged=false):SupabaseClient {
-  const run:Run=async work=>{const user=privileged?await assertAdmin():await currentUser();if(!user)throw new Error('Please sign in again.');return transaction(user.id,work,privileged);};
+  const run:Run=async work=>{const user=privileged?await assertAdmin():await currentUser();if(!user)throw new Error('Please sign in again.');return transaction(user.id,async db=>{if(privileged){await db.query('SELECT pg_advisory_xact_lock(90261007)');await db.query('SELECT public.assert_active()');if(!(await db.query('SELECT public.is_admin() allowed')).rows[0].allowed)throw new Error('Admin privileges required.');}return work(db);},privileged);};
   const local={auth:localAuth(),from:(table:string)=>new Query(table,run),storage:localStorage(run),
     rpc:async(name:string,args:Record<string,unknown>)=>{
       try {
