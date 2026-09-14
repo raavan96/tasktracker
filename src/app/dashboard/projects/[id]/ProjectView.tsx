@@ -12,6 +12,7 @@ import { deadlineLabel, initials } from '@/lib/task-presentation';
 import DeleteConfirmation from '@/components/DeleteConfirmation';
 import Modal from '@/components/Modal';
 import ActionsMenu from '@/components/ActionsMenu';
+import SegmentedControl from '@/components/SegmentedControl';
 import {useUrlState} from '@/lib/use-url-state';
 import TaskReview from '@/components/TaskReview';
 import TaskForm from '@/components/TaskForm';
@@ -203,7 +204,7 @@ export default function ProjectView({
         </div>
       </div>
 
-      {activeTab==='tasks'&&!project.is_archived&&<div className="flex flex-wrap items-center gap-3"><label className="text-sm">Task visibility <select className="ml-2 rounded-lg border p-2" value={showArchived?'archived':'active'} onChange={e=>setShowArchived(e.target.value==='archived')}><option value="active">Active tasks</option><option value="archived">Archived tasks</option></select></label><ArchiveAction kind="task" id={project.id} bulk/></div>}
+      {activeTab==='tasks'&&!project.is_archived&&<div className="flex flex-wrap items-center gap-3"><SegmentedControl label="Task visibility" value={showArchived?'archived':'active'} onChange={v=>setShowArchived(v==='archived')} options={[{value:'active',label:'Active tasks'},{value:'archived',label:'Archived tasks'}]}/><ArchiveAction kind="task" id={project.id} bulk/></div>}
       {/* TAB 1: TASKS BOARD */}
       {activeTab === 'tasks' && <div className="task-view-switch" role="group" aria-label="Task view">
         <span className={`task-view-indicator ${view === 'table' ? 'is-table' : ''}`} aria-hidden="true" />
