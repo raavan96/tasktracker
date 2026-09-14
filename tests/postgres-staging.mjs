@@ -201,4 +201,15 @@ await as(owner);await assert.rejects(()=>rows("UPDATE tasks SET recurrence='week
 await as(outsider);assert.equal((await rows('SELECT * FROM task_schedules WHERE task_id=$1',[scheduleTask])).length,0);await assert.rejects(()=>rows("SELECT save_task_schedule($1,2,'Forbidden','','low',NULL,'daily',current_date+1,NULL,false)",[scheduleTask]));
 console.log('Release 4 database: versioned remarks, mention validation/deduplication, private edit history, approval snapshots, archived reporting, future-only schedules, pause/end dates, recurrence retry safety and privacy passed.');
 
+const dataExports={};let dataActor=admin;
+new Function('exports','require',ts.transpileModule(read('src/lib/workspace-data.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(dataExports,name=>{
+ if(name==='server-only')return {};if(name==='./postgres/auth')return {currentUser:async()=>({id:dataActor})};if(name==='./postgres/db')return {transaction:async(id,work)=>{await as(id);return work(db);}};throw new Error('Unexpected dependency '+name);
+});
+const report=await dataExports.reportData({from:'2020-01-01',to:'2029-12-31'});assert.ok(report.items.length);assert.ok(report.trend.length);assert.ok(report.items.some(x=>x.task_id===rt&&x.archived));
+dataActor=outsider;assert.equal((await dataExports.reportData({from:'2020-01-01',to:'2029-12-31'})).total,0);
+dataActor=admin;assert.ok((await dataExports.searchWorkspace('Revised',true)).items.length);dataActor=outsider;assert.equal((await dataExports.searchWorkspace('Revised',true)).total,0);
+await as(owner);await rows("INSERT INTO tasks(project_id,title,created_by) SELECT $1,'Scale check '||lpad(n::text,4,'0'),$2 FROM generate_series(1,1000)n",[rp,owner]);
+dataActor=owner;const scalePage=await dataExports.taskPage({q:'Scale check',sort:'title'});assert.equal(scalePage.total,1000);assert.equal(scalePage.items.length,25);const scaleNext=await dataExports.taskPage({q:'Scale check',sort:'title',page:2});assert.equal(scaleNext.items.length,25);assert.ok(!scaleNext.items.some(t=>scalePage.items.some(x=>x.id===t.id)));assert.equal((await dataExports.taskPage({q:'Scale check'},true)).items.length,1000);dataActor=outsider;assert.equal((await dataExports.taskPage({q:'Scale check'})).total,0);
+console.log('Release 4 query integration: actual report/trend SQL, archived completion visibility, full-text search privacy, 1,000 rows with stable pages and complete exports passed.');
+
 await db.close();
