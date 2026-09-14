@@ -1,6 +1,7 @@
+import {assignedIds} from '@/lib/task-types';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
-import { FolderKanban, Users, CheckCircle2 } from 'lucide-react';
+import ProjectCollection from '@/components/ProjectCollection';
 import TaskSummary from '@/components/TaskSummary';
 import { todayKey, matchesSummary, deadlineLabel } from '@/lib/task-presentation';
 import CreateProjectModal from './CreateProjectModal';
@@ -21,7 +22,7 @@ export default async function DashboardPage({searchParams}:{searchParams:Promise
   const [{ data: projects, error: projectsError }, { data: allUsers, error: usersError },{data:reviewPolicy}] = await Promise.all([
     supabase.from('projects').select(`
       id, name, description, is_archived, created_at, created_by,
-      project_members(count), tasks(id, title, created_by, assignee_id, status, due_date, is_archived)
+      project_members(count), tasks(id, title, created_by, assignee_id,assignee_ids, status, due_date, is_archived)
     `).order('created_at', { ascending: false }),
     supabase.from('profiles').select('id, full_name, email, is_active').order('full_name'),
     supabase.from('review_settings').select('enabled').single(),
@@ -29,7 +30,7 @@ export default async function DashboardPage({searchParams}:{searchParams:Promise
 
   if(projectsError||usersError)throw new Error('The workspace could not load. Please retry.');
   const today=todayKey();
-  const attention=(projects||[]).filter(p=>!p.is_archived).flatMap(p=>(p.tasks||[]).filter(t=>!t.is_archived).map(t=>({...t,projectId:p.id,projectName:p.name}))).filter(t=>((isAdmin||(reviewPolicy?.enabled&&t.created_by===user?.id))&&t.assignee_id!==user?.id&&t.status==='in_review')||(t.assignee_id===user?.id&&['overdue','today','blocked'].some(f=>matchesSummary(t,f,today)))).sort((a,b)=>(a.due_date||'9999').localeCompare(b.due_date||'9999'));
+  const attention=(projects||[]).filter(p=>!p.is_archived).flatMap(p=>(p.tasks||[]).filter(t=>!t.is_archived).map(t=>({...t,projectId:p.id,projectName:p.name}))).filter(t=>((isAdmin||(reviewPolicy?.enabled&&t.created_by===user?.id))&&!assignedIds(t).includes(user?.id||'')&&t.status==='in_review')||(assignedIds(t).includes(user?.id||'')&&['overdue','today','blocked'].some(f=>matchesSummary(t,f,today)))).sort((a,b)=>(a.due_date||'9999').localeCompare(b.due_date||'9999'));
   const creators = new Map((allUsers || []).map(person => [person.id, person]));
 
   return (
@@ -48,74 +49,7 @@ export default async function DashboardPage({searchParams}:{searchParams:Promise
       <TaskSummary tasks={(projects || []).filter(p => !p.is_archived).flatMap(p => (p.tasks || []).filter(t=>!t.is_archived))} today={todayKey()} />
       <section aria-label="Needs my attention" className="rounded-xl border bg-surface p-5"><h2 className="text-lg font-semibold">Needs my attention</h2><p className="mt-1 text-sm text-gray-500">Your overdue, due today and blocked tasks{', plus work you can review'}.</p><div className="mt-4 divide-y">{attention.slice(0,8).map(task=><Link key={task.id} href={`/dashboard/projects/${task.projectId}?task=${task.id}`} className="flex flex-wrap justify-between gap-2 py-3 text-sm"><span><strong>{task.title}</strong><span className="block text-gray-500">{task.projectName}</span></span><span className="text-blue-600">{task.status==='in_review'?'Awaiting review':task.status==='blocked'?'Blocked':deadlineLabel(task.due_date,task.status,today)}</span></Link>)}{!attention.length&&<p className="py-3 text-sm text-gray-500">No urgent actions right now.</p>}</div>{attention.length>8&&<Link className="text-sm text-blue-600 underline" href="/dashboard/tasks">Review all tasks</Link>}</section>
       <nav className="flex gap-3" aria-label="Project visibility"><Link className="rounded-lg border px-4 py-2" aria-current={!archived?'page':undefined} href="/dashboard">Active projects</Link><Link className="rounded-lg border px-4 py-2" href="/dashboard/archive">Archived projects</Link></nav>
-      {/* Projects Grid */}
-      {(!projects || projects.filter(p=>p.is_archived===archived).length === 0) ? (
-        <div className="text-center py-16 bg-surface border border-gray-200 rounded-xl">
-          <FolderKanban className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <h3 className="text-base font-semibold text-gray-900">No projects found</h3>
-          <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
-            {isAdmin 
-              ? 'Get started by creating your first team project above.'
-              : 'You have not been assigned to any active projects yet.'}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.filter(p=>p.is_archived===archived).map((project) => {
-            const memberCount = project.project_members?.[0]?.count || 0;
-            const totalTasks = project.tasks?.length || 0;
-            const completedTasks = project.tasks?.filter((t) => t.status === 'done').length || 0;
-            const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-            return (
-              <Link
-                key={project.id}
-                href={`/dashboard/projects/${project.id}`}
-                className={`project-card block bg-surface rounded-xl border p-6 hover:shadow-md transition ${
-                  project.is_archived ? 'opacity-60 border-dashed border-gray-300' : 'border-gray-200'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900 truncate">{project.name}</h2>
-                  {project.is_archived && (
-                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-medium">
-                      Archived
-                    </span>
-                  )}
-                </div>
-
-                <p className="text-sm text-gray-500 mt-2 line-clamp-2 h-10">
-                  {project.description || 'No description provided.'}
-                </p>
-
-                <p className="mt-3 text-xs text-gray-500 break-words">Created by {creators.get(project.created_by)?.full_name || creators.get(project.created_by)?.email || 'Unavailable'}</p>
-                {/* Progress bar */}
-                <div className="mt-6">
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <span>Progress</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                  <span className="flex items-center">
-                    <Users className="w-4 h-4 mr-1 text-gray-400" /> {memberCount} members
-                  </span>
-                  <span className="flex items-center">
-                    <CheckCircle2 className="w-4 h-4 mr-1 text-gray-400" /> {completedTasks}/{totalTasks} tasks
-                  </span>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      )}
+      <ProjectCollection projects={(projects||[]).filter(p=>p.is_archived===archived).map(p=>({id:p.id,name:p.name,description:p.description,created_at:p.created_at,creator:creators.get(p.created_by)?.full_name||creators.get(p.created_by)?.email||'Unavailable',memberCount:p.project_members?.[0]?.count||0,totalTasks:p.tasks?.length||0,completedTasks:p.tasks?.filter(t=>t.status==='done').length||0}))}/>
     </div>
   );
 }

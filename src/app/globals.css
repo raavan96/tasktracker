@@ -293,3 +293,6 @@ body {
 :root:not([data-theme="dark"]) .task-dialog { background: linear-gradient(155deg, #fff, #f4f8fc 50%); border-color: #cad9e8; }
 :root:not([data-theme="dark"]) button[aria-pressed="true"]:not(.bg-blue-600) { background: #dceff5; color: #12617d; border-color: #99c5d7; }
 :root:not([data-theme="dark"]) details[open] > summary { color: #12617d; }
+
+:root [data-project-view="list"] .project-card,
+:root [data-project-view="grid"][data-grid-size="small"] .project-card { padding: 1rem; }

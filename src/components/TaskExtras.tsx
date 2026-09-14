@@ -12,7 +12,7 @@ export default function TaskExtras({ task, tasks, members, canEdit, onBusyChange
   const load=useCallback(async()=>{const result=await getTaskExtras(task.id,task.project_id);setData(result);setHistoryPage(0);},[task.id,task.project_id]);
   useEffect(()=>{let active=true; getTaskExtras(task.id,task.project_id).then(result=>{if(active){setData(result);setHistoryPage(0);}}).catch(()=>{if(active)setError('Task details could not load.');});return()=>{active=false};},[task.id,task.project_id,task.status]);
   async function run(action:()=>Promise<{error?:string}>) {setBusy(true);setError('');try{const result=await action();if(result.error){setError(result.error);return false;}await load();return true;}catch{setError('Could not save. Please retry.');return false;}finally{setBusy(false);}}
-  function value(field:string,text:string|null){if(!text)return 'None';if(field==='assignee_id')return members.find(m=>m.id===text)?.full_name || members.find(m=>m.id===text)?.email || 'Former member';return text.replaceAll('_',' ');}
+  function value(field:string,text:string|null){if(!text)return 'None';if(field==='assignees')return text.split(',').map(id=>members.find(m=>m.id===id)?.full_name||members.find(m=>m.id===id)?.email||'Former member').join(', ');if(field==='assignee_id')return members.find(m=>m.id===text)?.full_name || members.find(m=>m.id===text)?.email || 'Former member';return text.replaceAll('_',' ');}
   if(!data&&error)return <p role="alert" className="py-4 text-sm text-red-700">{error}</p>;
   if(!data)return <p role="status" className="py-4 text-sm text-gray-500">Loading checklist and history…</p>;
   if(data.error)return <p role="alert" className="py-4 text-sm text-red-700">{data.error}</p>;

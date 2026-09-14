@@ -1,5 +1,7 @@
 'use client';
 
+import AssigneePicker from './AssigneePicker';
+import {assignedIds} from '@/lib/task-types';
 import type { Member, Task } from '@/lib/task-types';
 
 export default function TaskForm({ task, draft, members, busy, onSubmit, onCancel, onManageTeam }: {
@@ -17,13 +19,7 @@ export default function TaskForm({ task, draft, members, busy, onSubmit, onCance
         <textarea name="description" rows={3} defaultValue={draft?.description ?? (task?.description || '')} placeholder="Add context, expected outcome, or useful links…" className={field} />
       </label>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <label className="block text-sm font-medium">Assignee
-          <select name="assigneeId" defaultValue={draft?.assigneeId ?? (task?.assignee_id || '')} className={field}>
-            <option value="">Unassigned</option>
-            {task?.assignee_id && !members.some(m => m.id === task.assignee_id) && <option value={task.assignee_id}>{task.assignee?.full_name||task.assignee?.email||'Previous assignee'}{task.assignee?.is_active===false?' · Inactive (current assignment)':''}</option>}
-            {members.map(member => <option key={member.id} value={member.id}>{member.full_name || member.email}</option>)}
-          </select>
-        </label>
+        <AssigneePicker members={members} initial={draft?.assigneeIds?JSON.parse(draft.assigneeIds):task?assignedIds(task):[]} />
         <label className="block text-sm font-medium">Priority
           <select name="priority" defaultValue={draft?.priority ?? (task?.priority || 'medium')} className={field}>
             <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="urgent">Urgent</option>

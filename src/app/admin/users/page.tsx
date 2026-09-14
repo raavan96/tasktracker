@@ -1,3 +1,4 @@
+import {assignedIds} from '@/lib/task-types';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import UserManagementClient from './UserManagementClient';
@@ -23,10 +24,10 @@ export default async function AdminUsersPage() {
     .select('*')
     .order('created_at', { ascending: false });
 
-  const { data: assignments, error: assignmentError } = await supabase.from('tasks').select('assignee_id,status,project:projects!inner(is_archived)').eq('project.is_archived',false).eq('is_archived',false);
+  const { data: assignments, error: assignmentError } = await supabase.from('tasks').select('assignee_id,assignee_ids,status,project:projects!inner(is_archived)').eq('project.is_archived',false).eq('is_archived',false);
   if (assignmentError) throw new Error('Assigned task counts could not load. Please retry.');
   const counts: Record<string,number> = {};
-  for (const task of assignments || []) if (task.assignee_id && task.status !== 'done') counts[task.assignee_id] = (counts[task.assignee_id] || 0) + 1;
+  for (const task of assignments || []) if(task.status!=='done') for(const id of assignedIds(task))counts[id]=(counts[id]||0)+1;
 
   const {data:reviewSettings,error:policyError}=await supabase.from('review_settings').select('enabled').single();
   if(policyError)throw new Error('Review policy could not load.');

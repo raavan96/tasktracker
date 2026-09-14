@@ -40,7 +40,7 @@ export default async function ProjectDetailPage({
       .eq('project_id', id),
     supabase.from('tasks').select(`
       *,
-      assignee:profiles!tasks_assignee_id_fkey(id, full_name, email, is_active),
+      assignees:assigned_people(id,full_name,email,is_active), assignee:profiles!tasks_assignee_id_fkey(id, full_name, email, is_active),
       task_comments(count)
     `).eq('project_id', id).order('created_at', { ascending: false }),
     supabase.from('project_notes')

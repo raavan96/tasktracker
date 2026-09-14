@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { projectAccess, checkAssignee } from '@/lib/project-access';
-import { parseTaskForm, type TaskStatus } from '@/lib/task-types';
+import { parseTaskForm, assignedIds, type TaskStatus } from '@/lib/task-types';
 
 function refreshTasks(projectId: string) {
   revalidatePath(`/dashboard/projects/${projectId}`);
@@ -13,10 +13,10 @@ function refreshTasks(projectId: string) {
 async function taskAccess(taskId: string, projectId: string, mode: 'edit' | 'status' | 'comment' | 'delete') {
   const access = await projectAccess(projectId);
   if (access.error) return access;
-  const { data: task } = await access.supabase.from('tasks').select('id, created_by, assignee_id, status, is_archived').eq('id', taskId).eq('project_id', projectId).single();
+  const { data: task } = await access.supabase.from('tasks').select('id, created_by, assignee_id, assignee_ids, status, is_archived').eq('id', taskId).eq('project_id', projectId).single();
   if (task?.is_archived) return {error:'Restore this task before making changes.'} as const;
   if (!task) return { error: 'Task not found or access denied.' } as const;
-  if (mode !== 'comment' && !access.isAdmin && task.created_by !== access.user.id && !(mode === 'status' && task.assignee_id === access.user.id)) {
+  if (mode !== 'comment' && !access.isAdmin && task.created_by !== access.user.id && !(mode === 'status' && assignedIds(task).includes(access.user.id))) {
     return { error: mode === 'status' ? 'Only an admin, the task creator, or the assignee can change this status.' : 'Only an admin or the task creator can edit or delete this task.' } as const;
   }
   return { ...access, taskStatus: task.status };
@@ -28,7 +28,7 @@ export async function createTask(projectId: string, formData: FormData) {
   const parsed = parseTaskForm(formData);
   if (parsed.error) return { error: parsed.error };
   if (parsed.data.status === 'done' && !access.isAdmin) return { error: 'Submit for review. Only admins approve completion.' };
-  const assignmentError = await checkAssignee(access.supabase, projectId, parsed.data.assignee_id);
+  const assignmentError = (await Promise.all(parsed.data.assignee_ids.map(id=>checkAssignee(access.supabase, projectId, id)))).find(Boolean);
   if (assignmentError) return { error: assignmentError };
   const { data, error } = await access.supabase.from('tasks').insert({ ...parsed.data, project_id: projectId, created_by: access.user.id }).select('id').single();
   if (error || !data) return { error: error?.message || 'The task could not be created.' };
@@ -42,7 +42,7 @@ export async function updateTask(taskId: string, projectId: string, formData: Fo
   const parsed = parseTaskForm(formData);
   if (parsed.error) return { error: parsed.error };
   if (parsed.data.status === 'done' && !access.isAdmin && access.taskStatus !== 'done') return { error: 'Submit for review. Only admins approve completion.' };
-  const assignmentError = await checkAssignee(access.supabase, projectId, parsed.data.assignee_id);
+  const assignmentError = (await Promise.all(parsed.data.assignee_ids.map(id=>checkAssignee(access.supabase, projectId, id)))).find(Boolean);
   if (assignmentError) return { error: assignmentError };
   const version=Number(formData.get('reviewVersion'));if(!formData.has('reviewVersion')||!Number.isSafeInteger(version)||version<0)return {error:'This task changed. Load the latest version before editing.'};
   const { data, error } = await access.supabase.from('tasks').update(parsed.data).eq('id', taskId).eq('project_id', projectId).eq('review_version',version).select('id').single();

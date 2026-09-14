@@ -55,7 +55,7 @@ try{
   await admin.getByRole('button',{name:'Resume task draft'}).click();
   await expect(admin.locator('dialog input[name=title]')).toHaveValue('Retained task draft');
   await admin.locator('dialog input[name=title]').fill('Verify local task workflow');
-  await admin.locator('dialog select[name=assigneeId]').selectOption(users[1].id);
+  await admin.getByRole('checkbox',{name:'Staging 1',exact:true}).check();
   await admin.getByRole('button',{name:'Create task',exact:true}).click();
   await expect.poll(async()=>Number((await db.query('SELECT count(*) FROM tasks')).rows[0].count)).toBe(1);
   const task=(await db.query('SELECT id FROM tasks')).rows[0].id;
@@ -136,7 +136,7 @@ try{
   assert.equal((await contexts[2].request.get(base+'/api/attachments/'+attachment)).status(),404);
   await member.getByRole('button',{name:'Ready for review',exact:true}).click();
   await expect.poll(async()=>(await db.query('SELECT status FROM tasks WHERE id=$1',[task])).rows[0].status).toBe('in_review');
-  await expect(member.getByRole('button',{name:'Approve & complete',exact:true})).toBeDisabled();
+  await expect(member.getByRole('button',{name:'Approve & complete',exact:true})).toBeHidden();
   await admin.goto(projectURL+'?task='+task);
   await admin.getByRole('button',{name:'Approve & complete',exact:true}).click();
   await expect.poll(async()=>(await db.query('SELECT status FROM tasks WHERE id=$1',[task])).rows[0].status).toBe('done');
@@ -213,7 +213,7 @@ try{
   await admin.goto(projectURL+'?task='+delegated);
   await admin.getByRole('button',{name:'Ready for review',exact:true}).click();
   await expect.poll(async()=>(await db.query('SELECT status FROM tasks WHERE id=$1',[delegated])).rows[0].status).toBe('in_review');
-  await expect(admin.getByRole('button',{name:'Approve & complete',exact:true})).toBeDisabled();
+  await expect(admin.getByRole('button',{name:'Approve & complete',exact:true})).toBeHidden();
   await member.goto(projectURL+'?task='+delegated);
   await expect(member.getByRole('button',{name:'Request changes',exact:true})).toBeDisabled();
   await member.getByLabel('Review feedback / reason').fill('Please revise the deliverable');
@@ -286,6 +286,17 @@ try{
   await admin.goto(base+'/dashboard/search?q=Discovery');await expect(admin.getByText('Discovery specimen',{exact:true}).first()).toBeVisible();await expect(admin.getByText('Discovery remark revised',{exact:true})).toBeVisible();
   await outsider.goto(base+'/dashboard/search?q=Discovery');await expect(outsider.getByText('No accessible results match these words.',{exact:true})).toBeVisible();
   await admin.goto(base+'/dashboard/reports');await expect(admin.getByRole('heading',{name:'Completion events by week'})).toBeVisible();const reportExport=await contexts[0].request.get(base+'/api/reports/export?from=2020-01-01&to=2029-12-31');assert.equal(reportExport.status(),200,await reportExport.text());
+  // Project preferences and shared-task review controls.
+  await admin.goto(base+'/dashboard');await admin.getByRole('button',{name:'List view',exact:true}).click();await expect(admin.locator('[data-project-view="list"]')).toBeVisible();await admin.reload();await expect(admin.getByRole('button',{name:'List view',exact:true})).toHaveAttribute('aria-pressed','true');
+  await admin.getByRole('button',{name:'Grid view',exact:true}).click();await admin.getByLabel('Grid size',{exact:true}).selectOption('small');await expect(admin.locator('[data-grid-size="small"]')).toBeVisible();await admin.getByLabel('Sort projects',{exact:true}).selectOption('name');await admin.reload();await expect(admin.getByLabel('Grid size',{exact:true})).toHaveValue('small');await expect(admin.getByLabel('Sort projects',{exact:true})).toHaveValue('name');
+  await admin.goto(projectURL);await admin.getByRole('button',{name:'Add Task',exact:true}).click();await admin.locator('dialog input[name=title]').fill('Shared browser assignment');await admin.getByRole('checkbox',{name:'Staging 1',exact:true}).check();await admin.getByRole('checkbox',{name:'Staging 3',exact:true}).check();await admin.getByRole('button',{name:'Create task',exact:true}).click();
+  const shared=await expect.poll(async()=>(await db.query("SELECT id FROM tasks WHERE title='Shared browser assignment'")).rows[0]?.id).toBeTruthy();void shared;
+  const sharedId=(await db.query("SELECT id FROM tasks WHERE title='Shared browser assignment'")).rows[0].id;
+  for(const n of [1,3]){await pages[n].goto(base+'/dashboard/my-tasks');await expect(pages[n].getByRole('link',{name:'Shared browser assignment',exact:true})).toBeVisible();}
+  await pages[3].goto(projectURL+'?task='+sharedId);await expect(pages[3].getByRole('button',{name:'Approve & complete',exact:true})).toBeHidden();await pages[3].getByRole('button',{name:'Ready for review',exact:true}).click();await expect.poll(async()=>(await db.query('SELECT status FROM tasks WHERE id=$1',[sharedId])).rows[0].status).toBe('in_review');await expect(pages[3].getByRole('button',{name:'Ready for review',exact:true})).toBeHidden();await expect(pages[3].getByRole('button',{name:'Approve & complete',exact:true})).toBeHidden();
+  await admin.goto(projectURL+'?task='+sharedId);await expect(admin.getByRole('button',{name:'Approve & complete',exact:true})).toBeVisible();await admin.getByRole('button',{name:'Approve & complete',exact:true}).click();await expect.poll(async()=>(await db.query('SELECT status FROM tasks WHERE id=$1',[sharedId])).rows[0].status).toBe('done');await expect(admin.getByRole('button',{name:'Approve & complete',exact:true})).toBeHidden();
+  console.log('Project list/grid sizes/sorting preferences and multi-assignee picker, My Tasks and permitted-only review buttons passed.');
+
   await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_id,due_date) SELECT $1,'Scale specimen '||lpad(n::text,4,'0'),$2,$3,current_date+(n%30) FROM generate_series(1,1000)n",[r4project,users[0].id,users[3].id]);
   await admin.goto(base+'/dashboard/tasks?q=Scale&sort=title');await expect(admin.getByText('1000 matching tasks',{exact:false})).toBeVisible();await expect(admin.locator('tbody tr')).toHaveCount(25);
   const first=await admin.locator('tbody tr').first().innerText();await admin.getByRole('button',{name:'Next',exact:true}).click();await expect(admin.getByText('Page 2 of 40',{exact:true})).toBeVisible();assert.notEqual(await admin.locator('tbody tr').first().innerText(),first);

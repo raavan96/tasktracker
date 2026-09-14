@@ -1,14 +1,16 @@
 'use server';
+import {assignedIds} from '@/lib/task-types';
+
 import { createClient } from '@/lib/supabase/server';
 import { projectAccess } from '@/lib/project-access';
 import { revalidatePath } from 'next/cache';
 async function accessTask(taskId: string, projectId: string) {
   const access = await projectAccess(projectId);
   if (access.error) return access;
-  const { data } = await access.supabase.from('tasks').select('id,created_by,assignee_id,is_archived').eq('id',taskId).eq('project_id',projectId).single();
+  const { data } = await access.supabase.from('tasks').select('id,created_by,assignee_id,assignee_ids,is_archived').eq('id',taskId).eq('project_id',projectId).single();
   if(data?.is_archived)return {error:'Restore this task before making changes.'} as const;
   if (!data) return { error: 'Task not found.' } as const;
-  if (!access.isAdmin && data.created_by !== access.user.id && data.assignee_id !== access.user.id) return { error: 'Only the creator, assignee, or admin can change task details.' } as const;
+  if (!access.isAdmin && data.created_by !== access.user.id && !assignedIds(data).includes(access.user.id)) return { error: 'Only the creator, assignee, or admin can change task details.' } as const;
   return access;
 }
 export async function getTaskExtras(taskId: string, projectId: string, historyPage=0) {

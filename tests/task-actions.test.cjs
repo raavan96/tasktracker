@@ -139,3 +139,8 @@ test('unversioned task edits and status changes cannot overwrite newer work',asy
  const t=setup();const missing=form();missing.delete('reviewVersion');assert.ok((await t.actions.updateTask('task','project',missing)).error);assert.ok((await t.actions.updateTaskStatus('task','project','in_progress')).error);assert.equal(t.writes.length,0);
  const stale=setup({zeroRows:true});assert.match((await stale.actions.updateTask('task','project',form())).error,/changed|reload/i);assert.equal(stale.invalidated.length,0);
 });
+
+test('multi-assignee form validates every selected project member',async()=>{
+ const valid=setup();const result=await valid.actions.createTask('project',form({assigneeIds:JSON.stringify(['member','creator'])}));assert.equal(result.success,true);assert.deepEqual(valid.writes[0].payload.assignee_ids,['member','creator']);
+ const invalid=setup({assignee:false});assert.ok((await invalid.actions.createTask('project',form({assigneeIds:JSON.stringify(['outsider'])}))).error);assert.equal(invalid.writes.length,0);
+});

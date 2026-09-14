@@ -3,8 +3,9 @@ import {useEffect,useState,useRef} from 'react';
 import {getTaskPage,exportTasks} from '@/app/dashboard/discovery/actions';
 import { useUrlState } from '@/lib/use-url-state';
 import Link from 'next/link';
+import {assigneeNames} from '@/lib/task-types';
 import { deadlineLabel, initials, makeCsv, summaryFilters } from '@/lib/task-presentation';
-export type TableTask = { assignee_id?: string|null; id: string; project_id: string; title: string; status: string; priority: string; due_date: string | null; assignee?: { is_active?: boolean; full_name: string | null; email: string } | null; creator?: { full_name: string | null; email: string } | null; project?: { name: string } | null };
+export type TableTask = { assignee_ids?:string[];assignees?:import('@/lib/task-types').Member[];assignee_id?: string|null; id: string; project_id: string; title: string; status: string; priority: string; due_date: string | null; assignee?: { is_active?: boolean; full_name: string | null; email: string } | null; creator?: { full_name: string | null; email: string } | null; project?: { name: string } | null };
 export default function TaskTable({ today, onOpen, projectId, archived=false, mine=false }: { tasks?: TableTask[]; projectId?:string; archived?:boolean; mine?:boolean; today: string; onOpen?: (id: string) => void; initialSummary?: string }) {
   const [creatorColumn,setCreatorColumn]=useUrlState<string>('creator','off',{allowed:['off','on'],remember:'creator-column'});
   const showCreator=creatorColumn==='on';
@@ -25,7 +26,7 @@ export default function TaskTable({ today, onOpen, projectId, archived=false, mi
   const filtered=data?.items||[];
   async function download() {setBusy(true);setError('');try{
     const result=await exportTasks(JSON.parse(key));if(result.error){setError(result.error);return;}
-    const csv = makeCsv([['Task', 'Project', 'Assignee', ...(showCreator ? ['Created by'] : []), 'Status', 'Priority', 'Due date'], ...result.items.map(t => [t.title, t.project?.name, t.assignee?.full_name || t.assignee?.email, ...(showCreator ? [t.creator?.full_name || t.creator?.email || 'Unavailable'] : []), t.status, t.priority, t.due_date?.slice(0, 10)])]);
+    const csv = makeCsv([['Task', 'Project', 'Assignee', ...(showCreator ? ['Created by'] : []), 'Status', 'Priority', 'Due date'], ...result.items.map(t => [t.title, t.project?.name, assigneeNames(t), ...(showCreator ? [t.creator?.full_name || t.creator?.email || 'Unavailable'] : []), t.status, t.priority, t.due_date?.slice(0, 10)])]);
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     const a = document.createElement('a'); a.href = url; a.download = 'tasktracker-tasks.csv'; a.click(); URL.revokeObjectURL(url);
   }catch{setError('Export failed. Please retry.');}finally{setBusy(false);}}
@@ -45,7 +46,7 @@ export default function TaskTable({ today, onOpen, projectId, archived=false, mi
       <table className="w-full text-left text-sm"><thead className="bg-gray-50 text-gray-600"><tr>{['Task', 'Assignee', ...(showCreator ? ['Created by'] : []), 'Status', 'Priority', 'Deadline'].map(h => <th key={h} className="p-4 font-medium">{h}</th>)}</tr></thead>
         <tbody>{filtered.map(t => <tr key={t.id} className="border-t border-gray-200 hover:bg-gray-50">
           <td className="p-4 min-w-56">{onOpen ? <button onClick={() => onOpen(t.id)} className="text-left font-semibold text-blue-700">{t.title}</button> : <Link className="font-semibold text-blue-700" href={`/dashboard/projects/${t.project_id}?task=${t.id}`}>{t.title}</Link>}{t.project && <p className="mt-1 text-xs text-gray-500">{t.project.name}</p>}</td>
-          <td className="p-4"><span className="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-xs text-blue-700">{initials(t.assignee?.full_name || t.assignee?.email || '?')}</span>{t.assignee?.full_name || t.assignee?.email || 'Unassigned'}{t.assignee?.is_active===false?' · Inactive':''}</td>
+          <td className="p-4"><span className="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-xs text-blue-700">{initials(assigneeNames(t) || '?')}</span>{assigneeNames(t) || 'Unassigned'}{t.assignee?.is_active===false?' · Inactive':''}</td>
           {showCreator && <td className="p-4">{t.creator?.full_name || t.creator?.email || 'Unavailable'}</td>}
           <td className="p-4 capitalize whitespace-nowrap"><span className="task-status-label" data-status={t.status}>{t.status.replaceAll('_', ' ')}</span></td><td className="p-4 capitalize"><span className="task-priority-label" data-priority={t.priority}>{t.priority}</span></td><td className="p-4 whitespace-nowrap">{deadlineLabel(t.due_date, t.status, today)}</td>
         </tr>)}</tbody></table>

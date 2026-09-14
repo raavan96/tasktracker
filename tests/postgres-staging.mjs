@@ -201,6 +201,7 @@ await as(owner);await assert.rejects(()=>rows("UPDATE tasks SET recurrence='week
 await as(outsider);assert.equal((await rows('SELECT * FROM task_schedules WHERE task_id=$1',[scheduleTask])).length,0);await assert.rejects(()=>rows("SELECT save_task_schedule($1,2,'Forbidden','','low',NULL,'daily',current_date+1,NULL,false)",[scheduleTask]));
 console.log('Release 4 database: versioned remarks, mention validation/deduplication, private edit history, approval snapshots, archived reporting, future-only schedules, pause/end dates, recurrence retry safety and privacy passed.');
 
+await as(null);await db.exec(read('postgres/009_shared_assignments.sql'));
 const dataExports={};let dataActor=admin;
 new Function('exports','require',ts.transpileModule(read('src/lib/workspace-data.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(dataExports,name=>{
  if(name==='server-only')return {};if(name==='./postgres/auth')return {currentUser:async()=>({id:dataActor})};if(name==='./postgres/db')return {transaction:async(id,work)=>{await as(id);return work(db);}};throw new Error('Unexpected dependency '+name);
@@ -211,5 +212,22 @@ dataActor=admin;assert.ok((await dataExports.searchWorkspace('Revised',true)).it
 await as(owner);await rows("INSERT INTO tasks(project_id,title,created_by) SELECT $1,'Scale check '||lpad(n::text,4,'0'),$2 FROM generate_series(1,1000)n",[rp,owner]);
 dataActor=owner;const scalePage=await dataExports.taskPage({q:'Scale check',sort:'title'});assert.equal(scalePage.total,1000);assert.equal(scalePage.items.length,25);const scaleNext=await dataExports.taskPage({q:'Scale check',sort:'title',page:2});assert.equal(scaleNext.items.length,25);assert.ok(!scaleNext.items.some(t=>scalePage.items.some(x=>x.id===t.id)));assert.equal((await dataExports.taskPage({q:'Scale check'},true)).items.length,1000);dataActor=outsider;assert.equal((await dataExports.taskPage({q:'Scale check'})).total,0);
 console.log('Release 4 query integration: actual report/trend SQL, archived completion visibility, full-text search privacy, 1,000 rows with stable pages and complete exports passed.');
+
+await as(owner);const mp=(await rows("SELECT create_workspace_project('Shared assignment QA','',ARRAY[$1::uuid,$2::uuid],true) id",[member,admin]))[0].id;
+const mt=(await rows("INSERT INTO tasks(project_id,title,created_by,assignee_ids,due_date) VALUES($1,'Shared task',$2,ARRAY[$2::uuid,$3::uuid],current_date-1) RETURNING id",[mp,owner,member]))[0].id;
+await assert.rejects(()=>rows('UPDATE tasks SET assignee_ids=ARRAY[$1::uuid] WHERE id=$2',[outsider,mt]));
+await as(member);await rows("UPDATE tasks SET status='in_progress' WHERE id=$1",[mt]);await assert.rejects(()=>rows("UPDATE tasks SET title='Forbidden edit' WHERE id=$1",[mt]));
+dataActor=member;assert.ok((await dataExports.taskPage({mine:true})).items.some(t=>t.id===mt));
+await as(null);await db.exec('SET ROLE service_role');await rows('SELECT run_workspace_automation()');await rows('SELECT run_workspace_automation()');
+assert.equal((await rows("SELECT user_id FROM notifications WHERE task_id=$1 AND dedupe_key LIKE '%:deadline'",[mt])).length,2);
+await as(member);let mv=(await rows('SELECT review_version FROM tasks WHERE id=$1',[mt]))[0].review_version;await rows("SELECT review_task($1,$2,'submit','')",[mt,mv]);
+await as(owner);mv=(await rows('SELECT review_version FROM tasks WHERE id=$1',[mt]))[0].review_version;await assert.rejects(()=>rows("SELECT review_task($1,$2,'approve','')",[mt,mv]));
+await as(admin);await rows("SELECT review_task($1,$2,'approve','')",[mt,mv]);const mf=(await rows('SELECT assignee_ids FROM completion_events WHERE task_id=$1',[mt]))[0];assert.deepEqual(mf.assignee_ids,[owner,member]);
+await as(owner);const sharedAdminTask=(await rows("INSERT INTO tasks(project_id,title,created_by,assignee_ids) VALUES($1,'Assigned admin cannot approve',$2,ARRAY[$3::uuid,$4::uuid]) RETURNING id",[mp,owner,member,admin]))[0].id;
+await as(member);await rows("SELECT review_task($1,0,'submit','')",[sharedAdminTask]);await as(admin);await assert.rejects(()=>rows("SELECT review_task($1,1,'approve','')",[sharedAdminTask]));await as(owner);await rows("SELECT review_task($1,1,'approve','')",[sharedAdminTask]);
+const recur=(await rows("INSERT INTO tasks(project_id,title,created_by,assignee_ids,due_date,recurrence) VALUES($1,'Shared repeating task',$2,ARRAY[$2::uuid,$3::uuid],current_date-1,'daily') RETURNING id",[mp,owner,member]))[0].id;
+await as(null);await db.exec('SET ROLE service_role');await rows('SELECT run_workspace_automation()');await rows('SELECT run_workspace_automation()');assert.deepEqual((await rows('SELECT assignee_ids FROM tasks WHERE recurrence_source=$1 LIMIT 1',[recur]))[0].assignee_ids,[owner,member]);
+await as(owner);await rows('SELECT remove_member_and_reassign_tasks($1,$2,$3)',[mp,member,admin]);assert.deepEqual((await rows('SELECT assignee_ids FROM tasks WHERE id=$1',[recur]))[0].assignee_ids,[owner,admin]);
+console.log('Shared assignment: co-assignee status/submission, creator/admin self-approval denial, per-person My Tasks/reminders, immutable completion group, repeating groups, private assignment validation and member replacement passed.');
 
 await db.close();

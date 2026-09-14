@@ -1,4 +1,5 @@
 'use client';
+import {assignedIds,assigneeNames} from '@/lib/task-types';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -264,7 +265,7 @@ export default function ProjectView({
                       <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-50">
                         <span className="flex items-center text-gray-600">
                           <span className="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-700 font-medium">{initials(task.assignee?.full_name || task.assignee?.email || '?')}</span>
-                          {task.assignee?.full_name || task.assignee?.email || 'Unassigned'}{task.assignee?.is_active===false?' · Inactive':''}
+                          {assigneeNames(task)}{task.assignee?.is_active===false?' · Inactive':''}
                         </span>
                         {(task.comment_count||0) > 0 && (
                           <span className="flex items-center text-gray-400">
@@ -429,7 +430,7 @@ export default function ProjectView({
           {errorNotice}
           <p className="mb-3 text-sm text-gray-500 break-words">Created by {selectedTask.creator?.full_name || selectedTask.creator?.email || 'Unavailable'}</p>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
-            <span>Assigned to <strong>{selectedTask.assignee?.full_name || selectedTask.assignee?.email || 'Unassigned'}</strong>{selectedTask.assignee?.is_active===false?' (Inactive — reassign this task)':''} · <span className="capitalize">{selectedTask.priority} priority</span></span>
+            <span>Assigned to <strong>{assigneeNames(selectedTask)}</strong>{selectedTask.assignee?.is_active===false?' (Inactive — reassign this task)':''} · <span className="capitalize">{selectedTask.priority} priority</span></span>
 
             {!taskReadOnly && (isAdmin || selectedTask.created_by === currentUserId) && <ActionsMenu label="Task actions"><button type="button" disabled={isSubmitting} onClick={() => { if(taskDraft&&!window.confirm('Discard your saved task draft and edit this task?'))return; setTaskDraft(null); setEditingTask(selectedTask); setSelectedTaskId(null); setFeedback(null); setIsTaskModalOpen(true); }} className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"><Pencil className="h-4 w-4" />Edit task</button>{selectedTask.status==='done'&&<ArchiveAction kind="task" id={selectedTask.id} recurring={selectedTask.recurrence!=='none'}/> }<div className="my-2 border-t" /><button type="button" disabled={isSubmitting} onClick={() => { setDeleteTarget({ kind: 'task', id: selectedTask.id, name: selectedTask.title }); setSelectedTaskId(null); setFeedback(null); }} className="flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete task</button></ActionsMenu>}
           </div>
@@ -444,7 +445,7 @@ export default function ProjectView({
                 <button
                   key={st}
                   aria-pressed={selectedTask.status === st}
-                  disabled={taskReadOnly || isSubmitting || (['done','in_review'].includes(selectedTask.status)) || (!isAdmin && selectedTask.created_by !== currentUserId && selectedTask.assignee_id !== currentUserId)}
+                  disabled={taskReadOnly || isSubmitting || (['done','in_review'].includes(selectedTask.status)) || (!isAdmin && selectedTask.created_by !== currentUserId && !assignedIds(selectedTask).includes(currentUserId))}
                   onClick={async () => {
                     await runAction(() => updateTaskStatus(selectedTask.id, project.id, st, Number(selectedTask.review_version)), 'Status updated.');
                   }}
@@ -470,7 +471,7 @@ export default function ProjectView({
             <div hidden={detailTab !== 'updates'}>
             <TaskDiscussion taskId={selectedTask.id} userId={currentUserId} members={members} readOnly={taskReadOnly} onBusyChange={setIsSubmitting}/>
             </div>
-            <TaskExtras onBusyChange={setIsSubmitting} view={detailTab} key={selectedTask.id} task={selectedTask} tasks={allTasks} members={members} canEdit={!taskReadOnly && (isAdmin || selectedTask.created_by === currentUserId || selectedTask.assignee_id === currentUserId)} />
+            <TaskExtras onBusyChange={setIsSubmitting} view={detailTab} key={selectedTask.id} task={selectedTask} tasks={allTasks} members={members} canEdit={!taskReadOnly && (isAdmin || selectedTask.created_by === currentUserId || assignedIds(selectedTask).includes(currentUserId))} />
         </Modal>
       )}
 

@@ -4,12 +4,12 @@ import type { PoolClient } from 'pg';
 export type Run = <T>(work: (db: PoolClient) => Promise<T>) => Promise<T>;
 const tables = new Set(['review_settings','task_reviews','member_events','archive_settings','archive_events','profiles','projects','project_members','tasks','project_notes','task_comments','notifications','task_checklist','task_history','task_dependencies','task_attachments']);
 const id = (value: string) => { if (!/^[a-z_][a-z_0-9]*$/.test(value)) throw new Error('Invalid query identifier'); return `"${value}"`; };
-type Relation = [string, string, string, boolean];
+type Relation = [string, string, string, boolean, boolean?];
 const relations: Record<string, Record<string, Relation>> = {
   task_reviews: {profiles:['profiles','actor_id','id',false]},
   projects: { project_members:['project_members','id','project_id',true], tasks:['tasks','id','project_id',true] },
   project_members: { profiles:['profiles','user_id','id',false] },
-  tasks: { profiles:['profiles','assignee_id','id',false], projects:['projects','project_id','id',false], task_comments:['task_comments','id','task_id',true] },
+  tasks: { assigned_people:['profiles','assignee_ids','id',true,true], profiles:['profiles','assignee_id','id',false], projects:['projects','project_id','id',false], task_comments:['task_comments','id','task_id',true] },
   project_notes: { profiles:['profiles','author_id','id',false] },
   task_comments: { profiles:['profiles','author_id','id',false] },
   task_history: { profiles:['profiles','actor_id','id',false] },
@@ -35,8 +35,8 @@ function projection(table: string, fields: string, alias: string, depth=0): stri
     if(match) {
       const [,rename,related,,inner]=match;
       const rel=relations[table]?.[related];if(!rel)throw new Error('Unsupported relationship');
-      const [target,local,remote,many]=rel, child=`r${depth+1}`;
-      const where=`${child}.${id(remote)}=${alias}.${id(local)}`;
+      const [target,local,remote,many,array]=rel, child=`r${depth+1}`;
+      const where=array?`${child}.${id(remote)}=ANY(${alias}.${id(local)})`:`${child}.${id(remote)}=${alias}.${id(local)}`;
       const expr=inner.trim()==='count'
         ? `(SELECT jsonb_build_array(jsonb_build_object('count',count(*))) FROM public.${id(target)} ${child} WHERE ${where})`
         : many
@@ -51,7 +51,7 @@ function projection(table: string, fields: string, alias: string, depth=0): stri
 }
 export class Query implements PromiseLike<unknown> {
   private fields='*'; private operation='select'; private values: Record<string,unknown> = {};
-  private filters: [string,unknown][]=[];private sort?: [string,boolean,boolean];private maximum?: number;
+  private filters: [string,unknown][]=[];private sort?: [string,boolean,boolean, boolean?];private maximum?: number;
   private offset=0;
   private cardinality='many';private head=false;private count=false;private returning=false;
   constructor(private table: string,private run: Run){if(!tables.has(table))throw new Error('Unsupported table');}
