@@ -26,4 +26,13 @@
 
 ## Verification status
 
-Local lint, TypeScript, unit and PGlite checks are being completed; exact CI/build evidence will be appended after the run. Production has not been changed for Release 5.
+Passed on application commit `18af5c6e4c558191df4874960ab76c3db2e5d96b`:
+
+- Local lint and TypeScript checks; 34 unit tests.
+- PGlite integration across all ten migrations, including actual planning queries/actions under authenticated RLS, private/revoked/inactive access, reset checklists, copied internal dependencies, retry handling and calendar privacy.
+- [Linux build and eight-session PostgreSQL 16 browser workflow](https://github.com/raavan96/tasktracker/actions/runs/34832075700): all steps passed. The Linux artifact is `tasktracker-postgres-staging`; its archive contains the SHA-256 file used at deployment.
+- Browser task/template/project copy flows, multiple assignees, permission denial, excluded attachments, calendar filtering and task-panel navigation.
+- 375px and 430px overflow checks; saved light/dark previews visually reviewed. These are Chromium viewport checks, not certification on physical iPhone Safari.
+- Existing review, member lifecycle, archive, search, reporting, CSV and 1,000-task pagination checks also passed.
+
+Production has not been changed for Release 5. Migration rehearsal, fresh backup and the app switch remain deployment steps. The migration is additive; existing approval and assignment policies remain in force.
