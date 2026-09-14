@@ -183,7 +183,7 @@ body {
 :root[data-theme="dark"] details[open] > summary { color: #a0edfa; }
 @media (min-width: 1280px) {
   :root .workspace-shell { padding-left: 224px; }
-  :root .dark-workspace-sidebar { display: flex; flex-direction: column; position: fixed; inset: 0 auto 0 0; width: 224px; padding: 1.5rem 1rem; z-index: 40; border-right: 1px solid var(--field-border); }
+  :root .dark-workspace-sidebar { display: flex; flex-direction: column; position: fixed; inset: 0 auto 0 0; width: 224px; padding: 1.5rem 1rem; overflow-y: auto; z-index: 40; border-right: 1px solid var(--field-border); }
   :root[data-theme="dark"] .dark-workspace-sidebar { background: linear-gradient(170deg, #111b28, #0c1019 38%); border-right-color: #293140; }
   :root .workspace-brand { padding: .25rem .375rem; font-size: 1rem; }
   :root[data-theme="dark"] .workspace-brand { color: #edf5ff; }
