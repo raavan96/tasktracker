@@ -7,7 +7,7 @@ import { parseTaskForm, type TaskStatus } from '@/lib/task-types';
 function refreshTasks(projectId: string) {
   revalidatePath(`/dashboard/projects/${projectId}`);
   revalidatePath('/dashboard/my-tasks');
-  revalidatePath('/dashboard');
+  revalidatePath('/dashboard','layout');
 }
 
 async function taskAccess(taskId: string, projectId: string, mode: 'edit' | 'status' | 'comment' | 'delete') {
@@ -54,7 +54,7 @@ export async function updateTaskStatus(taskId: string, projectId: string, newSta
   if (!['todo', 'in_progress', 'blocked', 'in_review', 'done'].includes(newStatus)) return { error: 'Choose a valid status.' };
   const access = await taskAccess(taskId, projectId, 'status');
   if (access.error) return { error: access.error };
-  if (newStatus === 'done' && !access.isAdmin) return { error: 'Submit for review. Only admins approve completion.' };
+  if (newStatus === 'done' || newStatus === 'in_review') return { error: 'Use the task’s Review section to submit or approve.' };
   const { data, error } = await access.supabase.from('tasks').update({ status: newStatus }).eq('id', taskId).eq('project_id', projectId).select('id').single();
   if (error || !data) return { error: error?.message || 'The status could not be updated.' };
   refreshTasks(projectId);

@@ -19,7 +19,7 @@ export async function assertAdmin(){
 }
 async function issueSession(userId:string){
   const token=randomBytes(32).toString('hex');
-  await pool().query("INSERT INTO auth.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '7 days')",[digest(token),userId]);
+  await transaction(userId,async db=>{await db.query('SELECT public.assert_active()');await db.query("INSERT INTO auth.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '7 days')",[digest(token),userId]);},true);
   (await cookies()).set(SESSION_COOKIE,token,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',path:'/',maxAge:7*86400});
 }
 async function attempt(email:string){
@@ -50,17 +50,17 @@ export function localAuth(){return {
   updateUser:({password}:{password:string})=>wrap(async()=>{const user=await currentUser();if(!user)throw new Error('Sign in before changing your password.');await replacePassword(user.id,password);await issueSession(user.id);return {user};}),
   admin:{
     createUser:({email,password,user_metadata}:{email:string;password:string;user_metadata:{full_name:string}})=>wrap(async()=>{
-      await assertAdmin();const passwordHash=await hashPassword(password);const db=await pool().connect();
-      try{await db.query('BEGIN');await db.query('SET LOCAL ROLE service_role');const {rows}=await db.query('INSERT INTO auth.users(id,email,password_hash,raw_user_meta_data) VALUES(gen_random_uuid(),$1,$2,$3) RETURNING id,email',[email,passwordHash,user_metadata]);
+      const caller=await assertAdmin();const passwordHash=await hashPassword(password);const db=await pool().connect();
+      try{await db.query('BEGIN');await db.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[caller.id]);await db.query('SELECT public.assert_active()');if(!(await db.query('SELECT public.is_admin() allowed')).rows[0].allowed)throw new Error('Admin privileges required.');await db.query('SET LOCAL ROLE service_role');const {rows}=await db.query('INSERT INTO auth.users(id,email,password_hash,raw_user_meta_data) VALUES(gen_random_uuid(),$1,$2,$3) RETURNING id,email',[email,passwordHash,user_metadata]);
         await db.query('INSERT INTO profiles(id,email,full_name) VALUES($1,$2,$3)',[rows[0].id,email,user_metadata.full_name]);await db.query('COMMIT');return {user:rows[0]};
       }catch(error){await db.query('ROLLBACK');throw error;}finally{db.release();}
     }),
     updateUserById:(id:string,{password}:{password:string})=>wrap(async()=>{await assertAdmin();await replacePassword(id,password);return {user:{id}};}),
-    deleteUser:(id:string)=>wrap(async()=>{const caller=await assertAdmin();if(caller.id===id)throw new Error('You cannot delete your own account.');await pool().query('DELETE FROM auth.users WHERE id=$1',[id]);return {}; }),
+    deleteUser:(id:string)=>wrap(async()=>{void id;await assertAdmin();throw new Error('Deactivate the member to preserve their history.'); }),
   }
 };}
 async function replacePassword(id:string,password:string){
-  const encoded=await hashPassword(password),db=await pool().connect();
-  try {await db.query('BEGIN');const result=await db.query('UPDATE auth.users SET password_hash=$1 WHERE id=$2',[encoded,id]);if(!result.rowCount)throw new Error('Member not found.');await db.query('DELETE FROM auth.sessions WHERE user_id=$1',[id]);await db.query('COMMIT');}
+  const caller=await currentUser();if(!caller)throw new Error('Please sign in again.');const encoded=await hashPassword(password),db=await pool().connect();
+  try {await db.query('BEGIN');await db.query('SELECT pg_advisory_xact_lock(90261007)');await db.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[caller.id]);await db.query('SELECT public.assert_active()');if(caller.id!==id&&!(await db.query('SELECT public.is_admin() allowed')).rows[0].allowed)throw new Error('Admin privileges required.');const result=await db.query('UPDATE auth.users SET password_hash=$1 WHERE id=$2',[encoded,id]);if(!result.rowCount)throw new Error('Member not found.');await db.query('DELETE FROM auth.sessions WHERE user_id=$1',[id]);await db.query('COMMIT');}
   catch(error){await db.query('ROLLBACK');throw error;}finally{db.release();}
 }

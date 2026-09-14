@@ -34,19 +34,20 @@ export default async function ProjectDetailPage({
   if (!project) notFound();
 
   // Independent reads start together after authentication and project visibility checks.
-  const [membersResult, tasksResult, notesResult, usersResult] = await Promise.all([
+  const [membersResult, tasksResult, notesResult, usersResult, reviewResult] = await Promise.all([
     supabase.from('project_members')
-      .select('user_id, joined_at, profiles(id, full_name, email, role)')
+      .select('user_id, joined_at, profiles(id, full_name, email, role, is_active)')
       .eq('project_id', id),
     supabase.from('tasks').select(`
       *,
-      assignee:profiles!tasks_assignee_id_fkey(id, full_name, email),
-      task_comments(*, author:profiles!task_comments_author_id_fkey(id, full_name, email))
+      assignee:profiles!tasks_assignee_id_fkey(id, full_name, email, is_active),
+      task_comments(*, author:profiles!task_comments_author_id_fkey(id, full_name, email, is_active))
     `).eq('project_id', id).order('created_at', { ascending: false }),
     supabase.from('project_notes')
-      .select('*, author:profiles!project_notes_author_id_fkey(id, full_name, email)')
+      .select('*, author:profiles!project_notes_author_id_fkey(id, full_name, email, is_active)')
       .eq('project_id', id).order('created_at', { ascending: false }),
-    supabase.from('profiles').select('id, full_name, email').order('full_name'),
+    supabase.from('profiles').select('id, full_name, email, is_active').order('full_name'),
+    supabase.from('review_settings').select('enabled').single(),
   ]);
   const { data: membersData } = membersResult;
   const { data: tasks } = tasksResult;
@@ -68,7 +69,7 @@ export default async function ProjectDetailPage({
       members={projectMembers}
       allWorkspaceUsers={allUsers || []}
       currentUserId={user.id}
-      isAdmin={isAdmin}
+      isAdmin={isAdmin} reviewEnabled={reviewResult.data?.enabled===true}
     />
   );
 }

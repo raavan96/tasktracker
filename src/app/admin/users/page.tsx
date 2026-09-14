@@ -28,13 +28,15 @@ export default async function AdminUsersPage() {
   const counts: Record<string,number> = {};
   for (const task of assignments || []) if (task.assignee_id && task.status !== 'done') counts[task.assignee_id] = (counts[task.assignee_id] || 0) + 1;
 
+  const {data:reviewSettings,error:policyError}=await supabase.from('review_settings').select('enabled').single();
+  if(policyError)throw new Error('Review policy could not load.');
   return (
     <div className="w-full space-y-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Team Management</h1>
         <p className="text-sm text-gray-500">Create team accounts and reset passwords, manage permissions, and assign roles.</p>
       </div>
-      <UserManagementClient counts={counts} users={profiles || []} currentUserId={user.id} />
+      <UserManagementClient reviewEnabled={!!reviewSettings?.enabled} counts={counts} users={profiles || []} currentUserId={user.id} />
     </div>
   );
 }

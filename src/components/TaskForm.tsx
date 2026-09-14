@@ -2,7 +2,7 @@
 
 import type { Member, Task } from '@/lib/task-types';
 
-export default function TaskForm({ task, draft, members, busy, onSubmit, onCancel, onManageTeam, isAdmin = false }: {
+export default function TaskForm({ task, draft, members, busy, onSubmit, onCancel, onManageTeam }: {
   draft?: Record<string,string>|null; task?: Task | null; members: Member[]; busy: boolean;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   isAdmin?: boolean; onCancel: () => void; onManageTeam?: (draft:Record<string,string>) => void;
@@ -37,7 +37,7 @@ export default function TaskForm({ task, draft, members, busy, onSubmit, onCance
         </label>
         <label className="block text-sm font-medium">Status
           <select name="status" defaultValue={draft?.status ?? (task?.status || 'todo')} className={field}>
-            <option value="todo">To Do</option><option value="in_progress">In Progress</option><option value="blocked">Blocked</option><option value="in_review">Ready for review</option>{(isAdmin || task?.status === 'done') && <option value="done" disabled={!isAdmin}>Completed (approved)</option>}
+            <option value="todo">To Do</option><option value="in_progress">In Progress</option><option value="blocked">Blocked</option>{task?.status==='in_review'&&<option value="in_review">Awaiting review — changes require resubmission</option>}{task?.status==='done'&&<option value="done">Completed — reopen before editing</option>}
           </select>
         </label>
       </div>

@@ -15,7 +15,7 @@ import {
 
 export default function MyTasksClient({
   initialTasks,
-  projects, isAdmin = false,
+  projects,
 }: {
   initialTasks: (Omit<Task, 'task_comments' | 'assignee' | 'created_by'> & { project?: { name: string }; task_comments?: { count: number }[] })[];
   projects: { id: string; name: string }[]; isAdmin?: boolean;
@@ -163,7 +163,7 @@ export default function MyTasksClient({
               <div className="flex items-center space-x-2 self-start sm:self-center">
                 <select
                   aria-label={`Status for ${task.title}`}
-                  disabled={pendingId !== null}
+                  disabled={pendingId !== null || ['in_review','done'].includes(task.status)}
                   value={task.status}
                   onChange={(e) => handleQuickStatusChange(task.id, task.project_id, e.target.value as TaskStatus)}
                   className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border focus:ring-2 focus:ring-blue-500 cursor-pointer ${
@@ -176,7 +176,7 @@ export default function MyTasksClient({
                   <option value="todo">To Do</option>
                   <option value="in_progress">In Progress</option>
                   <option value="blocked">Blocked</option>
-                  <option value="in_review">Ready for review</option><option value="done" disabled={!isAdmin}>Completed (admin approval)</option>
+                  {['in_review','done'].includes(task.status)&&<option value={task.status}>{task.status==='done'?'Completed':'Ready for review'}</option>}
                 </select>
               </div>
             </div>

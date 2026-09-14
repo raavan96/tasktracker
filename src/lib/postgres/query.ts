@@ -2,10 +2,11 @@
 // query syntax is accepted from an HTTP client; values always use parameters.
 import type { PoolClient } from 'pg';
 export type Run = <T>(work: (db: PoolClient) => Promise<T>) => Promise<T>;
-const tables = new Set(['archive_settings','archive_events','profiles','projects','project_members','tasks','project_notes','task_comments','notifications','task_checklist','task_history','task_dependencies','task_attachments']);
+const tables = new Set(['review_settings','task_reviews','member_events','archive_settings','archive_events','profiles','projects','project_members','tasks','project_notes','task_comments','notifications','task_checklist','task_history','task_dependencies','task_attachments']);
 const id = (value: string) => { if (!/^[a-z_][a-z_0-9]*$/.test(value)) throw new Error('Invalid query identifier'); return `"${value}"`; };
 type Relation = [string, string, string, boolean];
 const relations: Record<string, Record<string, Relation>> = {
+  task_reviews: {profiles:['profiles','actor_id','id',false]},
   projects: { project_members:['project_members','id','project_id',true], tasks:['tasks','id','project_id',true] },
   project_members: { profiles:['profiles','user_id','id',false] },
   tasks: { profiles:['profiles','assignee_id','id',false], projects:['projects','project_id','id',false], task_comments:['task_comments','id','task_id',true] },

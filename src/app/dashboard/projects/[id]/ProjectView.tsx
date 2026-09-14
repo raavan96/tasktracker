@@ -12,6 +12,7 @@ import DeleteConfirmation from '@/components/DeleteConfirmation';
 import Modal from '@/components/Modal';
 import ActionsMenu from '@/components/ActionsMenu';
 import {useUrlState} from '@/lib/use-url-state';
+import TaskReview from '@/components/TaskReview';
 import TaskForm from '@/components/TaskForm';
 import type { Task, Member } from '@/lib/task-types';
 import {
@@ -50,11 +51,11 @@ export default function ProjectView({
   members,
   allWorkspaceUsers,
   currentUserId,
-  isAdmin, today, initialTaskId = null,
+  isAdmin, reviewEnabled, today, initialTaskId = null,
 }: {
   project: { creator?: Pick<Member, 'full_name' | 'email'> | null; id: string; name: string; description: string | null; is_archived: boolean; completed_at?:string|null; created_by: string | null; is_private: boolean };
   tasks: Task[]; notes: { id: string; title: string; content: string; author_id: string; updated_at: string; author: Member | null }[];
-  members: Member[]; allWorkspaceUsers: Member[]; currentUserId: string; isAdmin: boolean; today: string; initialTaskId?: string | null;
+  members: Member[]; allWorkspaceUsers: Member[]; currentUserId: string; isAdmin: boolean; reviewEnabled: boolean; today: string; initialTaskId?: string | null;
 }) {
   const router = useRouter();
   const [editingProject, setEditingProject] = useState(false);
@@ -76,7 +77,7 @@ export default function ProjectView({
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [feedback, setFeedback] = useState<{ error?: string; success?: string } | null>(null);
   const [memberSearch,setMemberSearch]=useState('');
-  const availableMembers=allWorkspaceUsers.filter(u=>!members.some(m=>m.id===u.id));
+  const availableMembers=allWorkspaceUsers.filter(u=>u.is_active!==false&&!members.some(m=>m.id===u.id));
   const matchingMembers=availableMembers.filter(u=>`${u.full_name||''} ${u.email}`.toLowerCase().includes(memberSearch.trim().toLowerCase()));
   const [newMemberId, setNewMemberId] = useState('');
   const [commentInput, setCommentInput] = useState('');
@@ -413,7 +414,7 @@ export default function ProjectView({
       {isTaskModalOpen && (
         <Modal side title={editingTask ? 'Edit task' : 'Create new task'} busy={isSubmitting} onClose={() => setIsTaskModalOpen(false)}>
           {errorNotice}
-          <TaskForm draft={taskDraft} isAdmin={isAdmin} task={editingTask} members={members} busy={isSubmitting} onSubmit={handleSaveTask} onCancel={() => setIsTaskModalOpen(false)}
+          <TaskForm draft={taskDraft} isAdmin={isAdmin} task={editingTask} members={members.filter(m=>m.is_active!==false)} busy={isSubmitting} onSubmit={handleSaveTask} onCancel={() => setIsTaskModalOpen(false)}
             onManageTeam={canManage ? draft => { setTaskDraft(draft); setIsTaskModalOpen(false); setActiveTab('members'); } : undefined} />
         </Modal>
       )}
@@ -436,7 +437,7 @@ export default function ProjectView({
           {errorNotice}
           <p className="mb-3 text-sm text-gray-500 break-words">Created by {selectedTask.creator?.full_name || selectedTask.creator?.email || 'Unavailable'}</p>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
-            <span>Assigned to <strong>{selectedTask.assignee?.full_name || selectedTask.assignee?.email || 'Unassigned'}</strong> · <span className="capitalize">{selectedTask.priority} priority</span></span>
+            <span>Assigned to <strong>{selectedTask.assignee?.full_name || selectedTask.assignee?.email || 'Unassigned'}</strong>{selectedTask.assignee?.is_active===false?' (Inactive — reassign this task)':''} · <span className="capitalize">{selectedTask.priority} priority</span></span>
 
             {!taskReadOnly && (isAdmin || selectedTask.created_by === currentUserId) && <ActionsMenu label="Task actions"><button type="button" disabled={isSubmitting} onClick={() => { if(taskDraft&&!window.confirm('Discard your saved task draft and edit this task?'))return; setTaskDraft(null); setEditingTask(selectedTask); setSelectedTaskId(null); setFeedback(null); setIsTaskModalOpen(true); }} className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"><Pencil className="h-4 w-4" />Edit task</button>{selectedTask.status==='done'&&<ArchiveAction kind="task" id={selectedTask.id} recurring={selectedTask.recurrence!=='none'}/> }<div className="my-2 border-t" /><button type="button" disabled={isSubmitting} onClick={() => { setDeleteTarget({ kind: 'task', id: selectedTask.id, name: selectedTask.title }); setSelectedTaskId(null); setFeedback(null); }} className="flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete task</button></ActionsMenu>}
           </div>
@@ -447,11 +448,11 @@ export default function ProjectView({
             {/* Quick Status Bar */}
             <div className="py-3 flex flex-wrap items-center gap-2 border-b border-slate-200 text-xs">
               <span className="font-semibold text-gray-700">Status:</span>
-              {(['todo', 'in_progress', 'blocked', 'in_review', 'done'] as const).map((st) => (
+              {(['todo', 'in_progress', 'blocked'] as const).map((st) => (
                 <button
                   key={st}
                   aria-pressed={selectedTask.status === st}
-                  disabled={taskReadOnly || isSubmitting || (st === 'done' && !isAdmin) || (!isAdmin && selectedTask.created_by !== currentUserId && selectedTask.assignee_id !== currentUserId)}
+                  disabled={taskReadOnly || isSubmitting || (['done','in_review'].includes(selectedTask.status)) || (!isAdmin && selectedTask.created_by !== currentUserId && selectedTask.assignee_id !== currentUserId)}
                   onClick={async () => {
                     await runAction(() => updateTaskStatus(selectedTask.id, project.id, st), 'Status updated.');
                   }}
@@ -461,11 +462,12 @@ export default function ProjectView({
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  {st === 'in_review' ? 'Ready for review' : st === 'done' ? 'Approve & complete' : st === 'in_progress' && selectedTask.status === 'in_review' && isAdmin ? 'Request changes' : st.replace('_', ' ')}
+                  {st.replace('_', ' ')}
                 </button>
               ))}
             </div>
 
+            <TaskReview key={selectedTask.id} task={selectedTask} userId={currentUserId} isAdmin={isAdmin} reviewEnabled={reviewEnabled} readOnly={taskReadOnly || (!isAdmin&&!members.some(m=>m.id===currentUserId))}/>
             {selectedTask.description && (
               <div className="py-3 text-sm text-gray-700 border-b">
                 {selectedTask.description}
@@ -585,7 +587,7 @@ export default function ProjectView({
                     .filter((m: Member) => m.id !== memberToRemove.id)
                     .map((m: Member) => (
                       <option key={m.id} value={m.id}>
-                        {m.full_name || m.email}
+                        {m.full_name || m.email}{m.is_active===false?' · Inactive':''}
                       </option>
                     ))}
                 </select>

@@ -15,14 +15,15 @@ export async function getTaskExtras(taskId: string, projectId: string) {
   const supabase = await createClient();
   const { data: task } = await supabase.from('tasks').select('id').eq('id',taskId).eq('project_id',projectId).single();
   if (!task) return { error: 'Task not found or access denied.' };
-  const [checklist, history, dependencies, attachments] = await Promise.all([
+  const [checklist, history, dependencies, attachments, reviews] = await Promise.all([
     supabase.from('task_checklist').select('*').eq('task_id',taskId).order('created_at'),
     supabase.from('task_history').select('*,actor:profiles(full_name,email)').eq('task_id',taskId).order('created_at',{ascending:false}).limit(100),
     supabase.from('task_dependencies').select('depends_on').eq('task_id',taskId),
     supabase.from('task_attachments').select('*').eq('task_id',taskId).order('created_at'),
+    supabase.from('task_reviews').select('*,actor:profiles(full_name,email)').eq('task_id',taskId).order('created_at',{ascending:false}).limit(100),
   ]);
-  if ([checklist,history,dependencies,attachments].some(r=>r.error)) return {error:'Task details could not load. Check that the workspace migration is installed.'};
-  return { checklist:checklist.data || [], history:history.data || [], dependencies:dependencies.data || [], attachments:attachments.data || [] };
+  if ([checklist,history,dependencies,attachments,reviews].some(r=>r.error)) return {error:'Task details could not load. Check that the workspace migration is installed.'};
+  return { reviews:reviews.data||[], checklist:checklist.data || [], history:history.data || [], dependencies:dependencies.data || [], attachments:attachments.data || [] };
 }
 export async function saveChecklist(taskId:string, projectId:string, title:string, itemId?:string, completed?:boolean) {
   const access=await accessTask(taskId,projectId); if(access.error) return {error:access.error};

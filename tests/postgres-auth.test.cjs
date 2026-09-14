@@ -9,10 +9,10 @@ function load(file,mocks={}){
   const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
   new Function('require','module','exports',code)(name=>name in mocks?mocks[name]:require(name),mod,mod.exports);return mod.exports;
 }
-test('local authentication: login, session storage, member permissions, password reset, expiry, throttling and deletion',async()=>{
+test('local authentication: login, session storage, member permissions, password reset, expiry, throttling and retained accounts',async()=>{
   const db=new PGlite();
   try{
-    for(const f of ['001_base.sql','002_review.sql','003_workspace.sql','004_automation.sql','005_runtime.sql'])await db.exec(fs.readFileSync('postgres/'+f,'utf8'));
+    for(const f of ['001_base.sql','002_review.sql','003_workspace.sql','004_automation.sql','005_runtime.sql','006_archiving.sql','007_people_review.sql'])await db.exec(fs.readFileSync('postgres/'+f,'utf8'));
     const passwords=load('src/lib/postgres/password.ts');
     const encoded=await passwords.hashPassword('Synthetic-password-1');
     assert.ok(!encoded.includes('Synthetic-password-1'));
@@ -24,7 +24,7 @@ test('local authentication: login, session storage, member permissions, password
     const query=async(sql,args)=>{const res=await db.query(sql,args);return {...res,rowCount:res.affectedRows};};
     const connection={query,release(){}};
     const pool={query,connect:async()=>connection};
-    const transaction=async(user,fn)=>{await query('BEGIN');try{await query("SELECT set_config('request.jwt.claim.sub',$1,true)",[user||'']);await query('SET LOCAL ROLE authenticated');const result=await fn(connection);await query('COMMIT');return result;}catch(e){await query('ROLLBACK');throw e;}};
+    const transaction=async(user,fn,privileged=false)=>{await query('BEGIN');try{await query("SELECT set_config('request.jwt.claim.sub',$1,true)",[user||'']);await query(privileged?'SET LOCAL ROLE service_role':'SET LOCAL ROLE authenticated');const result=await fn(connection);await query('COMMIT');return result;}catch(e){await query('ROLLBACK');throw e;}};
     const jar=new Map();let options;
     const cookieAPI={get:name=>jar.has(name)?{value:jar.get(name)}:undefined,set:(name,value,opts)=>{jar.set(name,value);options=opts;},delete:name=>jar.delete(name)};
     const authModule=load('src/lib/postgres/auth.ts',{'server-only':{},'next/headers':{cookies:async()=>cookieAPI},react:{cache:f=>f},'./password':passwords,'./db':{pool:()=>pool,transaction}});
@@ -56,7 +56,7 @@ test('local authentication: login, session storage, member permissions, password
     assert.match((await auth.signInWithPassword({email:'missing@example.com',password:'wrong'})).error.message,/Too many/);
     jar.set(authModule.SESSION_COOKIE,secondAdminCookie);
     assert.ok((await auth.admin.deleteUser(admin)).error);
-    assert.equal((await auth.admin.deleteUser(member)).error,null);
-    assert.equal((await query('SELECT id FROM auth.users WHERE id=$1',[member])).rows.length,0);
+    assert.ok((await auth.admin.deleteUser(member)).error);
+    assert.equal((await query('SELECT id FROM auth.users WHERE id=$1',[member])).rows.length,1);
   }finally{await db.close();}
 });

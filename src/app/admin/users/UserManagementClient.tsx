@@ -1,11 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { createMember, resetMemberPassword, updateMemberDetails, updateUserRole, deleteUser } from '@/app/auth/actions';
+import { createMember, resetMemberPassword, updateMemberDetails, updateUserRole } from '@/app/auth/actions';
+import MemberLifecycle from '@/components/MemberLifecycle';
+import {changeReviewPolicy} from './lifecycle';
 import Modal from '@/components/Modal';
-import { UserPlus, Trash2, Shield, User, Loader2 } from 'lucide-react';
+import { UserPlus, Shield, User, Loader2 } from 'lucide-react';
 
 interface Profile {
+  is_active?: boolean;
   id: string;
   email: string;
   full_name: string | null;
@@ -15,15 +18,18 @@ interface Profile {
 
 export default function UserManagementClient({
   users,
-  currentUserId, counts,
+  currentUserId, counts, reviewEnabled,
 }: {
   users: Profile[];
-  currentUserId: string; counts: Record<string,number>;
+  reviewEnabled: boolean; currentUserId: string; counts: Record<string,number>;
 }) {
+  const [lifecycle,setLifecycle]=useState<Profile|null>(null);
+  const [accountFilter,setAccountFilter]=useState('active');
+  const [policyBusy,setPolicyBusy]=useState(false);
   const [search, setSearch] = useState('');
   const [editMember, setEditMember] = useState<Profile | null>(null);
   const [detailsBusy, setDetailsBusy] = useState(false);
-  const filteredUsers = users.filter(u => `${u.full_name} ${u.email} ${u.job_title || ''} ${u.department || ''}`.toLowerCase().includes(search.toLowerCase()));
+  const filteredUsers = users.filter(u => (accountFilter==='all'||(accountFilter==='inactive'?u.is_active===false:u.is_active!==false)) && `${u.full_name} ${u.email} ${u.job_title || ''} ${u.department || ''}`.toLowerCase().includes(search.toLowerCase()));
   const [isCreating, setIsCreating] = useState(false);
   const [feedback, setFeedback] = useState<{ error?: string; success?: string } | null>(null);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
@@ -58,6 +64,7 @@ export default function UserManagementClient({
   }
 
   async function handleRoleChange(userId: string, newRole: 'admin' | 'member') {
+    if(!window.confirm(`Change this member’s role to ${newRole}? This changes workspace access.`))return;
     setPendingActionId(userId);
     setFeedback(null);
     try { const res = await updateUserRole(userId, newRole);
@@ -67,19 +74,12 @@ export default function UserManagementClient({
     finally { setPendingActionId(null); }
   }
 
-  async function handleDelete(userId: string) {
-    if (!confirm('Are you sure you want to remove this user from the workspace?')) return;
-    setPendingActionId(userId);
-    setFeedback(null);
-    try { const res = await deleteUser(userId);
-    if (res?.error) setFeedback({ error: res.error });
-    else setFeedback({success:'Member updated.'});
-    } catch { setFeedback({error:'The change could not be confirmed. Please refresh and retry.'}); }
-    finally { setPendingActionId(null); }
-  }
 
   return (
     <div className="space-y-8">
+      <section className="rounded-xl border bg-surface p-4 space-y-2"><h2 className="font-semibold">Review policy</h2><p className="text-sm text-gray-500">{reviewEnabled?'Creator or admin approval is enabled. No self-approval.':'Only admins can review. Self-approval is blocked.'}</p><button disabled={policyBusy} className="rounded-lg border px-3 py-2 text-sm" onClick={async()=>{if(!window.confirm(reviewEnabled?'Limit approval to admins? Self-approval will remain blocked.':'Enable creator/admin review with no self-approval?'))return;setPolicyBusy(true);try{const r=await changeReviewPolicy(!reviewEnabled);if(r.error)setFeedback({error:r.error});}catch{setFeedback({error:'Policy change failed.'});}finally{setPolicyBusy(false);}}}>{reviewEnabled?'Use admin-only review':'Enable creator review'}</button></section>
+      {lifecycle&&<MemberLifecycle member={lifecycle} onClose={()=>setLifecycle(null)}/>}
+
       {feedback?.error && (
         <div role="alert" className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md">
           {feedback.error}
@@ -164,6 +164,7 @@ export default function UserManagementClient({
         </form>
       </Modal>}
       <input aria-label="Search members" placeholder="Search name, email, job title, or department" value={search} onChange={e=>setSearch(e.target.value)} className="w-full rounded-lg border px-4 py-3 text-sm" />
+      <select aria-label="Member account status" value={accountFilter} onChange={e=>setAccountFilter(e.target.value)} className="rounded-lg border p-3"><option value="active">Active members</option><option value="inactive">Inactive members</option><option value="all">All members</option></select>
       {/* User Roster */}
       <div className="bg-surface rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
@@ -188,7 +189,7 @@ export default function UserManagementClient({
                   <tr key={u.id} className="hover:bg-gray-50 transition">
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-900 flex items-center">
-                        {u.full_name || 'Anonymous User'}
+                        {u.full_name || 'Anonymous User'}{u.is_active===false&&<span className="ml-2 text-xs text-orange-700">Inactive</span>}
                         {isSelf && (
                           <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">You</span>
                         )}
@@ -218,14 +219,7 @@ export default function UserManagementClient({
                           >
                             Make {u.role === 'admin' ? 'Member' : 'Admin'}
                           </button>
-                          <details className="inline-block text-left"><summary className="cursor-pointer text-xs text-gray-500">More actions</summary><button
-                            onClick={() => handleDelete(u.id)}
-                            disabled={isPending}
-                            className="text-xs text-red-600 hover:text-red-800 p-1 inline-flex items-center disabled:opacity-50"
-                            title="Remove User"
-                          >
-                            <Trash2 className="w-4 h-4 mr-1" />Remove member
-                          </button></details>
+                          <button onClick={()=>setLifecycle(u)} className="rounded-lg border px-3 py-2 text-xs">{u.is_active===false?'Reactivate / reassign':'Deactivate / reassign'}</button>
                         </>
                       )}
                     </td>

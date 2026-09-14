@@ -14,6 +14,7 @@ for(let n=0;n<8;n++){
   const id=(await db.query('INSERT INTO auth.users(id,email,password_hash) VALUES(gen_random_uuid(),$1,$2) RETURNING id',[email,`scrypt-v1$${salt}$${key.toString('hex')}`])).rows[0].id;
   await db.query('INSERT INTO profiles(id,email,full_name,role) VALUES($1,$2,$3,$4)',[id,email,`Staging ${n}`,n===0?'admin':'member']);users.push({id,email});
 }
+await db.query('UPDATE review_settings SET enabled=true');
 const browser=await chromium.launch();const contexts=[];const pages=[];const external=[];
 const base='http://localhost:3104';
 try{
@@ -207,9 +208,51 @@ try{
   await expect(member.locator('article')).toHaveCount(1);
   await member.getByRole('button',{name:'Mark as read',exact:true}).click();
   await expect(member.getByText('You’re all caught up.',{exact:true})).toBeVisible();
+  // Release 3 member-created delegation and lifecycle flow, synthetic accounts only.
+  const delegated=(await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_id) VALUES($1,'Member delegation QA',$2,$3) RETURNING id",[projectURL.split('/').pop(),users[1].id,users[0].id])).rows[0].id;
+  await admin.goto(projectURL+'?task='+delegated);
+  await admin.getByRole('button',{name:'Ready for review',exact:true}).click();
+  await expect.poll(async()=>(await db.query('SELECT status FROM tasks WHERE id=$1',[delegated])).rows[0].status).toBe('in_review');
+  await expect(admin.getByRole('button',{name:'Approve & complete',exact:true})).toBeDisabled();
+  await member.goto(projectURL+'?task='+delegated);
+  await expect(member.getByRole('button',{name:'Request changes',exact:true})).toBeDisabled();
+  await member.getByLabel('Review feedback / reason').fill('Please revise the deliverable');
+  await member.getByRole('button',{name:'Request changes',exact:true}).click();
+  await expect.poll(async()=>(await db.query('SELECT status FROM tasks WHERE id=$1',[delegated])).rows[0].status).toBe('in_progress');
+  await admin.reload();await admin.getByRole('button',{name:'Ready for review',exact:true}).click();
+  await expect.poll(async()=>(await db.query('SELECT status FROM tasks WHERE id=$1',[delegated])).rows[0].status).toBe('in_review');
+  await member.reload();await member.getByRole('button',{name:'Approve & complete',exact:true}).click();
+  await expect.poll(async()=>(await db.query('SELECT status FROM tasks WHERE id=$1',[delegated])).rows[0].status).toBe('done');
+  await admin.goto(base+'/admin/users');await admin.getByRole('textbox',{name:'Search members'}).fill(users[1].email);
+  await admin.getByRole('button',{name:'Deactivate / reassign',exact:true}).click();
+  await admin.getByLabel('Reason for access change').fill('Synthetic lifecycle test');
+  await admin.getByRole('button',{name:'Confirm deactivation',exact:true}).click();
+  await expect.poll(async()=>(await db.query('SELECT disabled FROM auth.users WHERE id=$1',[users[1].id])).rows[0].disabled).toBe(true);
+  await member.goto(base+'/dashboard');await member.waitForURL('**/login');
+  await admin.getByLabel('Member account status').selectOption('inactive');
+  await admin.getByRole('button',{name:'Reactivate / reassign',exact:true}).click();
+  await admin.getByLabel('Reason for access change').fill('Restore synthetic access');
+  await admin.getByRole('button',{name:'Confirm reactivation',exact:true}).click();
+  await expect.poll(async()=>(await db.query('SELECT disabled FROM auth.users WHERE id=$1',[users[1].id])).rows[0].disabled).toBe(false);
+  console.log('Release 3 browser: member creator requests changes and approves delegated work; admin cannot self-approve; deactivation revokes existing browser session; reactivation preserves account.');
   console.log('UI audit: completion archive, project/task restore, read-only archived work, retained download, settings permissions, team details, project notes, workload and CSV export passed.');
   await outsider.goto(projectURL);await expect(outsider.getByText('Verify local task workflow',{exact:true})).toHaveCount(0);
   await Promise.all(pages.map(p=>p.goto(base+'/dashboard')));
+  // Real PostgreSQL row locks: two eligible reviewers cannot approve one version twice.
+  await db.query('INSERT INTO project_members(project_id,user_id) VALUES($1,$2)',[projectURL.split('/').pop(),users[3].id]);
+  const raceTask=(await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_id,status) VALUES($1,'Concurrent review QA',$2,$3,'in_review') RETURNING id",[projectURL.split('/').pop(),users[1].id,users[3].id])).rows[0].id;
+  async function concurrentAs(id,sql,args){const c=new pg.Client({connectionString:process.env.DATABASE_ADMIN_URL});await c.connect();try{await c.query('BEGIN');await c.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[id]);await c.query('SET LOCAL ROLE authenticated');await c.query(sql,args);await c.query('COMMIT');}catch(e){await c.query('ROLLBACK');throw e;}finally{await c.end();}}
+  const approvals=await Promise.allSettled([users[0],users[1]].map(u=>concurrentAs(u.id,"SELECT review_task($1,0,'approve','')",[raceTask])));
+  assert.equal(approvals.filter(r=>r.status==='fulfilled').length,1);
+  assert.equal(approvals.filter(r=>r.status==='rejected').length,1);
+  await db.query("UPDATE profiles SET role='admin' WHERE id=$1",[users[4].id]);
+  const demotions=await Promise.allSettled([[users[0],users[4]],[users[4],users[0]]].map(([actor,target])=>concurrentAs(actor.id,"UPDATE profiles SET role='member' WHERE id=$1",[target.id])));
+  assert.equal(demotions.filter(r=>r.status==='fulfilled').length,1);
+  assert.equal(demotions.filter(r=>r.status==='rejected').length,1);
+  assert.equal(Number((await db.query("SELECT count(*) FROM profiles WHERE role='admin' AND is_active")).rows[0].count),1);
+  await db.query("UPDATE profiles SET role='admin' WHERE id=$1",[users[0].id]);
+  console.log('Real PostgreSQL concurrency: one winning approval per task version; competing admin demotions preserve an active administrator.');
+
   assert.equal(external.length,0,'Staging must not contact Supabase');
   console.log('Eight browser logins, private project, task assignment, local upload/download, outsider denial, review and admin approval passed against PostgreSQL 16.');
 }finally{await browser.close();await db.end();}

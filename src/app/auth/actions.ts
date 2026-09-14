@@ -146,30 +146,8 @@ export async function updateUserRole(userId: string, newRole: 'admin' | 'member'
 }
 
 export async function deleteUser(userId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  const { data: callerProfile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user?.id)
-    .single();
-
-  if (callerProfile?.role !== 'admin') {
-    return { error: 'Unauthorized.' };
-  }
-
-  if (user?.id === userId) {
-    return { error: 'You cannot delete your own account.' };
-  }
-
-  const adminClient = createAdminClient();
-  const { error } = await adminClient.auth.admin.deleteUser(userId);
-
-  if (error) return { error: error.message };
-
-  revalidatePath('/admin/users');
-  return { success: 'User removed.' };
+  void userId;
+  return {error:'Deactivate this member from Team Users to preserve their history.'};
 }
 
 export async function updateMemberDetails(userId: string, formData: FormData) {
