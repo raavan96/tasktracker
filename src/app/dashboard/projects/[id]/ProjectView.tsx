@@ -272,7 +272,7 @@ export default function ProjectView({
                       <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-50">
                         <span className="flex items-center text-gray-600">
                           <span className="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-700 font-medium">{initials(task.assignee?.full_name || task.assignee?.email || '?')}</span>
-                          {task.assignee?.full_name || task.assignee?.email || 'Unassigned'}
+                          {task.assignee?.full_name || task.assignee?.email || 'Unassigned'}{task.assignee?.is_active===false?' · Inactive':''}
                         </span>
                         {task.task_comments?.length > 0 && (
                           <span className="flex items-center text-gray-400">
@@ -584,7 +584,7 @@ export default function ProjectView({
                 >
                   <option value="">Leave Tasks Unassigned</option>
                   {members
-                    .filter((m: Member) => m.id !== memberToRemove.id)
+                    .filter((m: Member) => m.id !== memberToRemove.id && m.is_active!==false)
                     .map((m: Member) => (
                       <option key={m.id} value={m.id}>
                         {m.full_name || m.email}{m.is_active===false?' · Inactive':''}

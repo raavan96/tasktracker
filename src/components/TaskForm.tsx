@@ -20,7 +20,7 @@ export default function TaskForm({ task, draft, members, busy, onSubmit, onCance
         <label className="block text-sm font-medium">Assignee
           <select name="assigneeId" defaultValue={draft?.assigneeId ?? (task?.assignee_id || '')} className={field}>
             <option value="">Unassigned</option>
-            {task?.assignee_id && !members.some(m => m.id === task.assignee_id) && <option value={task.assignee_id} disabled>Previous assignee — choose a project member</option>}
+            {task?.assignee_id && !members.some(m => m.id === task.assignee_id) && <option value={task.assignee_id}>{task.assignee?.full_name||task.assignee?.email||'Previous assignee'}{task.assignee?.is_active===false?' · Inactive (current assignment)':''}</option>}
             {members.map(member => <option key={member.id} value={member.id}>{member.full_name || member.email}</option>)}
           </select>
         </label>

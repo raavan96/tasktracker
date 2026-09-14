@@ -1,6 +1,8 @@
 BEGIN;
 ALTER TABLE public.profiles ADD COLUMN is_active boolean NOT NULL DEFAULT true;
-UPDATE public.profiles p SET is_active=NOT u.disabled FROM auth.users u WHERE u.id=p.id;
+ALTER TABLE public.profiles DISABLE TRIGGER zz_updated_at;
+UPDATE public.profiles p SET is_active=NOT u.disabled FROM auth.users u WHERE u.id=p.id AND p.is_active IS DISTINCT FROM NOT u.disabled;
+ALTER TABLE public.profiles ENABLE TRIGGER zz_updated_at;
 ALTER TABLE public.tasks ADD COLUMN review_version bigint NOT NULL DEFAULT 0;
 CREATE TABLE public.review_settings(id boolean PRIMARY KEY DEFAULT true CHECK(id), enabled boolean NOT NULL DEFAULT false);
 INSERT INTO public.review_settings VALUES(true,false);
@@ -129,7 +131,7 @@ CREATE FUNCTION public.review_task(p_task uuid,p_version bigint,p_decision text,
 DECLARE t tasks%ROWTYPE; reviewer boolean; next_status task_status; BEGIN
  PERFORM public.assert_active();SELECT * INTO t FROM tasks WHERE id=p_task FOR UPDATE;
  IF NOT FOUND OR NOT public.can_work_project(t.project_id) OR t.is_archived THEN RAISE EXCEPTION 'Task unavailable or read-only'; END IF;
- IF t.review_version<>p_version THEN RAISE EXCEPTION 'This task changed. Refresh before reviewing'; END IF;
+ IF p_version IS NULL OR p_version<0 OR t.review_version<>p_version THEN RAISE EXCEPTION 'This task changed. Refresh before reviewing'; END IF;
  reviewer=(public.is_admin() OR t.created_by=auth.uid()) AND t.assignee_id IS DISTINCT FROM auth.uid();
  IF p_decision IN ('changes','withdraw','reopen') AND length(trim(coalesce(p_reason,''))) NOT BETWEEN 1 AND 2000 THEN RAISE EXCEPTION 'Enter a reason (1–2000 characters)'; END IF;
  IF p_decision='submit' THEN
