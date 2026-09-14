@@ -14,7 +14,7 @@ export function useCardMotion(root:RefObject<HTMLElement|null>,layoutKey:string)
   if(!before.current.size)return;
   const pairs=[...(root.current?.querySelectorAll<HTMLElement>('[data-project-id]')||[])].map(card=>({card,old:before.current.get(card.dataset.projectId!),box:card.getBoundingClientRect()}));before.current.clear();
   if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-  for(const {card,old,box} of pairs){if(!old||!box.width||!box.height||typeof card.animate!=='function')continue;running.current.push(card.animate([{transformOrigin:'top left',transform:`translate(${old.left-box.left}px,${old.top-box.top}px) scale(${old.width/box.width},${old.height/box.height})`},{transformOrigin:'top left',transform:'none'}],{duration:240,easing:'cubic-bezier(.2,.8,.2,1)'}));}
+  for(const {card,old,box} of pairs){if(!old||!box.width||!box.height||typeof card.animate!=='function')continue;running.current.push(card.animate([{opacity:.7,transform:`translate(${old.left-box.left}px,${old.top-box.top}px)`},{opacity:1,transform:'none'}],{duration:240,easing:'cubic-bezier(.2,.8,.2,1)'}));}
  },[layoutKey,root]);
  useLayoutEffect(()=>()=>running.current.forEach(a=>a.cancel()),[]);
  return capture;
