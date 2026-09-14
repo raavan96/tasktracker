@@ -53,6 +53,14 @@ jobs:
             sleep 1
           done
           node tests/postgres-browser.mjs
+      - name: Save Release 5 mobile previews
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: release5-ui-checks
+          path: /tmp/release5-*.png
+          retention-days: 7
+          if-no-files-found: ignore
       - name: Package Linux staging build
         run: |
           mkdir -p .next/standalone/.next

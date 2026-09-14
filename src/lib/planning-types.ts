@@ -1,0 +1,9 @@
+export type PlanningSource={kind:'project'|'task'|'template';id:string};
+export type BlueprintTask={key:string;title:string;description:string;priority:string;offset:number|null;checklist:string[];dependencies:string[]};
+export type Blueprint={kind:'project'|'task';name:string;description:string;tasks:BlueprintTask[]};
+export type PlanningPreview={source:PlanningSource;version:string;sourceProjectId:string;blueprint:Blueprint};
+export type PlanTask={key:string;title:string;description:string;priority:string;dueDate:string;assigneeIds:string[];checklist:string[]};
+export type PlanInput={source:PlanningSource;version:string;requestId:string;name:string;description:string;targetProjectId:string;members:string[];tasks:PlanTask[]};
+export function validDate(value:string){return /^\d{4}-\d{2}-\d{2}$/.test(value)&&value>='2000-01-01'&&value<='2100-12-31'&&Number.isFinite(Date.parse(value+'T00:00:00Z'))&&new Date(value+'T00:00:00Z').toISOString().slice(0,10)===value;}
+export function shiftDate(value:string,days:number){if(!validDate(value)||!Number.isInteger(days))return '';const date=new Date(value+'T00:00:00Z');date.setUTCDate(date.getUTCDate()+days);const result=date.toISOString().slice(0,10);return validDate(result)?result:'';}
+export function calendarRange(date:string,mode:string){if(!validDate(date))throw new Error('Choose a valid calendar date.');const d=new Date(date+'T00:00:00Z');if(mode==='month')d.setUTCDate(1);const start=new Date(d);start.setUTCDate(start.getUTCDate()-(start.getUTCDay()+6)%7);const end=new Date(start);if(mode==='week')end.setUTCDate(end.getUTCDate()+6);else {end.setUTCFullYear(d.getUTCFullYear(),d.getUTCMonth()+1,0);end.setUTCDate(end.getUTCDate()+(7-end.getUTCDay())%7);}return {from:start.toISOString().slice(0,10),to:end.toISOString().slice(0,10)};}

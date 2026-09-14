@@ -3,12 +3,14 @@
 import { useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FolderKanban, CheckSquare, Users, Menu, Archive, Search, BarChart3 } from 'lucide-react';
+import { FolderKanban, CheckSquare, Users, Menu, Archive, Search, BarChart3, CalendarDays, Copy } from 'lucide-react';
 
 export default function WorkspaceNav({ isAdmin, mobile = false }: { isAdmin: boolean; mobile?: boolean }) {
   const menu = useRef<HTMLDetailsElement>(null);
   const pathname = usePathname();
   const links = [
+    {href:'/dashboard/calendar',label:'Calendar',icon:CalendarDays,active:pathname==='/dashboard/calendar'},
+    {href:'/dashboard/templates',label:'Templates',icon:Copy,active:pathname==='/dashboard/templates'||pathname==='/dashboard/planning'},
     {href:'/dashboard/search',label:'Search',icon:Search,active:pathname==='/dashboard/search'},
     {href:'/dashboard/reports',label:'Reports',icon:BarChart3,active:pathname==='/dashboard/reports'},
     { href: '/dashboard', label: 'Projects', icon: FolderKanban, active: pathname === '/dashboard' || pathname.startsWith('/dashboard/projects') },

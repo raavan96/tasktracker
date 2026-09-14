@@ -230,4 +230,40 @@ await as(null);await db.exec('SET ROLE service_role');await rows('SELECT run_wor
 await as(owner);await rows('SELECT remove_member_and_reassign_tasks($1,$2,$3)',[mp,member,admin]);assert.deepEqual((await rows('SELECT assignee_ids FROM tasks WHERE id=$1',[recur]))[0].assignee_ids,[owner,admin]);
 console.log('Shared assignment: co-assignee status/submission, creator/admin self-approval denial, per-person My Tasks/reminders, immutable completion group, repeating groups, private assignment validation and member replacement passed.');
 
+
+// Release 5: run the actual planning implementation under the authenticated RLS role.
+await as(null);await db.exec(read('postgres/010_planning.sql'));
+const planTypes={},planning={};
+new Function('exports',ts.transpileModule(read('src/lib/planning-types.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(planTypes);
+let planActor=owner;
+new Function('exports','require',ts.transpileModule(read('src/lib/planning.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(planning,name=>{
+ if(name==='server-only')return {};if(name==='node:crypto')return require('node:crypto');if(name==='./planning-types')return planTypes;
+ if(name==='./workspace-data')return {workspaceRead:async work=>{await as(planActor);return run(async()=>{await rows('SELECT assert_active()');return work(db,planActor);});}};throw Error(name);
+});
+await as(owner);const pp=(await rows("SELECT create_workspace_project('Planning original','Project description',ARRAY[$1::uuid],true) id",[member]))[0].id;
+const pt1=(await rows("INSERT INTO tasks(project_id,title,description,created_by,assignee_ids,due_date,priority) VALUES($1,'Planning first','First description',$2,ARRAY[$2::uuid,$3::uuid],'2026-01-01','high') RETURNING id",[pp,owner,member]))[0].id;
+const pt2=(await rows("INSERT INTO tasks(project_id,title,created_by,due_date) VALUES($1,'Planning next',$2,'2026-01-04') RETURNING id",[pp,owner]))[0].id;
+await rows("INSERT INTO task_checklist(task_id,title,completed) VALUES($1,'Reusable checklist',true)",[pt1]);await rows('INSERT INTO task_dependencies(task_id,depends_on) VALUES($1,$2)',[pt2,pt1]);
+const ps={kind:'project',id:pp};const pv=await planning.previewPlanning(ps);assert.deepEqual(pv.blueprint.tasks.map(t=>t.offset),[0,3]);
+const template=await planning.storeTemplate(ps,pv.version,'Personal repeat');
+planActor=member;assert.equal((await planning.planningOptions()).templates.length,0);await assert.rejects(()=>planning.previewPlanning({kind:'template',id:template.id}));
+planActor=outsider;await assert.rejects(()=>planning.previewPlanning(ps));await assert.rejects(()=>planning.storeTemplate(ps,pv.version,'Forbidden'));
+planActor=owner;const makeInput=preview=>({source:preview.source,version:preview.version,requestId:require('node:crypto').randomUUID(),name:'Planning copy',description:'Fresh work',targetProjectId:pp,members:[member],tasks:preview.blueprint.tasks.map(t=>({key:t.key,title:t.title,description:t.description,priority:t.priority,dueDate:t.offset===null?'':planTypes.shiftDate('2026-09-20',t.offset),assigneeIds:[owner,member],checklist:t.checklist}))});
+const pi=makeInput(pv),copy=await planning.createPlan(pi);assert.deepEqual(await planning.createPlan(pi),copy);await assert.rejects(()=>planning.createPlan({...pi,name:'Changed retry'}));
+await as(owner);const copied=await rows('SELECT * FROM tasks WHERE project_id=$1 ORDER BY due_date',[copy.projectId]);assert.equal(copied.length,2);assert.ok(copied.every(t=>t.status==='todo'&&t.created_by===owner&&t.recurrence==='none'));assert.deepEqual(copied.map(t=>new Date(t.due_date).toISOString().slice(0,10)),['2026-09-20','2026-09-23']);assert.deepEqual(copied[0].assignee_ids,[owner,member]);assert.equal((await rows('SELECT completed FROM task_checklist WHERE task_id=$1',[copied[0].id]))[0].completed,false);assert.equal((await rows('SELECT depends_on FROM task_dependencies WHERE task_id=$1',[copied[1].id]))[0].depends_on,copied[0].id);
+assert.equal((await rows('SELECT is_private FROM projects WHERE id=$1',[copy.projectId]))[0].is_private,true);
+const before=Number((await rows('SELECT count(*) n FROM projects'))[0].n);
+const invalid=makeInput(pv);invalid.tasks[1].assigneeIds=[outsider];await assert.rejects(()=>planning.createPlan(invalid));await as(owner);assert.equal(Number((await rows('SELECT count(*) n FROM projects'))[0].n),before);
+await rows("UPDATE tasks SET title='Source changed' WHERE id=$1",[pt1]);await assert.rejects(()=>planning.createPlan(makeInput(pv)),/source changed/i);
+const stored=await planning.previewPlanning({kind:'template',id:template.id});assert.equal(stored.blueprint.tasks[0].title,'Planning first');
+const tp=await planning.previewPlanning({kind:'task',id:pt2});assert.equal(tp.blueprint.tasks[0].dependencies.length,0);const ti=makeInput(tp);ti.name='Single new task';const one=await planning.createPlan(ti);assert.ok(one.taskId);assert.equal(one.projectId,pp);
+const cal=await planning.calendarData('2026-09-20','month',copy.projectId,member);assert.equal(cal.total,2);assert.equal(cal.items.length,2);assert.equal(new Set(cal.items.map(t=>t.id)).size,2);
+planActor=outsider;assert.equal((await planning.calendarData('2026-09-20','month',copy.projectId,'')).total,0);assert.equal((await planning.calendarData('2026-09-20','month',copy.projectId,'')).undated,0);
+planActor=member;const memberPreview=await planning.previewPlanning(ps),memberTemplate=await planning.storeTemplate(ps,memberPreview.version,'Member own template');
+await as(owner);await rows('SELECT remove_member_and_reassign_tasks($1,$2,$3)',[pp,member,owner]);await assert.rejects(()=>planning.previewPlanning({kind:'template',id:memberTemplate.id}));
+planActor=owner;await planning.removeTemplate(template.id);await assert.rejects(()=>planning.previewPlanning({kind:'template',id:template.id}));
+await assert.rejects(()=>planning.previewPlanning({kind:'project',id:rp}),/100 active tasks/);
+await as(admin);await rows("SELECT set_member_active($1,false,'Planning inactive test')",[member]);planActor=member;await assert.rejects(()=>planning.planningOptions(),/inactive/i);await as(admin);await rows("SELECT set_member_active($1,true,'Planning test complete')",[member]);
+console.log('Release 5: private templates, revoked/inactive access, date shifting, shared assignments, unchecked checklists, dependency remapping, source-version validation, atomic invalid-copy rollback, idempotent retries and private calendar passed.');
+
 await db.close();

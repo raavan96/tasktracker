@@ -297,6 +297,30 @@ try{
   await admin.goto(projectURL+'?task='+sharedId);await expect(admin.getByRole('button',{name:'Approve & complete',exact:true})).toBeVisible();await admin.getByRole('button',{name:'Approve & complete',exact:true}).click();await expect.poll(async()=>(await db.query('SELECT status FROM tasks WHERE id=$1',[sharedId])).rows[0].status).toBe('done');await expect(admin.getByRole('button',{name:'Approve & complete',exact:true})).toBeHidden();
   console.log('Project list/grid sizes/sorting preferences and multi-assignee picker, My Tasks and permitted-only review buttons passed.');
 
+
+  // Release 5: actual previews, private templates, copies and responsive calendar.
+  await admin.setViewportSize({width:1280,height:900});
+  await admin.goto(projectURL+'?task='+sharedId);await admin.getByText('Task actions',{exact:true}).click();await admin.getByRole('link',{name:'Duplicate task',exact:true}).click();
+  await expect(admin.getByRole('heading',{name:'Duplicate task',exact:true})).toBeVisible();
+  await admin.getByText('Save this source as a reusable template',{exact:true}).click();
+  await admin.getByLabel('Template name',{exact:true}).fill('R5 personal template');await admin.getByRole('button',{name:'Save template',exact:true}).click();await expect(admin.getByText('Saved to your templates.',{exact:true})).toBeVisible();
+  const templateId=(await db.query("SELECT id FROM planning_templates WHERE name='R5 personal template'")).rows[0].id;
+  await admin.getByLabel('New task title',{exact:true}).fill('R5 shared copy');await admin.getByLabel('Copy deadline 1',{exact:true}).fill('2026-09-20');
+  await admin.getByRole('checkbox',{name:'Staging 1',exact:true}).check();await admin.getByRole('checkbox',{name:'Staging 3',exact:true}).check();await admin.getByRole('button',{name:'Create task copy',exact:true}).click();
+  await expect.poll(async()=>(await db.query("SELECT count(*) n FROM tasks WHERE title='R5 shared copy'")).rows[0].n).toBe('1');
+  const r5copy=(await db.query("SELECT * FROM tasks WHERE title='R5 shared copy'")).rows[0];assert.equal(r5copy.status,'todo');assert.deepEqual(r5copy.assignee_ids,[users[1].id,users[3].id]);assert.equal(r5copy.created_by,users[0].id);
+  await admin.goto(base+'/dashboard/templates');await admin.getByLabel('Search templates',{exact:true}).fill('R5 personal');await expect(admin.getByRole('heading',{name:'R5 personal template',exact:true})).toBeVisible();await admin.getByRole('link',{name:'Use template',exact:true}).click();await expect(admin.getByRole('heading',{name:'Use template',exact:true})).toBeVisible();await expect(admin.getByRole('checkbox',{checked:true})).toHaveCount(0);
+  await outsider.goto(base+'/dashboard/planning?kind=template&id='+templateId);await expect(outsider.getByRole('alert')).toContainText('Template unavailable');
+  await admin.goto(base+'/dashboard/planning?kind=project&id='+r4project);await admin.getByLabel('New project name',{exact:true}).fill('R5 project copy');await admin.getByRole('button',{name:'Create project copy',exact:true}).click();await expect.poll(async()=>(await db.query("SELECT id FROM projects WHERE name='R5 project copy'")).rows[0]?.id).toBeTruthy();
+  const r5project=(await db.query("SELECT id,is_private FROM projects WHERE name='R5 project copy'")).rows[0];assert.equal(r5project.is_private,true);assert.equal(Number((await db.query('SELECT count(*) n FROM project_members WHERE project_id=$1',[r5project.id])).rows[0].n),1);assert.equal(Number((await db.query("SELECT count(*) n FROM tasks WHERE project_id=$1 AND (status<>'todo' OR cardinality(assignee_ids)>0 OR recurrence<>'none')",[r5project.id])).rows[0].n),0);
+  assert.equal(Number((await db.query('SELECT count(*) n FROM task_attachments a JOIN tasks t ON t.id=a.task_id WHERE t.project_id=$1',[r5project.id])).rows[0].n),0);
+  await admin.goto(base+'/dashboard/calendar?date=2026-09-20&project='+r4project+'&assignee='+users[1].id);await expect(admin.getByRole('heading',{name:'Calendar',exact:true})).toBeVisible();await expect(admin.getByRole('link').filter({hasText:'R5 shared copy'})).toHaveCount(1);await admin.getByRole('link',{name:'Week',exact:true}).click();await expect(admin.getByRole('link',{name:'Week',exact:true})).toHaveAttribute('aria-current','page');
+  for(const width of [375,430]){await admin.setViewportSize({width,height:932});await expect.poll(()=>admin.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await admin.screenshot({path:`/tmp/release5-calendar-${width}.png`,fullPage:true});}
+  await admin.getByRole('link').filter({hasText:'R5 shared copy'}).click();await expect(admin.getByRole('heading',{name:'R5 shared copy',exact:true})).toBeVisible();
+  for(const width of [375,430]){await admin.setViewportSize({width,height:932});await admin.goto(base+'/dashboard/planning?kind=template&id='+templateId);await expect.poll(()=>admin.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await admin.screenshot({path:`/tmp/release5-planning-${width}.png`,fullPage:true});}
+  await admin.setViewportSize({width:1280,height:900});
+  console.log('Release 5 browser: menu copies, personal template save/use/outsider denial, shared assignments, reset approval/status, private project defaults, attachment exclusion, calendar filters/single shared task, task navigation and 375/430px layouts passed.');
+
   await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_id,due_date) SELECT $1,'Scale specimen '||lpad(n::text,4,'0'),$2,$3,current_date+(n%30) FROM generate_series(1,1000)n",[r4project,users[0].id,users[3].id]);
   await admin.goto(base+'/dashboard/tasks?q=Scale&sort=title');await expect(admin.getByText('1000 matching tasks',{exact:false})).toBeVisible();await expect(admin.locator('tbody tr')).toHaveCount(25);
   const first=await admin.locator('tbody tr').first().innerText();await admin.getByRole('button',{name:'Next',exact:true}).click();await expect(admin.getByText('Page 2 of 40',{exact:true})).toBeVisible();assert.notEqual(await admin.locator('tbody tr').first().innerText(),first);

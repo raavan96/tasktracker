@@ -18,6 +18,7 @@ export function initials(name: string) {
 export type SummaryTask = { status: string; due_date: string | null };
 export function matchesSummary(task: SummaryTask, filter: string, today: string) {
   const due = task.due_date?.slice(0, 10);
+  if (filter === 'undated') return !due;
   if (filter === 'pending') return task.status !== 'done';
   if (filter === 'blocked') return task.status === 'blocked';
   if (filter === 'overdue') return task.status !== 'done' && !!due && due < today;
@@ -28,7 +29,7 @@ export function matchesSummary(task: SummaryTask, filter: string, today: string)
   return true;
 }
 export const summaryFilters = [
-  {id:'pending',label:'Pending'}, {id:'blocked',label:'Blocked'},
+  {id:'undated',label:'No deadline'}, {id:'pending',label:'Pending'}, {id:'blocked',label:'Blocked'},
   { id: 'overdue', label: 'Overdue' }, { id: 'today', label: 'Due today' },
   { id: 'in_progress', label: 'In progress' }, { id: 'in_review', label: 'Awaiting review' }, { id: 'done', label: 'Completed' },
 ];

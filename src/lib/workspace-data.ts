@@ -13,7 +13,7 @@ export async function taskPage(filters:TaskFilters,exportAll=false){return works
  if(filters.assignee&&filters.assignee!=='all')where.push(filters.assignee==='unassigned'?'cardinality(t.assignee_ids)=0':bind(filters.assignee)+'::uuid=ANY(t.assignee_ids)');
  if(filters.q?.trim())where.push("concat_ws(' ',t.title,t.description,a.full_name,a.email,c.full_name,c.email,p.name) ILIKE "+bind('%'+filters.q.trim().slice(0,200).replace(/[\\%_]/g,'\\$&')+'%'));
  const today="(now() AT TIME ZONE 'Asia/Kolkata')::date";
- const summaries:Record<string,string>={pending:"t.status<>'done'",overdue:`t.status NOT IN ('done','in_review') AND t.due_date<${today}`,today:`t.status NOT IN ('done','in_review') AND t.due_date=${today}`,in_progress:"t.status='in_progress'",in_review:"t.status='in_review'",done:"t.status='done'",blocked:"t.status='blocked'"};
+ const summaries:Record<string,string>={undated:'t.due_date IS NULL',pending:"t.status<>'done'",overdue:`t.status NOT IN ('done','in_review') AND t.due_date<${today}`,today:`t.status NOT IN ('done','in_review') AND t.due_date=${today}`,in_progress:"t.status='in_progress'",in_review:"t.status='in_review'",done:"t.status='done'",blocked:"t.status='blocked'"};
  if(filters.summary&&summaries[filters.summary])where.push(summaries[filters.summary]);
  if(filters.status&&filters.status!=='all')where.push('t.status::text='+bind(filters.status));
  if(filters.priority&&filters.priority!=='all')where.push('t.priority::text='+bind(filters.priority));
