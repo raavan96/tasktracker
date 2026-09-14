@@ -1,6 +1,6 @@
 # Release 4 — Reporting, collaboration and scale
 
-Prepared against live Release 3 (`db59fea`) and repository HEAD `400c684` on 14 September 2026. This document specifies the next release; its features are not implemented or deployed yet. The source of scope is the Release 4 section of `tasktracker-ux-audit-and-deployment-plan-2026-09-13.md`.
+Prepared against live Release 3 (`db59fea`) and repository HEAD `400c684` on 14 September 2026. Implemented and deployed on 14 September 2026. See `tasktracker-release-4-2026-09-14.md` for delivered behavior, verification, operational evidence and remaining limits. The following sections retain the original specification. The source of scope is the Release 4 section of `tasktracker-ux-audit-and-deployment-plan-2026-09-13.md`.
 
 ## User experience
 
