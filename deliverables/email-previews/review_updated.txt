@@ -1,0 +1,25 @@
+TaskTracker Notification — Review update
+
+Hi Aishwarya,
+
+The task review has changed
+
+There is a new review update. Open the task for its current status and next steps.
+
+Prepare the September admissions report
+
+Project: Admissions · September
+
+Assigned to: Ankit Toppo, Aishwarya Naidu
+
+Deadline (India time): 18 September 2026
+
+Updated by: Riya Sharma
+
+Update: The task details changed after submission. Open the task to check whether another review is needed.
+
+Open task: https://168.144.155.51/dashboard/projects/sample-project?task=sample-task
+
+Open TaskTracker to reply. Replies to this email do not update a task.
+
+Email preferences: https://168.144.155.51/dashboard/notifications

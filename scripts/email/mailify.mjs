@@ -7,7 +7,7 @@ export function mailifyConfig(env = process.env) {
   return {key:env.MAILIFY_API_KEY, secret:env.MAILIFY_API_SECRET, from:env.MAILIFY_FROM, fromName:env.MAILIFY_FROM_NAME};
 }
 
-export async function sendMailifyTest({recipient, name, subject, content}, config, fetcher = fetch) {
+export async function sendMailify({recipient, name, subject, content}, config, fetcher = fetch) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient || '')) throw new Error('A valid test recipient is required.');
   if (!subject?.trim() || !content?.trim()) throw new Error('Subject and content are required.');
   const form = new FormData();
@@ -28,3 +28,6 @@ export async function sendMailifyTest({recipient, name, subject, content}, confi
   let body; try {body=JSON.parse(raw);} catch {body=raw;}
   return {httpStatus:response.status, body};
 }
+
+// Kept for the explicitly authorized one-off connection test.
+export const sendMailifyTest = sendMailify;

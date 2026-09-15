@@ -1,0 +1,24 @@
+TaskTracker Notification — Daily deadline summary
+
+Hi Aishwarya,
+
+Your deadlines at a glance
+
+Here are your overdue tasks and work due today or tomorrow. This summary covers work currently assigned to you.
+
+Tuesday, 15 September
+
+Verify course-wise enrolment totals — 2 days overdue · Admissions
+https://168.144.155.51/dashboard/projects/sample-project?task=sample-task
+
+Prepare the September admissions report — Due today · Admissions
+https://168.144.155.51/dashboard/projects/sample-project?task=sample-task
+
+Publish the weekly team update — Due tomorrow · Team operations
+https://168.144.155.51/dashboard/projects/sample-project?task=sample-task
+
+Open my tasks: https://168.144.155.51/dashboard/my-tasks
+
+Open TaskTracker to reply. Replies to this email do not update a task.
+
+Email preferences: https://168.144.155.51/dashboard/notifications

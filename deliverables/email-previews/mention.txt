@@ -1,0 +1,25 @@
+TaskTracker Notification — Mention
+
+Hi Aishwarya,
+
+You were mentioned
+
+A teammate mentioned you in a task update.
+
+Prepare the September admissions report
+
+Project: Admissions · September
+
+Assigned to: Ankit Toppo, Aishwarya Naidu
+
+Deadline (India time): 18 September 2026
+
+Updated by: Riya Sharma
+
+Update: @Aishwarya — could you verify the admissions totals? The supporting sheet is attached to the task.
+
+Read the update: https://168.144.155.51/dashboard/projects/sample-project?task=sample-task
+
+Open TaskTracker to reply. Replies to this email do not update a task.
+
+Email preferences: https://168.144.155.51/dashboard/notifications

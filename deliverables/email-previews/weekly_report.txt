@@ -1,0 +1,23 @@
+TaskTracker Notification — Weekly team report
+
+Hi Aishwarya,
+
+Your team’s week in review
+
+A summary of completed work, pending tasks and work that needs attention.
+
+7–13 September 2026
+
+Completed during the week: 12
+
+Pending now: 8
+
+Overdue now: 2
+
+Awaiting review now: 3
+
+Open reports: https://168.144.155.51/dashboard/reports
+
+Open TaskTracker to reply. Replies to this email do not update a task.
+
+Email preferences: https://168.144.155.51/dashboard/notifications

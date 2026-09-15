@@ -1,3 +1,4 @@
+import EmailPreferences,{type EmailSettings} from '@/components/EmailPreferences';
 import {workspaceRead} from '@/lib/workspace-data';
 import NotificationPreferences,{type NotificationSettings} from '@/components/NotificationPreferences';
 import NotificationsClient,{type Notification} from './NotificationsClient';
@@ -9,7 +10,9 @@ export default async function NotificationsPage({searchParams}:{searchParams:Pro
   const page=Math.min(pages,Math.max(1,Math.trunc(Number(params.page)||1)));
   const notifications=(await db.query<Notification>("SELECT n.id,n.title,n.message,n.created_at,n.is_read,CASE WHEN t.id IS NULL THEN NULL ELSE jsonb_build_object('id',t.id,'project_id',t.project_id) END task FROM notifications n LEFT JOIN tasks t ON t.id=n.task_id WHERE n.user_id=$1 AND ($2<>'unread' OR NOT n.is_read) ORDER BY n.created_at DESC,n.id DESC LIMIT 50 OFFSET $3",[user,filter,(page-1)*50])).rows;
   const preferences=(await db.query<NotificationSettings>('SELECT deadline_days,mentions,assignments,reviews FROM notification_preferences WHERE user_id=$1',[user])).rows[0]||{deadline_days:1,mentions:true,assignments:true,reviews:true};
-  return {preferences,notifications,unread:Number(counts.unread),page,pages,total};
+  const emailPreferences=(await db.query<EmailSettings>('SELECT enabled,assignments,mentions,reviews,deadline_digest FROM email_preferences WHERE user_id=$1',[user])).rows[0]||{enabled:false,assignments:true,mentions:true,reviews:true,deadline_digest:true};
+  const deliveryEnabled=(await db.query('SELECT enabled FROM email_delivery_settings WHERE id')).rows[0]?.enabled===true;
+  return {emailPreferences,deliveryEnabled,preferences,notifications,unread:Number(counts.unread),page,pages,total};
  });
- return <div className="space-y-6"><NotificationsClient {...result} filter={filter}/><div className="mx-auto max-w-4xl"><NotificationPreferences initial={result.preferences}/></div></div>;
+ return <div className="space-y-6"><NotificationsClient {...result} filter={filter}/><div className="mx-auto max-w-4xl"><NotificationPreferences initial={result.preferences}/><EmailPreferences initial={result.emailPreferences} deliveryEnabled={result.deliveryEnabled}/></div></div>;
 }

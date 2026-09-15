@@ -24,9 +24,9 @@ The one authorized test request completed. Mailify returned HTTP 200 with this b
 {"success":[false]}
 ```
 
-HTTP 200 alone is not delivery success. The response did not confirm acceptance or delivery and supplied no diagnostic message. No second request was sent. Private attempt and redacted response evidence are under `/var/lib/tasktracker-mailify`.
+HTTP 200 alone is not delivery success. The response supplied no diagnostic message. The user subsequently supplied an inbox screenshot confirming that this exact test was delivered from TaskTracker@collegeduniamail.com. The initial inference of rejection was incorrect. No second request was sent. Private attempt and redacted response evidence are under `/var/lib/tasktracker-mailify`.
 
-The provider must explain this result and confirm the exact sender/domain-header value, the mail-setting ID for this credential pair, and the meaning of test mode. Do not change those settings or guess sender addresses automatically.
+The configured sender/settings worked for this test. The provider still needs to explain its false success flag and test-mode semantics before reliable automatic retries or delivery-status claims can be implemented. Do not change those settings or guess sender addresses automatically.
 
 ## Validation and remaining work
 

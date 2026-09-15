@@ -1,0 +1,23 @@
+TaskTracker Notification — Task assignment
+
+Hi Aishwarya,
+
+A new task is yours
+
+You have been assigned a task. Review the details and coordinate with the other assignees.
+
+Prepare the September admissions report
+
+Project: Admissions · September
+
+Assigned to: Ankit Toppo, Aishwarya Naidu
+
+Deadline (India time): 18 September 2026
+
+Updated by: Riya Sharma
+
+Open task: https://168.144.155.51/dashboard/projects/sample-project?task=sample-task
+
+Open TaskTracker to reply. Replies to this email do not update a task.
+
+Email preferences: https://168.144.155.51/dashboard/notifications

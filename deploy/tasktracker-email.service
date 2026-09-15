@@ -1,0 +1,20 @@
+[Unit]
+Description=TaskTracker email notification queue
+After=network-online.target tasktracker-staging-db.service
+Wants=network-online.target
+Requires=tasktracker-staging-db.service
+[Service]
+Type=oneshot
+User=tasktracker
+Group=tasktracker
+# Set WorkingDirectory to the verified deployed release before enabling.
+WorkingDirectory=/opt/tasktracker-current
+EnvironmentFile=/etc/tasktracker-local.env
+EnvironmentFile=/etc/tasktracker-mailify.env
+ExecStart=/usr/bin/node scripts/email/worker.mjs
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+MemoryMax=96M
+TimeoutStartSec=360

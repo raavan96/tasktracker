@@ -1,0 +1,24 @@
+TaskTracker Notification — Task activity summary
+
+Hi Aishwarya,
+
+Catch up on your tasks
+
+A summary of new remarks and status changes in the tasks you follow.
+
+Recent task activity
+
+Verify course-wise enrolment totals — Riya added a remark · Admissions
+https://168.144.155.51/dashboard/projects/sample-project?task=sample-task
+
+Prepare the September admissions report — Status changed to In progress
+https://168.144.155.51/dashboard/projects/sample-project?task=sample-task
+
+Publish the weekly team update — Ankit added a supporting document
+https://168.144.155.51/dashboard/projects/sample-project?task=sample-task
+
+Open workspace: https://168.144.155.51/dashboard
+
+Open TaskTracker to reply. Replies to this email do not update a task.
+
+Email preferences: https://168.144.155.51/dashboard/notifications
