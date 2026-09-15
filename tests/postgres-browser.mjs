@@ -390,7 +390,7 @@ try{
   assert.equal((await db.query('SELECT due_date::text due FROM tasks WHERE id=$1',[perfTask])).rows[0].due,'2026-12-01');
   await admin.goto(base+'/dashboard/notifications');await admin.getByText('Notification preferences',{exact:true}).click();await admin.getByLabel('Deadline reminders per task',{exact:true}).selectOption('7');await admin.getByLabel('Mentions',{exact:true}).uncheck();await admin.getByRole('button',{name:'Save preferences',exact:true}).click();await expect(admin.getByText('Preferences saved.',{exact:true})).toBeVisible();
   await admin.reload();await admin.getByText('Notification preferences',{exact:true}).click();await expect(admin.getByLabel('Deadline reminders per task',{exact:true})).toHaveValue('7');await expect(admin.getByLabel('Mentions',{exact:true})).not.toBeChecked();
-  await admin.goto(base+'/dashboard/tasks?preset=delegated');await expect(admin.getByRole('link',{name:'Save benchmark',exact:true})).toBeVisible();
+  await admin.goto(base+'/dashboard/tasks?preset=delegated&q=Save%20benchmark');await expect(admin.getByRole('link',{name:'Save benchmark',exact:true})).toBeVisible();
   for(const width of [375,430,1280]){await admin.setViewportSize({width,height:932});await expect.poll(()=>admin.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await admin.screenshot({path:`/tmp/release5-cd-${width}.png`,fullPage:true,animations:'disabled'});}
   await admin.getByText('My account',{exact:true}).click();await expect(admin.getByRole('link',{name:'Change password',exact:true})).toBeVisible();
   console.log('Release C/D browser: private saved views persist, bulk preview/confirmation saves, notification settings persist, delegated quick view, account menu and 375/430/1280 widths passed.');
