@@ -275,7 +275,7 @@ try{
   await expect(remarkInput).toHaveValue('Again @Staging 3 ');
   await expect(admin.getByRole('button',{name:'@Staging 3 ×',exact:true})).toHaveCount(1);
   await remarkInput.fill('Please @Staging 3 after');await remarkInput.press('Home');await remarkInput.press('ArrowRight');
-  await remarkInput.evaluate(el=>{el.setSelectionRange(16,16);el.dispatchEvent(new Event('select',{bubbles:true}));});
+  await remarkInput.evaluate(el=>{el.setSelectionRange(17,17);el.dispatchEvent(new Event('select',{bubbles:true}));});
   await expect(admin.getByRole('option',{name:'Mention Staging 3',exact:true})).toBeVisible();await remarkInput.press('Enter');
   await expect(remarkInput).toHaveValue('Please @Staging 3  after');
   await remarkInput.fill('Discovery remark revised');
