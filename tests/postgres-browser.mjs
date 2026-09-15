@@ -86,12 +86,12 @@ try{
     await admin.getByRole('button',{name:/Switch to (light|dark) mode/}).click();
 
     await admin.getByText('Project actions',{exact:true}).click();
-    await expect.poll(async()=>{const box=await admin.locator('[data-actions-menu]').boundingBox();return box.x>=0&&box.x+box.width<=width;}).toBe(true);
+    await expect.poll(async()=>{const box=await admin.locator('details[open] > [data-actions-menu]').boundingBox();return box.x>=0&&box.x+box.width<=width;}).toBe(true);
     await admin.keyboard.press('Escape');
     await admin.getByRole('button',{name:'Table & export',exact:true}).click();
     await expect(admin.getByRole('region',{name:'Table view',exact:true})).toBeVisible();
-    if(width===430)for(const select of await admin.locator('.task-table-view select').all())assert.ok((await select.boundingBox()).width>=140,'Mobile filters must keep their selected values readable');
-    await admin.getByText('More filters & columns',{exact:true}).click();await admin.getByLabel('Show Created by column').check();
+    if(width===430)for(const select of await admin.locator('.task-table-view select:visible').all())assert.ok((await select.boundingBox()).width>=140,'Mobile filters must keep their selected values readable');
+    if(!await admin.getByLabel('Show Created by column').isVisible())await admin.getByText('More filters & columns',{exact:true}).click();await admin.getByLabel('Show Created by column').check();
     await expect(admin.getByRole('columnheader',{name:'Created by',exact:true})).toBeVisible();
     await expect(admin.getByRole('cell',{name:'Staging 0',exact:true})).toBeVisible();
     await expect(admin.getByRole('region',{name:'Board view',exact:true})).toHaveCount(0);
