@@ -1,4 +1,14 @@
-# TaskTracker dark email release — prepared, sending disabled
+# TaskTracker dark email release — deployed 15 September 2026
+
+## Production rollout — completed
+
+Release `0fcb521b252b70316d84a5d2205216612b079057` is live at `/opt/tasktracker-releases/0fcb521`. [Linux build and full regression run 34963767070](https://github.com/raavan96/tasktracker/actions/runs/34963767070) passed. Archive SHA256: `bcf8dbe537a8a577465cad7058cfbc73fa4e9b358808ce836d8c809eaefd13fd`.
+
+Both migrations were rehearsed on a restored production backup before deployment. The deployment took 5.8 seconds and preserved fingerprints of all existing application records. Final backup: `/var/backups/tasktracker/20260915T113552357938Z`; database SHA256 `ff2a5cf18a296c3262a1c7d9dbb48e4b4747cea946c5b14708a59411e4e488df`. Server evidence: `/var/backups/tasktracker/release-email-deployment.json`. Previous app unit: `/etc/tasktracker-release-email-0fcb521.service.previous`.
+
+Workspace and server delivery switches are now enabled. `tasktracker-email.timer` is enabled and active, with its service pinned to the deployed release. The worker completed successfully, the public HTTPS login returned 200, and the web app and existing automation timer remained active. Zero members were opted in and zero queue items existed at activation; no email was sent during this rollout. Members must enable Receive email and Weekly report in Notifications preferences. Reports run from Monday 11 AM Asia/Kolkata, with a two-minute worker cadence and same-week catch-up.
+
+The following sections record preparation and design validation; references to disabled delivery describe the pre-deployment state. Actual Gmail/Outlook HTML rendering remains unverified, and provider success=false remains unconfirmed with no automatic retries.
 
 ## Design gallery
 
