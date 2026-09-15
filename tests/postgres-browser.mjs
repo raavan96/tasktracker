@@ -76,7 +76,7 @@ try{
   await expect(admin.locator('dialog')).toHaveCount(0);
   for (const width of [1440,430]) {
     await admin.setViewportSize({width,height:932});
-    const geometry=()=>admin.evaluate(()=>[...document.querySelectorAll('.workspace-main,.workspace-main h1,.dark-workspace-sidebar,.workspace-header-inner,.board-column,.task-card')].map(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return [el.className,Math.round(r.x),Math.round(r.y),Math.round(r.width),Math.round(r.height),s.fontSize,s.padding,s.borderRadius,s.display];}));
+    const geometry=()=>admin.evaluate(()=>[...document.querySelectorAll('.workspace-main,.workspace-main h1,.dark-workspace-sidebar,.workspace-header-inner,.board-column,.task-card')].map(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return [el.className,Math.round(r.x),Math.round(r.y),Math.round(r.width),Math.round(r.height),s.fontSize,s.padding,s.display];}));
     await admin.evaluate(()=>document.fonts.ready);
     await admin.evaluate(()=>Promise.all(document.getAnimations().filter(a=>a.effect?.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{}))));
     const beforeTheme=await geometry();
