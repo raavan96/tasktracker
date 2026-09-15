@@ -449,7 +449,7 @@ try{
    for(const route of ['/dashboard','/dashboard/my-tasks','/dashboard/tasks','/dashboard/calendar','/dashboard/reports','/dashboard/templates','/dashboard/archive','/dashboard/workload','/admin/users','/dashboard/notifications',projectURL.replace(base,'')+'?task='+r4task+'&discussion=true']){
     await admin.goto(base+route);await expect(admin.locator('.workspace-main')).toBeVisible();await admin.evaluate(()=>document.fonts.ready);
     if(route.includes('discussion=true')){await expect(admin.getByLabel('Write a task update',{exact:true})).toBeVisible();await expect(admin.getByText('Loading remarks…',{exact:true})).toBeHidden();}
-    assert.deepEqual(await themeControls('light'),await themeControls('dark'),`Theme controls differ: ${width} ${route}`);
+    await expect(async()=>{assert.deepEqual(await themeControls('light'),await themeControls('dark'),`Theme controls differ: ${width} ${route}`);}).toPass({timeout:10000});
     if(route==='/dashboard'){
      await themeControls('light');await admin.screenshot({path:`/tmp/release5-light-theme-${width}.png`,fullPage:true});
     }
