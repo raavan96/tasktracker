@@ -376,9 +376,9 @@ assert.ok(weeklyData.projects.some(p=>p.id===ep));assert.ok(!weeklyData.projects
 assert.ok(!weeklyData.items.some(t=>t.title==='Colleague-only personal task'));assert.ok(weeklyData.items.some(t=>t.title==='Email task'));
 assert.equal(weeklyData.stats.find(s=>s.label==='Your tasks completed last week').value,1);
 const adminWeekly=await weeklyReportData(db,admin,week);assert.ok(!adminWeekly?.projects.some(p=>p.id===ep));
-await rows("SELECT queue_weekly_emails(($1::date+time '08:59') AT TIME ZONE 'Asia/Kolkata')",[week]);assert.equal((await rows("SELECT count(*) n FROM email_queue WHERE user_id=$1 AND category='weekly_report'",[member]))[0].n,0);
-await rows("SELECT queue_weekly_emails(($1::date+time '09:00') AT TIME ZONE 'Asia/Kolkata')",[week]);
-await rows("SELECT queue_weekly_emails((($1::date+1)+time '09:00') AT TIME ZONE 'Asia/Kolkata')",[week]);
+await rows("SELECT queue_weekly_emails(($1::date+time '10:59') AT TIME ZONE 'Asia/Kolkata')",[week]);assert.equal((await rows("SELECT count(*) n FROM email_queue WHERE user_id=$1 AND category='weekly_report'",[member]))[0].n,0);
+await rows("SELECT queue_weekly_emails(($1::date+time '11:00') AT TIME ZONE 'Asia/Kolkata')",[week]);
+await rows("SELECT queue_weekly_emails((($1::date+1)+time '11:00') AT TIME ZONE 'Asia/Kolkata')",[week]);
 assert.equal((await rows("SELECT count(*) n FROM email_queue WHERE user_id=$1 AND category='weekly_report'",[member]))[0].n,1);
 const weeklyJob=(await rows("SELECT * FROM email_queue WHERE user_id=$1 AND category='weekly_report'",[member]))[0];
 const weeklyMail=await emailLogic.prepareEmail(db,weeklyJob);assert.ok(weeklyMail.html.includes('Your projects'));assert.ok(!weeklyMail.html.includes('Unrelated public project'));assert.ok(!weeklyMail.html.includes('Colleague-only personal task'));

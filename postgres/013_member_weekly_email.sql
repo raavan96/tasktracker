@@ -7,7 +7,7 @@ ALTER TABLE email_queue ADD CONSTRAINT email_queue_task_required CHECK(category 
 CREATE FUNCTION queue_weekly_emails(p_now timestamptz DEFAULT now()) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
 DECLARE local_now timestamp=p_now AT TIME ZONE 'Asia/Kolkata'; week_start date=date_trunc('week',local_now)::date;
 BEGIN
- IF NOT EXISTS(SELECT 1 FROM email_delivery_settings WHERE id AND enabled) OR local_now<week_start+time '09:00' THEN RETURN;END IF;
+ IF NOT EXISTS(SELECT 1 FROM email_delivery_settings WHERE id AND enabled) OR local_now<week_start+time '11:00' THEN RETURN;END IF;
  INSERT INTO email_queue(user_id,category,event_key)
  SELECT prefs.user_id,'weekly_report','weekly:'||prefs.user_id||':'||week_start
  FROM email_preferences prefs JOIN profiles u ON u.id=prefs.user_id

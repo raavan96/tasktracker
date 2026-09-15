@@ -34,7 +34,7 @@ Rollback can stop the email timer and restore the previous web release while ret
 
 ## Personal weekly reports
 
-Migration 013 adds a weekly-report preference and event producer for every opted-in active member. Reports run from Monday 9 AM India time for the previous Monday-Sunday, with catch-up within that same week and one queue item per member/week. Global delivery switches remain off.
+Migration 013 adds a weekly-report preference and event producer for every opted-in active member. Reports run from Monday 11 AM India time for the previous Monday-Sunday, with catch-up within that same week and one queue item per member/week. Global delivery switches remain off.
 
 Personal statistics and pending-task links cover tasks assigned to or created by the recipient. Project summaries cover only current explicit project memberships; admin visibility, public visibility and former membership never expand the email scope. Project totals include teammates' work and are labelled separately. Active projects and projects completed during the reporting week are included. Last-week completions use completion-event timestamps with India-time boundaries; current pending/overdue/review figures are labelled now.
 
