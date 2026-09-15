@@ -4,7 +4,7 @@
 
 Open `email-previews/index.html` for 11 category previews, a phone/desktop toggle and plain-text versions. Examples use synthetic task data. Templates use dark navy backgrounds, lighter cards, high-contrast text, cyan action buttons and distinct review/completion/attention accents. The layouts use presentation tables and inline styles, with no fonts, images or tracking resources loaded externally.
 
-All 11 categories were checked in the browser at 375px and 800px without horizontal overflow. The rendered examples are browser previews, not proof of Gmail, Outlook or iPhone Mail rendering. Mailify may add its own unsubscribe footer; that footer is outside these templates. The provider's sample exposes only a content field, so the plain-text versions are available as artifacts but are not claimed to be sent as a multipart alternative.
+All 11 categories were checked in the browser at 375px and 800px without horizontal overflow. The main text, footer, action button and category label color pairs measured 9.19:1–10.73:1 contrast. The rendered examples are browser previews, not proof of Gmail, Outlook or iPhone Mail rendering. Mailify may add its own unsubscribe footer; that footer is outside these templates. The provider's sample exposes only a content field, so the plain-text versions are available as artifacts but are not claimed to be sent as a multipart alternative.
 
 Initial queued categories: assignment, mention, review requested, approved, changes requested, review updated, daily deadline digest. Additional prepared designs: deadline changed, activity digest, project completed and weekly report. The additional four designs do not yet have event producers.
 
@@ -22,7 +22,7 @@ Initial queued categories: assignment, mention, review requested, approved, chan
 
 Local lint, TypeScript, 40 unit tests and the database suite pass. Database tests cover global disabled defaults, no backlog, private preferences/queue, independent in-app suppression, deduplication, access removal, opt-out, false/timeout no-retry behavior, accepted status and daily digest generation.
 
-The Linux browser regression adds per-member email preference persistence and confirms that saving preferences cannot enable workspace delivery. Final CI evidence will be recorded when available.
+The Linux browser regression adds per-member email preference persistence and confirms that saving preferences cannot enable workspace delivery. The complete Linux build and browser regression passed for commit `926159d791ad33b8b10c54e06fc347f68ff8dc67`: [CI run 34956878073](https://github.com/raavan96/tasktracker/actions/runs/34956878073).
 
 ## Rollout
 
