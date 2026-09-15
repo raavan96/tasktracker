@@ -388,4 +388,19 @@ await rows('DELETE FROM project_members WHERE project_id=$1 AND user_id=$2',[ep,
 await rows('DELETE FROM project_members WHERE user_id=$1',[member]);assert.equal(await emailLogic.prepareEmail(db,weeklyJob),null);
 await as(member);await assert.rejects(()=>rows('SELECT queue_weekly_emails()'));await as(null);
 console.log('Member weekly email: own tasks and current membership only, no admin/public-project expansion, prior-week completion boundaries, Monday timing, dedupe, opt-out and revoked membership passed.');
+await db.exec(read('postgres/014_managed_email.sql'));
+assert.equal((await rows('SELECT count(*) n FROM profiles p LEFT JOIN email_preferences e ON e.user_id=p.id WHERE NOT coalesce(e.enabled AND e.assignments AND e.mentions AND e.reviews AND e.deadline_digest AND e.weekly_report,false)'))[0].n,0);
+for(const id of [member,admin]){
+ await as(id);
+ await assert.rejects(()=>rows('UPDATE email_preferences SET enabled=false WHERE user_id=$1',[id]));
+ await assert.rejects(()=>rows('DELETE FROM email_preferences WHERE user_id=$1',[id]));
+ await assert.rejects(()=>rows('INSERT INTO email_preferences(user_id,enabled) VALUES($1,false)',[id]));
+ assert.equal((await rows('SELECT * FROM email_preferences')).length,1);
+}
+await as(null);
+const newcomer='00000000-0000-0000-0000-000000000099';
+await rows('INSERT INTO auth.users(id,email) VALUES($1,$2)',[newcomer,'newcomer@collegedunia.com']);
+await rows('INSERT INTO profiles(id,email,full_name,role) VALUES($1,$2,$3,$4)',[newcomer,'newcomer@collegedunia.com','New member','member']);
+assert.equal((await rows('SELECT enabled AND assignments AND mentions AND reviews AND deadline_digest AND weekly_report subscribed FROM email_preferences WHERE user_id=$1',[newcomer]))[0].subscribed,true);
+console.log('Managed email: existing and future members subscribed; member/admin preference mutations denied.');
 await db.close();

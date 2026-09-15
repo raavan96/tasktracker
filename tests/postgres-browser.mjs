@@ -394,17 +394,17 @@ try{
   for(const width of [375,430,1280]){await admin.setViewportSize({width,height:932});await expect.poll(()=>admin.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await admin.screenshot({path:`/tmp/release5-cd-${width}.png`,fullPage:true,animations:'disabled'});}
   await admin.getByText('My account',{exact:true}).click();await expect(admin.getByRole('link',{name:'Change password',exact:true})).toBeVisible();
   console.log('Release C/D browser: private saved views persist, bulk preview/confirmation saves, notification settings persist, delegated quick view, account menu and 375/430/1280 widths passed.');
-  // Email settings are private and cannot activate workspace delivery.
-  await admin.goto(base+'/dashboard/notifications');await admin.getByText('Email preferences',{exact:true}).click();
-  await expect(admin.getByText('Workspace email delivery has not been enabled yet. You can save your preferences now.',{exact:true})).toBeVisible();
-  await expect(admin.getByLabel('Receive email notifications',{exact:true})).not.toBeChecked();
-  await admin.getByLabel('Receive email notifications',{exact:true}).check();await admin.getByLabel('Mentions in task updates',{exact:true}).uncheck();await admin.getByLabel('Weekly task and project report',{exact:true}).uncheck();
-  await admin.getByRole('button',{name:'Save email preferences',exact:true}).click();await expect(admin.getByText('Email preferences saved.',{exact:true})).toBeVisible();
-  await admin.reload();await admin.getByText('Email preferences',{exact:true}).click();await expect(admin.getByLabel('Receive email notifications',{exact:true})).toBeChecked();await expect(admin.getByLabel('Mentions in task updates',{exact:true})).not.toBeChecked();await expect(admin.getByLabel('Weekly task and project report',{exact:true})).not.toBeChecked();
-  await member.goto(base+'/dashboard/notifications');await member.getByText('Email preferences',{exact:true}).click();await expect(member.getByLabel('Receive email notifications',{exact:true})).not.toBeChecked();
+  // Email subscriptions are workspace-managed, without member controls.
+  for(const page of [admin,member]){
+   await page.goto(base+'/dashboard/notifications');
+   await expect(page.getByRole('region',{name:'Workspace email notifications'})).toBeVisible();
+   await expect(page.getByRole('button',{name:'Save email preferences',exact:true})).toHaveCount(0);
+   await expect(page.getByLabel('Receive email notifications',{exact:true})).toHaveCount(0);
+  }
   assert.equal((await db.query('SELECT enabled FROM email_delivery_settings')).rows[0].enabled,false);
+  assert.equal(Number((await db.query('SELECT count(*) n FROM profiles p LEFT JOIN email_preferences e ON e.user_id=p.id WHERE e.enabled IS DISTINCT FROM true')).rows[0].n),0);
   assert.equal(Number((await db.query('SELECT count(*) n FROM email_queue')).rows[0].n),0);
-  console.log('Email browser preferences: disabled defaults, save/reload persistence, per-user privacy and workspace delivery remains off.');
+  console.log('Managed email: all members subscribed, no member controls, workspace switch unchanged.');
 
 
   assert.equal(external.length,0,'Staging must not contact Supabase');
