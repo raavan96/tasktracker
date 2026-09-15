@@ -436,6 +436,25 @@ try{
   console.log('Managed email and compact notification settings; mobile/desktop action alignment passed.');
 
 
+  // Theme changes must not remove controls or change action/field state.
+  async function themeControls(theme){
+   await admin.evaluate(value=>document.documentElement.dataset.theme=value,theme);
+   return admin.locator('button,a,input,select,textarea,summary,[role="button"]').evaluateAll(elements=>elements.map(e=>{
+    const r=e.getBoundingClientRect(),s=getComputedStyle(e);
+    return {tag:e.tagName,name:(e.getAttribute('aria-label')||e.textContent||'').trim().replace(/Switch to (light|dark) mode/,'Theme toggle'),href:e.getAttribute('href'),type:e.getAttribute('type'),disabled:e.matches(':disabled'),visible:r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none',pointer:s.pointerEvents,value:'value' in e?e.value:null};
+   }));
+  }
+  for(const width of [430,1440]){
+   await admin.setViewportSize({width,height:1000});
+   for(const route of ['/dashboard','/dashboard/my-tasks','/dashboard/tasks','/dashboard/calendar','/dashboard/reports','/dashboard/templates','/dashboard/archive','/dashboard/workload','/admin/users','/dashboard/notifications',projectURL.replace(base,'')+'?task='+r4task+'&discussion=true']){
+    await admin.goto(base+route);await admin.waitForLoadState('networkidle');
+    assert.deepEqual(await themeControls('light'),await themeControls('dark'),`Theme controls differ: ${width} ${route}`);
+    if(route==='/dashboard'){
+     await themeControls('light');await admin.screenshot({path:`/tmp/release5-light-theme-${width}.png`,fullPage:true});
+    }
+   }
+  }
+  console.log('Light/dark control parity: 11 pages including task drawer, at phone and desktop widths; names, destinations, visibility, enabled state and field values match.');
   assert.equal(external.length,0,'Staging must not contact Supabase');
   console.log('Eight browser logins, private project, task assignment, local upload/download, outsider denial, review and admin approval passed against PostgreSQL 16.');
 }finally{await browser.close();await db.end();}
