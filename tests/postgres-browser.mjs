@@ -398,9 +398,9 @@ try{
   await admin.goto(base+'/dashboard/notifications');await admin.getByText('Email preferences',{exact:true}).click();
   await expect(admin.getByText('Workspace email delivery has not been enabled yet. You can save your preferences now.',{exact:true})).toBeVisible();
   await expect(admin.getByLabel('Receive email notifications',{exact:true})).not.toBeChecked();
-  await admin.getByLabel('Receive email notifications',{exact:true}).check();await admin.getByLabel('Mentions in task updates',{exact:true}).uncheck();
+  await admin.getByLabel('Receive email notifications',{exact:true}).check();await admin.getByLabel('Mentions in task updates',{exact:true}).uncheck();await admin.getByLabel('Weekly task and project report',{exact:true}).uncheck();
   await admin.getByRole('button',{name:'Save email preferences',exact:true}).click();await expect(admin.getByText('Email preferences saved.',{exact:true})).toBeVisible();
-  await admin.reload();await admin.getByText('Email preferences',{exact:true}).click();await expect(admin.getByLabel('Receive email notifications',{exact:true})).toBeChecked();await expect(admin.getByLabel('Mentions in task updates',{exact:true})).not.toBeChecked();
+  await admin.reload();await admin.getByText('Email preferences',{exact:true}).click();await expect(admin.getByLabel('Receive email notifications',{exact:true})).toBeChecked();await expect(admin.getByLabel('Mentions in task updates',{exact:true})).not.toBeChecked();await expect(admin.getByLabel('Weekly task and project report',{exact:true})).not.toBeChecked();
   await member.goto(base+'/dashboard/notifications');await member.getByText('Email preferences',{exact:true}).click();await expect(member.getByLabel('Receive email notifications',{exact:true})).not.toBeChecked();
   assert.equal((await db.query('SELECT enabled FROM email_delivery_settings')).rows[0].enabled,false);
   assert.equal(Number((await db.query('SELECT count(*) n FROM email_queue')).rows[0].n),0);

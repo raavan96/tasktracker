@@ -1,4 +1,5 @@
 // Worker logic is isolated from the CLI so PostgreSQL tests can exercise it.
+import {weeklyReportData} from './weekly.mjs';
 import {renderEmail} from './templates.mjs';
 export async function claimEmail(db) {
  return (await db.query(`UPDATE email_queue SET state='attempting',attempted_at=now()
@@ -8,11 +9,16 @@ export async function claimEmail(db) {
 export async function prepareEmail(db,job) {
  const person=(await db.query(`SELECT u.email,p.full_name,p.role,e.* FROM email_preferences e JOIN profiles p ON p.id=e.user_id JOIN auth.users u ON u.id=p.id WHERE e.user_id=$1 AND e.enabled AND p.is_active AND NOT u.disabled AND EXISTS(SELECT 1 FROM email_delivery_settings WHERE id AND enabled)`,[job.user_id])).rows[0];
  if(!person)return null;
- const group=job.category==='assignment'?'assignments':job.category==='mention'?'mentions':job.category==='deadline_digest'?'deadline_digest':'reviews';
+ const group=job.category==='assignment'?'assignments':job.category==='mention'?'mentions':job.category==='deadline_digest'?'deadline_digest':job.category==='weekly_report'?'weekly_report':'reviews';
  if(!person[group])return null;
  const date=(await db.query("SELECT (now() AT TIME ZONE 'Asia/Kolkata')::date::text today")).rows[0].today;
  let data={name:person.full_name||'there'};
- if(job.category==='deadline_digest'){
+ if(job.category==='weekly_report'){
+  const week=(await db.query("SELECT date_trunc('week',now() AT TIME ZONE 'Asia/Kolkata')::date::text week")).rows[0].week;
+  if(job.event_key!==`weekly:${job.user_id}:${week}`)return null;
+  const report=await weeklyReportData(db,job.user_id,week);if(!report)return null;
+  data={...data,...report};
+ } else if(job.category==='deadline_digest'){
   if(job.event_key!==`deadline:${job.user_id}:${date}`)return null;
   const items=(await db.query(`SELECT t.id,t.project_id,t.title,t.due_date::text,p.name project_name,count(*) OVER () total FROM tasks t JOIN projects p ON p.id=t.project_id WHERE $1=ANY(t.assignee_ids) AND t.status NOT IN ('done','in_review') AND t.due_date<=$2::date+1 AND can_email_task($1,t.id) ORDER BY t.due_date,t.id LIMIT 21`,[job.user_id,date])).rows;
   if(!items.length)return null;

@@ -1,22 +1,31 @@
-TaskTracker Notification — Weekly team report
+TaskTracker Notification — Your weekly report
 
 Hi Aishwarya,
 
-Your team’s week in review
+Your work and projects, this week
 
-A summary of completed work, pending tasks and work that needs attention.
+Your assigned or created tasks, followed by shared progress across projects you currently belong to. Completed figures cover the previous week; pending and overdue figures reflect the latest state.
 
 7–13 September 2026
 
-Completed during the week: 12
+Prepare the September admissions report — Admissions · In progress · Due 18 Sep 2026
+https://168.144.155.51/dashboard/projects/sample-project?task=sample-task
 
-Pending now: 8
+Your tasks completed last week: 4
 
-Overdue now: 2
+Your pending tasks now: 5
 
-Awaiting review now: 3
+Your overdue tasks now: 1
 
-Open reports: https://168.144.155.51/dashboard/reports
+Your tasks awaiting review now: 2
+
+Admissions · September — 8 completed last week · 6 pending now · 1 overdue now
+https://168.144.155.51/dashboard/projects/sample-project
+
+Team operations — 4 completed last week · 3 pending now · 0 overdue now
+https://168.144.155.51/dashboard/projects/sample-operations
+
+Open workspace: https://168.144.155.51/dashboard
 
 Open TaskTracker to reply. Replies to this email do not update a task.
 

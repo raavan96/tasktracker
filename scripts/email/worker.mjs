@@ -13,6 +13,7 @@ try {
   // A worker could stop after the provider received a request. Never resend it.
   await db.query("UPDATE email_queue SET state='unconfirmed',finished_at=now() WHERE state='attempting' AND attempted_at<now()-interval '5 minutes'");
   await db.query('SELECT queue_deadline_emails()');
+  await db.query('SELECT queue_weekly_emails()');
   let processed=0;
   while(processed<10&&await processOneEmail(db,mail=>sendMailify({recipient:mail.recipient,subject:mail.subject,content:mail.html},config)))processed++;
   console.log(`Processed ${processed} email queue items. Accepted does not mean delivered; unconfirmed items are not retried.`);

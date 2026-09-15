@@ -14,8 +14,8 @@ export async function saveNotificationPreferences(input:{deadline_days:number;me
  if(![0,1,3,7].includes(input.deadline_days)||['mentions','assignments','reviews'].some(k=>typeof input[k as keyof typeof input]!=='boolean'))throw new Error('Choose valid notification preferences.');
  await db.query('INSERT INTO notification_preferences(user_id,deadline_days,mentions,assignments,reviews) VALUES($1,$2,$3,$4,$5) ON CONFLICT(user_id) DO UPDATE SET deadline_days=excluded.deadline_days,mentions=excluded.mentions,assignments=excluded.assignments,reviews=excluded.reviews',[user,input.deadline_days,input.mentions,input.assignments,input.reviews]);return {error:''};
  });}catch{return {error:'Preferences could not be saved. Please retry.'};}}
-export async function saveEmailPreferences(input:{enabled:boolean;assignments:boolean;mentions:boolean;reviews:boolean;deadline_digest:boolean}){try{return await workspaceRead(async(db,user)=>{
- const keys=['enabled','assignments','mentions','reviews','deadline_digest'] as const;
+export async function saveEmailPreferences(input:{enabled:boolean;assignments:boolean;mentions:boolean;reviews:boolean;deadline_digest:boolean;weekly_report:boolean}){try{return await workspaceRead(async(db,user)=>{
+ const keys=['enabled','assignments','mentions','reviews','deadline_digest','weekly_report'] as const;
  if(!input||keys.some(key=>typeof input[key]!=='boolean'))throw new Error('Choose valid email preferences.');
- await db.query('INSERT INTO email_preferences(user_id,enabled,assignments,mentions,reviews,deadline_digest) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(user_id) DO UPDATE SET enabled=excluded.enabled,assignments=excluded.assignments,mentions=excluded.mentions,reviews=excluded.reviews,deadline_digest=excluded.deadline_digest',[user,...keys.map(key=>input[key])]);return {error:''};
+ await db.query('INSERT INTO email_preferences(user_id,enabled,assignments,mentions,reviews,deadline_digest,weekly_report) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(user_id) DO UPDATE SET enabled=excluded.enabled,assignments=excluded.assignments,mentions=excluded.mentions,reviews=excluded.reviews,deadline_digest=excluded.deadline_digest,weekly_report=excluded.weekly_report',[user,...keys.map(key=>input[key])]);return {error:''};
  });}catch{return {error:'Email preferences could not be saved. Please retry.'};}}
