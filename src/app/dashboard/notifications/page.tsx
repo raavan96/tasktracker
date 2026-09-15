@@ -1,3 +1,4 @@
+import NotificationSettingsPanel from '@/components/NotificationSettingsPanel';
 import EmailPreferences from '@/components/EmailPreferences';
 import {workspaceRead} from '@/lib/workspace-data';
 import NotificationPreferences,{type NotificationSettings} from '@/components/NotificationPreferences';
@@ -13,5 +14,5 @@ export default async function NotificationsPage({searchParams}:{searchParams:Pro
   const deliveryEnabled=(await db.query('SELECT enabled FROM email_delivery_settings WHERE id')).rows[0]?.enabled===true;
   return {deliveryEnabled,preferences,notifications,unread:Number(counts.unread),page,pages,total};
  });
- return <div className="space-y-6"><NotificationsClient {...result} filter={filter}/><div className="mx-auto max-w-4xl"><NotificationPreferences initial={result.preferences}/><EmailPreferences deliveryEnabled={result.deliveryEnabled}/></div></div>;
+ return <div className="flex min-h-[calc(100dvh-10rem)] flex-col gap-10"><NotificationsClient {...result} filter={filter}/><NotificationSettingsPanel><NotificationPreferences initial={result.preferences}/><EmailPreferences deliveryEnabled={result.deliveryEnabled}/></NotificationSettingsPanel></div>;
 }
