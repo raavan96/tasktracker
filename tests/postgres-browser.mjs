@@ -345,13 +345,14 @@ try{
   await db.query("SELECT set_config('request.jwt.claim.sub','',false)");
   async function openUpdates(page){await page.goto(base+`/dashboard/projects/${perfProject}?task=${perfTask}&discussion=true`);await expect(page.getByRole('heading',{name:'Task history',exact:true})).toBeVisible();await expect(page.getByText('Loading remarks…',{exact:true})).toHaveCount(0);}
   await openUpdates(admin);
-  const saveTimings=[];
+  const saveTimings=[];let savePosts=0;const countSave=request=>{if(request.method()==='POST')savePosts++;};admin.on('request',countSave);
   for(let i=0;i<30;i++){
     await admin.getByLabel('Write a task update',{exact:true}).fill('Save timing '+i);
     const started=Date.now();await admin.getByRole('button',{name:'Post update',exact:true}).click();
     await expect(admin.getByRole('status').filter({hasText:'Saved.'})).toBeVisible();
     await expect(admin.getByLabel('Write a task update',{exact:true})).toHaveValue('');saveTimings.push(Date.now()-started);
   }
+  admin.off('request',countSave);assert.equal(savePosts,30,'Each save should use one request without reloading the project or remarks');
   const sorted=[...saveTimings].sort((a,b)=>a-b);
   console.log('Release A confirmed-save timings: '+JSON.stringify({samples:30,medianMs:sorted[14],p95Ms:sorted[28],maxMs:sorted[29]}));
   await admin.getByLabel('Write a task update',{exact:true}).fill('Lost response QA');

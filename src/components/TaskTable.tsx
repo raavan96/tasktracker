@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {assigneeNames} from '@/lib/task-types';
 import { deadlineLabel, initials, makeCsv, summaryFilters } from '@/lib/task-presentation';
 export type TableTask = { assignee_ids?:string[];assignees?:import('@/lib/task-types').Member[];assignee_id?: string|null; id: string; project_id: string; title: string; status: string; priority: string; due_date: string | null; assignee?: { is_active?: boolean; full_name: string | null; email: string } | null; creator?: { full_name: string | null; email: string } | null; project?: { name: string } | null };
-export default function TaskTable({ today, onOpen, projectId, archived=false, mine=false }: { tasks?: TableTask[]; projectId?:string; archived?:boolean; mine?:boolean; today: string; onOpen?: (id: string) => void; initialSummary?: string }) {
+export default function TaskTable({ today, onOpen, projectId, archived=false, mine=false, refreshToken }: { refreshToken?:unknown; tasks?: TableTask[]; projectId?:string; archived?:boolean; mine?:boolean; today: string; onOpen?: (id: string) => void; initialSummary?: string }) {
   const [creatorColumn,setCreatorColumn]=useUrlState<string>('creator','off',{allowed:['off','on'],remember:'creator-column'});
   const showCreator=creatorColumn==='on';
   const [search,setSearch]=useUrlState<string>('q','',{replace:true});
@@ -27,7 +27,7 @@ export default function TaskTable({ today, onOpen, projectId, archived=false, mi
   useEffect(()=>{let active=true;const changed=previous.current!==key;
    if(changed){previous.current=key;if(page!=='1'){const url=new URL(window.location.href);url.searchParams.delete('page');window.history.replaceState(null,'',url.pathname+url.search);return;}}
    const includeOptions=!optionsLoaded.current;setBusy(true);getTaskPage({...JSON.parse(key),page:Number(page),includeOptions}).then(r=>{if(active){if(r.error)setError(r.error);else{setData(previous=>!includeOptions&&previous?{...r,people:previous.people,projects:previous.projects}:r);optionsLoaded.current=true;setError('');}setBusy(false);}}).catch(()=>{if(active){setError('Task list could not load. Retry by refreshing.');setBusy(false);}});
-   return()=>{active=false;};},[key,page,focusVersion]);
+   return()=>{active=false;};},[key,page,focusVersion,refreshToken]);
   const people=new Map((data?.people||[]).map(p=>[p.id,p.full_name||p.email]));
   const filtered=data?.items||[];
   async function download() {setBusy(true);setError('');try{

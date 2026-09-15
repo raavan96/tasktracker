@@ -275,6 +275,7 @@ const remarkModule={exports:{}};
 new Function('exports',require('typescript').transpileModule(read('src/lib/postgres/remarks.ts'),{compilerOptions:{module:require('typescript').ModuleKind.CommonJS,target:require('typescript').ScriptTarget.ES2022}}).outputText)(remarkModule.exports);
 const write=remarkModule.exports.writeRemark;
 const connection={query:async(sql,args)=>{const result=await db.query(sql,args);return {...result,rowCount:result.affectedRows??result.rows.length};}};
+const creatorRow=await q('tasks').select('creator:task_creator(id)').eq('id',remarkTask).single().execute();assert.equal(creatorRow.data.creator.id,admin);
 const request='11111111-2222-4333-8444-555555555555';
 const first=await write(connection,admin,remarkTask,'Confirmed once',[member],undefined,undefined,request);
 const again=await write(connection,admin,remarkTask,'Confirmed once',[member],undefined,undefined,request);

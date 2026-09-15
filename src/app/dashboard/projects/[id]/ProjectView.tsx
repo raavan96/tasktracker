@@ -82,7 +82,7 @@ export default function ProjectView({
   const needsNotes=activeTab==='notes'&&!(noteCache.source===initialNotes?noteCache.loaded:notesLoaded);
   useEffect(()=>{let live=true;if(needsTasks){projectTasks(project.id,showArchived||project.is_archived).then(items=>{if(live){setSectionError('');setTaskCache({source:initialTasks,items,active:true,archived:showArchived||project.is_archived});}}).catch(()=>{if(live)setSectionError('Tasks could not load. Please retry.');});}return()=>{live=false};},[needsTasks,showArchived,project.id,project.is_archived,initialTasks,sectionRetry]);
   useEffect(()=>{let live=true;if(needsNotes){projectNotes(project.id).then(items=>{if(live){setSectionError('');setNoteCache({source:initialNotes,items,loaded:true});}}).catch(()=>{if(live)setSectionError('Notes could not load. Please retry.');});}return()=>{live=false};},[needsNotes,project.id,initialNotes,sectionRetry]);
-  async function openTableTask(id:string){setFeedback(null);setDetailTab('details');if(!allTasks.some(t=>t.id===id)){try{const items=await projectTasks(project.id,true,id);if(!items.length)throw new Error();setTaskCache({...cache,items:[...cache.items,...items]});}catch{setSectionError('Task could not load. Please retry.');return;}}setSelectedTaskId(id);}
+  async function openTableTask(id:string){setFeedback(null);setDetailTab('details');if(!allTasks.some(t=>t.id===id)){try{const items=await projectTasks(project.id,true,id);if(!items.length)throw new Error();setTaskCache({...cache,items:[...cache.items,...items]});}catch{setSectionError('Task could not load. Please retry.');return;}}const url=new URL(window.location.href);url.searchParams.set('task',id);window.history.replaceState(null,'',url.pathname+url.search);setSelectedTaskId(id);}
   const [taskDraft,setTaskDraft]=useState<Record<string,string>|null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
@@ -232,7 +232,7 @@ export default function ProjectView({
       </div>}
       {activeTab === 'tasks' && <section key={view} className="task-view-enter space-y-6" aria-label={view === 'board' ? 'Board view' : 'Table view'}>
 
-      {activeTab === 'tasks' && view === 'table' && <TaskTable projectId={project.id} archived={project.is_archived||showArchived} tasks={tasks} today={today} onOpen={openTableTask} />}
+      {activeTab === 'tasks' && view === 'table' && <TaskTable refreshToken={initialTasks} projectId={project.id} archived={project.is_archived||showArchived} tasks={tasks} today={today} onOpen={openTableTask} />}
       {activeTab === 'tasks' && view === 'board' && !needsTasks && <label className="block md:hidden text-sm font-medium">Filter by status<select value={mobileStatus} onChange={e=>setMobileStatus(e.target.value)} className="mt-2 w-full rounded-lg border p-3"><option value="all">All tasks ({tasks.length})</option>{statusColumns.map(col=><option key={col.id} value={col.id}>{col.title} ({tasks.filter(t=>t.status===col.id).length})</option>)}</select></label>}
       {activeTab === 'tasks' && view === 'board' && !needsTasks && !tasks.length && <p className="md:hidden rounded-xl border p-6 text-sm text-gray-500">No tasks yet. Add a task to get started.</p>}
       {activeTab === 'tasks' && view === 'board' && !needsTasks && (
