@@ -21,7 +21,7 @@ export async function weeklyReportData(db,userId,weekStart) {
  SELECT p.id,p.name,p.is_archived,
  (SELECT count(*) FROM tasks t WHERE t.project_id=p.id AND NOT t.is_archived AND NOT p.is_archived AND t.status<>'done')::int pending,
  (SELECT count(*) FROM tasks t,bounds WHERE t.project_id=p.id AND NOT t.is_archived AND NOT p.is_archived AND t.status NOT IN ('done','in_review') AND t.due_date<today)::int overdue,
- (SELECT count(*) FROM completions c WHERE c.project_id=p.id)::int completed
+ (SELECT count(DISTINCT c.task_id) FROM completions c WHERE c.project_id=p.id)::int completed
  FROM scope p ORDER BY p.name,p.id LIMIT 20) x),'[]'::jsonb) projects,
  coalesce((SELECT jsonb_agg(to_jsonb(x) ORDER BY x.due_date NULLS LAST,x.id) FROM (
  SELECT t.id,t.project_id,t.title,t.project_name,t.status,t.due_date::text due_date FROM personal t WHERE NOT t.is_archived AND NOT t.project_archived AND t.status<>'done' ORDER BY t.due_date NULLS LAST,t.id LIMIT 10) x),'[]'::jsonb) tasks`,[userId,weekStart]);

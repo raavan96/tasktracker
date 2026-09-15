@@ -2,7 +2,7 @@ TaskTracker Notification — Your weekly report
 
 Hi Aishwarya,
 
-Your work and projects, this week
+Your weekly progress
 
 Your assigned or created tasks, followed by shared progress across projects you currently belong to. Completed figures cover the previous week; pending and overdue figures reflect the latest state.
 

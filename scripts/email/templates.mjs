@@ -10,7 +10,7 @@ export const categories = {
  deadline_digest:{label:'Daily deadline summary',headline:'Your deadlines at a glance',intro:'Here are your overdue tasks and work due today or tomorrow. This summary covers work currently assigned to you.',cta:'Open my tasks',accent:'#84dcec'},
  activity_digest:{label:'Task activity summary',headline:'Catch up on your tasks',intro:'A summary of new remarks and status changes in the tasks you follow.',cta:'Open workspace',accent:'#84dcec'},
  project_completed:{label:'Project completed',headline:'This project is complete',intro:'The project creator or an admin has completed this project. It is now available in the completed-projects archive.',cta:'View project',accent:'#79d6a7'},
- weekly_report:{label:'Your weekly report',headline:'Your work and projects, this week',intro:'Your assigned or created tasks, followed by shared progress across projects you currently belong to. Completed figures cover the previous week; pending and overdue figures reflect the latest state.',cta:'Open workspace',accent:'#84dcec'}
+ weekly_report:{label:'Your weekly report',headline:'Your weekly progress',intro:'Your assigned or created tasks, followed by shared progress across projects you currently belong to. Completed figures cover the previous week; pending and overdue figures reflect the latest state.',cta:'Open workspace',accent:'#84dcec'}
 };
 export const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function taskPath(task){return `/dashboard/projects/${encodeURIComponent(task.projectId)}?task=${encodeURIComponent(task.id)}`;}
