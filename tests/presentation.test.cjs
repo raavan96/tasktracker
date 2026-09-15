@@ -7,3 +7,5 @@ test('deadlines and summary use India date at UTC boundary',()=>{assert.equal(to
 test('CSV quotes delimiters/newlines and neutralizes formulas',()=>{const csv=makeCsv([['=SUM(A1:A2)','a,"b"\nc','@cmd','normal']]);assert.ok(csv.includes("'=SUM"));assert.ok(csv.includes('a,""b""\nc'));assert.ok(csv.includes("'@cmd"));assert.ok(csv.startsWith('\uFEFF'));});
 
 test('review summary includes only tasks submitted for approval',()=>{assert.equal(matchesSummary({status:'in_review',due_date:null},'in_review','2026-09-11'),true);assert.equal(matchesSummary({status:'done',due_date:null},'in_review','2026-09-11'),false);});
+
+test('review tasks use their own queue rather than overdue work counts',()=>{for(const [filter,date] of [['today','2026-09-15'],['overdue','2026-09-14']]){assert.equal(matchesSummary({status:'in_review',due_date:date},filter,'2026-09-15'),false);assert.equal(matchesSummary({status:'todo',due_date:date},filter,'2026-09-15'),true);}});

@@ -17,11 +17,17 @@ export default function TaskTable({ today, onOpen, projectId, archived=false, mi
   const [projectFilter,setProjectFilter]=useUrlState<string>('project','');
   const [legacyStatus]=useUrlState<string>('status','all');
   const [page,setPage]=useUrlState<string>('page','1');
+  const optionsLoaded=useRef(false);const [focusVersion,setFocusVersion]=useState(0);
+  useEffect(()=>{const refresh=()=>{optionsLoaded.current=false;setFocusVersion(n=>n+1);};window.addEventListener('focus',refresh);return()=>window.removeEventListener('focus',refresh);},[]);
   const [data,setData]=useState<Awaited<ReturnType<typeof getTaskPage>>|null>(null);
   const [busy,setBusy]=useState(true),[error,setError]=useState('');
-  const key=JSON.stringify({q:search,summary,assignee,sort,project:projectId||projectFilter||undefined,priority,status:legacyStatus,archived,mine});const previous=useRef(key);
-  useEffect(()=>{let active=true;if(previous.current!==key){previous.current=key;const url=new URL(window.location.href);url.searchParams.delete('page');window.history.replaceState(null,'',url.pathname+url.search);}
-   const timer=setTimeout(()=>{setBusy(true);getTaskPage({...JSON.parse(key),page:Number(page)}).then(r=>{if(active){setData(r);setError(r.error);setBusy(false);}}).catch(()=>{if(active){setError('Task list could not load. Retry by refreshing.');setBusy(false);}});},180);return()=>{active=false;clearTimeout(timer);};},[key,page]);
+  const [debouncedSearch,setDebouncedSearch]=useState(search);
+  useEffect(()=>{const timer=setTimeout(()=>setDebouncedSearch(search),180);return()=>clearTimeout(timer);},[search]);
+  const key=JSON.stringify({q:debouncedSearch,summary,assignee,sort,project:projectId||projectFilter||undefined,priority,status:legacyStatus,archived,mine});const previous=useRef(key);
+  useEffect(()=>{let active=true;const changed=previous.current!==key;
+   if(changed){previous.current=key;if(page!=='1'){const url=new URL(window.location.href);url.searchParams.delete('page');window.history.replaceState(null,'',url.pathname+url.search);return;}}
+   const includeOptions=!optionsLoaded.current;setBusy(true);getTaskPage({...JSON.parse(key),page:Number(page),includeOptions}).then(r=>{if(active){if(r.error)setError(r.error);else{setData(previous=>!includeOptions&&previous?{...r,people:previous.people,projects:previous.projects}:r);optionsLoaded.current=true;setError('');}setBusy(false);}}).catch(()=>{if(active){setError('Task list could not load. Retry by refreshing.');setBusy(false);}});
+   return()=>{active=false;};},[key,page,focusVersion]);
   const people=new Map((data?.people||[]).map(p=>[p.id,p.full_name||p.email]));
   const filtered=data?.items||[];
   async function download() {setBusy(true);setError('');try{

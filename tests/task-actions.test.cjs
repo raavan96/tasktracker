@@ -74,7 +74,7 @@ test('successful edit persists all fields, scopes by project, and refreshes all 
   const t = setup(); const result = await t.actions.updateTask('task','project',form({title:'  Revised task  ',status:'blocked',dueDate:'2026-10-01'}));
   assert.equal(result.success,true); assert.equal(t.writes[0].payload.title,'Revised task'); assert.equal(t.writes[0].payload.status,'blocked');
   assert.deepEqual(t.writes[0].filters,[['id','task'],['project_id','project'],['review_version',0]]);
-  assert.deepEqual(t.invalidated,['/dashboard/projects/project','/dashboard/my-tasks','/dashboard']);
+  assert.deepEqual(t.invalidated,['/dashboard/projects/project','/dashboard/my-tasks','/dashboard','/dashboard/tasks','/dashboard/workload','/dashboard/calendar']);
 });
 test('assignee may update status but cannot rewrite another creator’s task', async () => {
   const t = setup({user:{id:'member'},role:'member'});

@@ -4,7 +4,7 @@ import {transaction} from './postgres/db';
 import type {PoolClient} from 'pg';
 import type {TableTask} from '@/components/TaskTable';
 export async function workspaceRead<T>(work:(db:PoolClient,userId:string)=>Promise<T>){const user=await currentUser();if(!user)throw new Error('Please sign in again.');return transaction(user.id,async db=>{await db.query('SELECT public.assert_active()');return work(db,user.id);});}
-export type TaskFilters={q?:string;summary?:string;assignee?:string;sort?:string;project?:string;page?:number;archived?:boolean;mine?:boolean;status?:string;priority?:string};
+export type TaskFilters={includeOptions?:boolean;q?:string;summary?:string;assignee?:string;sort?:string;project?:string;page?:number;archived?:boolean;mine?:boolean;status?:string;priority?:string};
 export async function taskPage(filters:TaskFilters,exportAll=false){return workspaceRead(async(db,user)=>{
  const args:unknown[]=[];const bind=(v:unknown)=>{args.push(v);return '$'+args.length;};
  const where=[filters.archived?'(t.is_archived OR p.is_archived)':'NOT t.is_archived AND NOT p.is_archived'];
@@ -23,8 +23,8 @@ export async function taskPage(filters:TaskFilters,exportAll=false){return works
  const page=Math.min(Math.max(1,Math.trunc(Number(filters.page)||1)),Math.max(1,Math.ceil(total/25)));
  const sorts:Record<string,string>={deadline:'t.due_date ASC NULLS LAST',title:'lower(t.title)',assignee:"lower(coalesce(a.full_name,a.email,''))",priority:"CASE t.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END"};
  const items=(await db.query<TableTask & {review_version:number;description:string|null}>("SELECT t.id,t.project_id,t.title,t.status,t.priority,t.description,t.due_date,t.assignee_id,t.assignee_ids,t.review_version,jsonb_build_object('full_name',a.full_name,'email',a.email,'is_active',a.is_active) assignee,jsonb_build_object('full_name',c.full_name,'email',c.email) creator,jsonb_build_object('name',p.name) project"+from+' ORDER BY '+(sorts[filters.sort||'deadline']||sorts.deadline)+',t.id LIMIT '+(exportAll?10000:25)+' OFFSET '+(exportAll?0:(page-1)*25),args)).rows;
- const people=(await db.query<{id:string;full_name:string|null;email:string}>('SELECT id,full_name,email FROM profiles ORDER BY full_name,id')).rows;
- const projects=(await db.query<{id:string;name:string}>('SELECT id,name FROM projects ORDER BY name,id')).rows;
+ const people=filters.includeOptions===false?[]:(await db.query<{id:string;full_name:string|null;email:string}>('SELECT id,full_name,email FROM profiles ORDER BY full_name,id')).rows;
+ const projects=filters.includeOptions===false?[]:(await db.query<{id:string;name:string}>('SELECT id,name FROM projects ORDER BY name,id')).rows;
  return {items,total,page,people,projects};
 });}
 export async function searchWorkspace(query:string,archived:boolean,page=1){return workspaceRead(async db=>{

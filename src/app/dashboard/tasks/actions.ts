@@ -7,7 +7,10 @@ import { parseTaskForm, assignedIds, type TaskStatus } from '@/lib/task-types';
 function refreshTasks(projectId: string) {
   revalidatePath(`/dashboard/projects/${projectId}`);
   revalidatePath('/dashboard/my-tasks');
-  revalidatePath('/dashboard','layout');
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/tasks');
+  revalidatePath('/dashboard/workload');
+  revalidatePath('/dashboard/calendar');
 }
 
 async function taskAccess(taskId: string, projectId: string, mode: 'edit' | 'status' | 'comment' | 'delete') {

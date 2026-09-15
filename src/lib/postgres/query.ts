@@ -9,7 +9,7 @@ const relations: Record<string, Record<string, Relation>> = {
   task_reviews: {profiles:['profiles','actor_id','id',false]},
   projects: { project_members:['project_members','id','project_id',true], tasks:['tasks','id','project_id',true] },
   project_members: { profiles:['profiles','user_id','id',false] },
-  tasks: { assigned_people:['profiles','assignee_ids','id',true,true], profiles:['profiles','assignee_id','id',false], projects:['projects','project_id','id',false], task_comments:['task_comments','id','task_id',true] },
+  tasks: { task_creator:['profiles','created_by','id',false], assigned_people:['profiles','assignee_ids','id',true,true], profiles:['profiles','assignee_id','id',false], projects:['projects','project_id','id',false], task_comments:['task_comments','id','task_id',true] },
   project_notes: { profiles:['profiles','author_id','id',false] },
   task_comments: { profiles:['profiles','author_id','id',false] },
   task_history: { profiles:['profiles','actor_id','id',false] },

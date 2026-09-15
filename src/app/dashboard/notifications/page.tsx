@@ -1,9 +1,13 @@
-import {createClient} from '@/lib/supabase/server';
-import {redirect} from 'next/navigation';
-import NotificationsClient from './NotificationsClient';
-export default async function NotificationsPage(){
- const db=await createClient();const {data:{user}}=await db.auth.getUser();if(!user)redirect('/login');
- const {data,error}=await db.from('notifications').select('*,task:tasks(id,project_id,title)').eq('user_id',user.id).order('created_at',{ascending:false});
- if(error)throw new Error('Notifications could not load. Please try again.');
- return <NotificationsClient notifications={data||[]}/>;
+import {workspaceRead} from '@/lib/workspace-data';
+import NotificationsClient,{type Notification} from './NotificationsClient';
+export default async function NotificationsPage({searchParams}:{searchParams:Promise<{filter?:string;page?:string}>}){
+ const params=await searchParams,filter=params.filter==='unread'?'unread':'all';
+ const result=await workspaceRead(async(db,user)=>{
+  const counts=(await db.query<{total:string;unread:string}>('SELECT count(*) total,count(*) FILTER (WHERE NOT is_read) unread FROM notifications WHERE user_id=$1',[user])).rows[0];
+  const total=Number(filter==='unread'?counts.unread:counts.total),pages=Math.max(1,Math.ceil(total/50));
+  const page=Math.min(pages,Math.max(1,Math.trunc(Number(params.page)||1)));
+  const notifications=(await db.query<Notification>("SELECT n.id,n.title,n.message,n.created_at,n.is_read,CASE WHEN t.id IS NULL THEN NULL ELSE jsonb_build_object('id',t.id,'project_id',t.project_id) END task FROM notifications n LEFT JOIN tasks t ON t.id=n.task_id WHERE n.user_id=$1 AND ($2<>'unread' OR NOT n.is_read) ORDER BY n.created_at DESC,n.id DESC LIMIT 50 OFFSET $3",[user,filter,(page-1)*50])).rows;
+  return {notifications,unread:Number(counts.unread),page,pages,total};
+ });
+ return <NotificationsClient {...result} filter={filter}/>;
 }

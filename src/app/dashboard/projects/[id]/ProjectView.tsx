@@ -1,7 +1,8 @@
 'use client';
 import {assignedIds,assigneeNames} from '@/lib/task-types';
 
-import { useState } from 'react';
+import {projectTasks,projectNotes} from '../data';
+import { useState,useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import TaskDiscussion from '@/components/TaskDiscussion';
@@ -46,18 +47,26 @@ import {
 
 export default function ProjectView({
   project,
-  tasks: allTasks,
-  notes,
+  tasks: initialTasks,
+  notes: initialNotes,
   members,
   allWorkspaceUsers,
-  currentUserId,
+  currentUserId, counts, tasksLoaded, notesLoaded,
   isAdmin, reviewEnabled, today, initialTaskId = null, initialDiscussion=false,
 }: {
   project: { updated_at:string; creator?: Pick<Member, 'full_name' | 'email'> | null; id: string; name: string; description: string | null; is_archived: boolean; completed_at?:string|null; created_by: string | null; is_private: boolean };
+  counts:{tasks:number;archived:number;notes:number;unfinished:number;recurring:boolean};tasksLoaded:boolean;notesLoaded:boolean;
   tasks: Task[]; notes: { id: string; title: string; content: string; author_id: string; updated_at: string; author: Member | null }[];
   members: Member[]; allWorkspaceUsers: Member[]; currentUserId: string; isAdmin: boolean; reviewEnabled: boolean; today: string; initialTaskId?: string | null; initialDiscussion?:boolean;
 }) {
   const router = useRouter();
+  const [taskCache,setTaskCache]=useState<{source:Task[];items:Task[];active:boolean;archived:boolean}>({source:initialTasks,items:initialTasks,active:tasksLoaded,archived:tasksLoaded&&project.is_archived});
+  const [noteCache,setNoteCache]=useState({source:initialNotes,items:initialNotes,loaded:notesLoaded});
+  const cache=taskCache.source===initialTasks?taskCache:{source:initialTasks,items:initialTasks,active:tasksLoaded,archived:tasksLoaded&&project.is_archived};
+  const allTasks=cache.items;
+  const notes=noteCache.source===initialNotes?noteCache.items:initialNotes;
+  const [sectionError,setSectionError]=useState('');const [sectionRetry,setSectionRetry]=useState(0);
+
   const [editingProject, setEditingProject] = useState(false);
   const [projectVersion,setProjectVersion]=useState(project.updated_at);
   const [view, setView] = useUrlState<'board' | 'table'>('view','board',{allowed:['board','table'],remember:'project-view'});
@@ -69,10 +78,18 @@ export default function ProjectView({
   const tasks=allTasks.filter(t=>project.is_archived || Boolean(t.is_archived)===showArchived);
   const [deleteTarget, setDeleteTarget] = useState<{ kind: 'task' | 'project'; id: string; name: string } | null>(null);
   const [activeTab, setActiveTab] = useUrlState<'tasks' | 'notes' | 'members'>('tab','tasks',{allowed:['tasks','notes','members']});
+  const needsTasks=activeTab==='tasks'&&view==='board'&&!(showArchived||project.is_archived?cache.archived:cache.active);
+  const needsNotes=activeTab==='notes'&&!(noteCache.source===initialNotes?noteCache.loaded:notesLoaded);
+  useEffect(()=>{let live=true;if(needsTasks){projectTasks(project.id,showArchived||project.is_archived).then(items=>{if(live){setSectionError('');setTaskCache({source:initialTasks,items,active:true,archived:showArchived||project.is_archived});}}).catch(()=>{if(live)setSectionError('Tasks could not load. Please retry.');});}return()=>{live=false};},[needsTasks,showArchived,project.id,project.is_archived,initialTasks,sectionRetry]);
+  useEffect(()=>{let live=true;if(needsNotes){projectNotes(project.id).then(items=>{if(live){setSectionError('');setNoteCache({source:initialNotes,items,loaded:true});}}).catch(()=>{if(live)setSectionError('Notes could not load. Please retry.');});}return()=>{live=false};},[needsNotes,project.id,initialNotes,sectionRetry]);
+  async function openTableTask(id:string){setFeedback(null);setDetailTab('details');if(!allTasks.some(t=>t.id===id)){try{const items=await projectTasks(project.id,true,id);if(!items.length)throw new Error();setTaskCache({...cache,items:[...cache.items,...items]});}catch{setSectionError('Task could not load. Please retry.');return;}}setSelectedTaskId(id);}
   const [taskDraft,setTaskDraft]=useState<Record<string,string>|null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(initialTaskId);
+  const [remarkCounts,setRemarkCounts]=useState<Record<string,{base:number;delta:number}>>({});
+  useEffect(()=>{if(initialTaskId&&!initialTasks.some(t=>t.id===initialTaskId)){let live=true;projectTasks(project.id,true,initialTaskId).then(items=>{if(live)setTaskCache(previous=>({...previous,source:initialTasks,items:[...initialTasks,...items]}));}).catch(()=>{if(live)setSectionError('Task could not load. Please retry.');});return()=>{live=false};}},[initialTaskId,initialTasks,project.id]);
+  function remarkCount(task:Task){const entry=remarkCounts[task.id];return (task.comment_count||0)+(entry?.base===(task.comment_count||0)?entry.delta:0);}
   const selectedTask = allTasks.find(task => task.id === selectedTaskId) || null;
   const taskReadOnly=project.is_archived || !!selectedTask?.is_archived;
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -154,7 +171,7 @@ export default function ProjectView({
           <div className="flex flex-wrap items-center gap-2">
             {canArchive && project.is_archived && <ArchiveAction kind="project" id={project.id} archived/>}
             {project.is_archived && <p className="text-sm text-gray-500">{project.completed_at?'Completed project':'Archived project'} · Restore to make changes.</p>}
-            {<ActionsMenu label="Project actions"><Link className="block rounded-lg px-3 py-2 text-sm hover:bg-gray-100" href={`/dashboard/planning?kind=project&id=${project.id}`}>Duplicate project</Link><Link className="block rounded-lg px-3 py-2 text-sm hover:bg-gray-100" href={`/dashboard/planning?kind=project&id=${project.id}&save=true`}>Save as template</Link>{canManage&&<><button type="button" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-gray-100" onClick={event => { event.currentTarget.closest("details")?.removeAttribute("open"); setProjectVersion(project.updated_at); setEditingProject(true); }}><Pencil className="h-4 w-4" />Edit project</button><ArchiveAction kind="project" id={project.id} complete/><ArchiveAction kind="project" id={project.id} unfinished={allTasks.filter(t=>t.status!=='done').length} recurring={allTasks.some(t=>t.recurrence&&t.recurrence!=='none')}/><div className="my-2 border-t" /><button type="button" onClick={event => { event.currentTarget.closest("details")?.removeAttribute("open"); setFeedback(null); setDeleteTarget({ kind: 'project', id: project.id, name: project.name }); }}
+            {<ActionsMenu label="Project actions"><Link className="block rounded-lg px-3 py-2 text-sm hover:bg-gray-100" href={`/dashboard/planning?kind=project&id=${project.id}`}>Duplicate project</Link><Link className="block rounded-lg px-3 py-2 text-sm hover:bg-gray-100" href={`/dashboard/planning?kind=project&id=${project.id}&save=true`}>Save as template</Link>{canManage&&<><button type="button" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-gray-100" onClick={event => { event.currentTarget.closest("details")?.removeAttribute("open"); setProjectVersion(project.updated_at); setEditingProject(true); }}><Pencil className="h-4 w-4" />Edit project</button><ArchiveAction kind="project" id={project.id} complete/><ArchiveAction kind="project" id={project.id} unfinished={counts.unfinished} recurring={counts.recurring}/><div className="my-2 border-t" /><button type="button" onClick={event => { event.currentTarget.closest("details")?.removeAttribute("open"); setFeedback(null); setDeleteTarget({ kind: 'project', id: project.id, name: project.name }); }}
               className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete project</button></>}</ActionsMenu>}
             {!project.is_archived && activeTab === 'tasks' && (isAdmin || members.some((m: Member) => m.id === currentUserId)) && (
               <button
@@ -183,7 +200,7 @@ export default function ProjectView({
               activeTab === 'tasks' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            Tasks ({tasks.length})
+            Tasks ({project.is_archived?counts.tasks:showArchived?counts.archived:counts.tasks-counts.archived})
           </button>
           <button
             onClick={() => setActiveTab('notes')}
@@ -191,7 +208,7 @@ export default function ProjectView({
               activeTab === 'notes' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            <StickyNote className="w-4 h-4 mr-1.5" /> Notes ({notes.length})
+            <StickyNote className="w-4 h-4 mr-1.5" /> Notes ({counts.notes})
           </button>
           <button
             onClick={() => setActiveTab('members')}
@@ -204,6 +221,8 @@ export default function ProjectView({
         </div>
       </div>
 
+      {sectionError&&<p role="alert" className="rounded-lg border p-3">{sectionError} <button className="underline" onClick={()=>{setSectionError('');setSectionRetry(n=>n+1);}}>Retry</button></p>}
+      {(needsTasks||needsNotes)&&!sectionError&&<p role="status">Loading {needsNotes?'notes':'tasks'}…</p>}
       {activeTab==='tasks'&&!project.is_archived&&<div className="flex flex-wrap items-center gap-3"><SegmentedControl label="Task visibility" value={showArchived?'archived':'active'} onChange={v=>setShowArchived(v==='archived')} options={[{value:'active',label:'Active tasks'},{value:'archived',label:'Archived tasks'}]}/><ArchiveAction kind="task" id={project.id} bulk/></div>}
       {/* TAB 1: TASKS BOARD */}
       {activeTab === 'tasks' && <div className="task-view-switch" role="group" aria-label="Task view">
@@ -213,10 +232,10 @@ export default function ProjectView({
       </div>}
       {activeTab === 'tasks' && <section key={view} className="task-view-enter space-y-6" aria-label={view === 'board' ? 'Board view' : 'Table view'}>
 
-      {activeTab === 'tasks' && view === 'table' && <TaskTable projectId={project.id} archived={project.is_archived||showArchived} tasks={tasks} today={today} onOpen={id => { setSelectedTaskId(id); setDetailTab('details'); setFeedback(null); }} />}
-      {activeTab === 'tasks' && view === 'board' && <label className="block md:hidden text-sm font-medium">Filter by status<select value={mobileStatus} onChange={e=>setMobileStatus(e.target.value)} className="mt-2 w-full rounded-lg border p-3"><option value="all">All tasks ({tasks.length})</option>{statusColumns.map(col=><option key={col.id} value={col.id}>{col.title} ({tasks.filter(t=>t.status===col.id).length})</option>)}</select></label>}
-      {activeTab === 'tasks' && view === 'board' && !tasks.length && <p className="md:hidden rounded-xl border p-6 text-sm text-gray-500">No tasks yet. Add a task to get started.</p>}
-      {activeTab === 'tasks' && view === 'board' && (
+      {activeTab === 'tasks' && view === 'table' && <TaskTable projectId={project.id} archived={project.is_archived||showArchived} tasks={tasks} today={today} onOpen={openTableTask} />}
+      {activeTab === 'tasks' && view === 'board' && !needsTasks && <label className="block md:hidden text-sm font-medium">Filter by status<select value={mobileStatus} onChange={e=>setMobileStatus(e.target.value)} className="mt-2 w-full rounded-lg border p-3"><option value="all">All tasks ({tasks.length})</option>{statusColumns.map(col=><option key={col.id} value={col.id}>{col.title} ({tasks.filter(t=>t.status===col.id).length})</option>)}</select></label>}
+      {activeTab === 'tasks' && view === 'board' && !needsTasks && !tasks.length && <p className="md:hidden rounded-xl border p-6 text-sm text-gray-500">No tasks yet. Add a task to get started.</p>}
+      {activeTab === 'tasks' && view === 'board' && !needsTasks && (
         <div className="task-board grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {statusColumns.map((col) => {
             const columnTasks = tasks.filter((t: Task) => t.status === col.id);
@@ -268,9 +287,9 @@ export default function ProjectView({
                           <span className="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-700 font-medium">{initials(task.assignee?.full_name || task.assignee?.email || '?')}</span>
                           {assigneeNames(task)}{task.assignee?.is_active===false?' · Inactive':''}
                         </span>
-                        {(task.comment_count||0) > 0 && (
+                        {(remarkCount(task)) > 0 && (
                           <span className="flex items-center text-gray-400">
-                            <MessageSquare className="w-3.5 h-3.5 mr-1" /> {task.comment_count||0}
+                            <MessageSquare className="w-3.5 h-3.5 mr-1" /> {remarkCount(task)}
                           </span>
                         )}
                       </div>
@@ -286,7 +305,7 @@ export default function ProjectView({
       </section>}
 
       {/* TAB 2: PROJECT NOTES */}
-      {activeTab === 'notes' && (
+      {activeTab === 'notes' && !needsNotes && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {notes.length === 0 ? (
             <div className="col-span-full text-center py-12 bg-surface rounded-xl border border-gray-200">
@@ -436,7 +455,7 @@ export default function ProjectView({
             {<ActionsMenu label="Task actions"><Link className="block rounded-lg px-3 py-2 text-sm hover:bg-gray-100" href={`/dashboard/planning?kind=task&id=${selectedTask.id}`}>Duplicate task</Link><Link className="block rounded-lg px-3 py-2 text-sm hover:bg-gray-100" href={`/dashboard/planning?kind=task&id=${selectedTask.id}&save=true`}>Save as template</Link>{!taskReadOnly && (isAdmin || selectedTask.created_by === currentUserId)&&<><button type="button" disabled={isSubmitting} onClick={() => { if(taskDraft&&!window.confirm('Discard your saved task draft and edit this task?'))return; setTaskDraft(null); setEditingTask(selectedTask); setSelectedTaskId(null); setFeedback(null); setIsTaskModalOpen(true); }} className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"><Pencil className="h-4 w-4" />Edit task</button>{selectedTask.status==='done'&&<ArchiveAction kind="task" id={selectedTask.id} recurring={selectedTask.recurrence!=='none'}/> }<div className="my-2 border-t" /><button type="button" disabled={isSubmitting} onClick={() => { setDeleteTarget({ kind: 'task', id: selectedTask.id, name: selectedTask.title }); setSelectedTaskId(null); setFeedback(null); }} className="flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete task</button></>}</ActionsMenu>}
           </div>
           {taskReadOnly&&<div className="mb-3 rounded-lg border p-3 text-sm">Archived · read-only. {project.is_archived?'Restore the project first.':(isAdmin||selectedTask.created_by===currentUserId)&&<ArchiveAction kind="task" id={selectedTask.id} archived/>}</div>}
-          <div aria-label="Task panel sections" className="flex gap-2 border-b py-3 mb-3">{(['details','updates'] as const).map(tab=><button key={tab} type="button" aria-pressed={detailTab===tab} onClick={()=>setDetailTab(tab)} className={`rounded-lg px-4 py-2 text-sm font-medium ${detailTab===tab?'bg-blue-600 text-white':'bg-gray-100 text-gray-700'}`}>{tab==='details'?'Details':`Updates (${selectedTask.comment_count || 0})`}</button>)}</div>
+          <div aria-label="Task panel sections" className="flex gap-2 border-b py-3 mb-3">{(['details','updates'] as const).map(tab=><button key={tab} type="button" aria-pressed={detailTab===tab} onClick={()=>setDetailTab(tab)} className={`rounded-lg px-4 py-2 text-sm font-medium ${detailTab===tab?'bg-blue-600 text-white':'bg-gray-100 text-gray-700'}`}>{tab==='details'?'Details':`Updates (${remarkCount(selectedTask)})`}</button>)}</div>
           <div hidden={detailTab !== 'details'}>
           {selectedTask.due_date && <p className="mb-3 text-sm text-slate-600">Due {new Date(selectedTask.due_date.slice(0, 10) + 'T00:00:00').toLocaleDateString()}</p>}
             {/* Quick Status Bar */}
@@ -470,7 +489,7 @@ export default function ProjectView({
 
             </div>
             <div hidden={detailTab !== 'updates'}>
-            <TaskDiscussion taskId={selectedTask.id} userId={currentUserId} members={members} readOnly={taskReadOnly} onBusyChange={setIsSubmitting}/>
+            <TaskDiscussion key={selectedTask.id} taskId={selectedTask.id} userId={currentUserId} members={members} readOnly={taskReadOnly} onBusyChange={setIsSubmitting} active={detailTab==='updates'} onCountChange={delta=>setRemarkCounts(counts=>({...counts,[selectedTask.id]:{base:selectedTask.comment_count||0,delta:(counts[selectedTask.id]?.base===(selectedTask.comment_count||0)?counts[selectedTask.id].delta:0)+delta}}))}/>
             </div>
             <TaskExtras onBusyChange={setIsSubmitting} view={detailTab} key={selectedTask.id} task={selectedTask} tasks={allTasks} members={members} canEdit={!taskReadOnly && (isAdmin || selectedTask.created_by === currentUserId || assignedIds(selectedTask).includes(currentUserId))} />
         </Modal>

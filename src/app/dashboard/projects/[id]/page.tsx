@@ -1,3 +1,4 @@
+import {projectTasks,projectNotes,projectCounts} from '../data';
 import { createClient } from '@/lib/supabase/server';
 import { notFound, redirect } from 'next/navigation';
 import ProjectView from './ProjectView';
@@ -7,9 +8,12 @@ import type { Member } from '@/lib/task-types';
 export default async function ProjectDetailPage({
   params, searchParams,
 }: {
-  params: Promise<{ id: string }>; searchParams: Promise<{ task?: string; discussion?:string }>;
+  params: Promise<{ id: string }>; searchParams: Promise<{ task?: string; discussion?:string;view?:string;tab?:string }>;
 }) {
   const { id } = await params;
+  const search=await searchParams;
+  const tasksLoaded=search.view!=='table'&&(!search.tab||search.tab==='tasks');
+  const notesLoaded=search.tab==='notes';
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -34,24 +38,18 @@ export default async function ProjectDetailPage({
   if (!project) notFound();
 
   // Independent reads start together after authentication and project visibility checks.
-  const [membersResult, tasksResult, notesResult, usersResult, reviewResult] = await Promise.all([
+  const [membersResult, tasks, notes, usersResult, reviewResult, counts] = await Promise.all([
     supabase.from('project_members')
       .select('user_id, joined_at, profiles(id, full_name, email, role, is_active)')
       .eq('project_id', id),
-    supabase.from('tasks').select(`
-      *,
-      assignees:assigned_people(id,full_name,email,is_active), assignee:profiles!tasks_assignee_id_fkey(id, full_name, email, is_active),
-      task_comments(count)
-    `).eq('project_id', id).order('created_at', { ascending: false }),
-    supabase.from('project_notes')
-      .select('*, author:profiles!project_notes_author_id_fkey(id, full_name, email, is_active)')
-      .eq('project_id', id).order('created_at', { ascending: false }),
+    tasksLoaded?projectTasks(id,project.is_archived):search.task?projectTasks(id,true,search.task):Promise.resolve([]),
+    notesLoaded?projectNotes(id):Promise.resolve([]),
     supabase.from('profiles').select('id, full_name, email, is_active').order('full_name'),
     supabase.from('review_settings').select('enabled').single(),
+    projectCounts(id),
   ]);
+  if ([membersResult,usersResult,reviewResult].some(result=>result.error)) throw new Error('Project data could not be loaded. Please retry.');
   const { data: membersData } = membersResult;
-  const { data: tasks } = tasksResult;
-  const { data: notes } = notesResult;
   const { data: allUsers } = usersResult;
   if (usersResult.error) throw new Error('Creator information could not be loaded. Please retry.');
   const creators = new Map((allUsers || []).map(person => [person.id, person]));
@@ -62,9 +60,10 @@ export default async function ProjectDetailPage({
 
   return (
     <ProjectView
+      counts={counts} tasksLoaded={tasksLoaded} notesLoaded={notesLoaded}
       today={todayKey()} initialTaskId={(await searchParams).task || null} initialDiscussion={(await searchParams).discussion==='true'}
       project={{...project, creator: creators.get(project.created_by) || null}}
-      tasks={(tasks || []).map(task => ({...task,comment_count:task.task_comments?.[0]?.count||0,task_comments:[], creator: creators.get(task.created_by) || null}))}
+      tasks={tasks}
       notes={notes || []}
       members={projectMembers}
       allWorkspaceUsers={allUsers || []}

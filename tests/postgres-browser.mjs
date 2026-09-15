@@ -338,6 +338,44 @@ try{
   const timings=await Promise.all(pages.map(async p=>{const start=Date.now();await p.goto(base+'/dashboard/search?q=Scale');return Date.now()-start;}));console.log('Release 4 eight-session search timings (ms): '+JSON.stringify(timings));
   console.log('Release 4 browser: own remark editing/history, one mention alert, private search, schedule pause/future-only template, content-sniffed private preview, reports/export, 1,000 task pagination/full CSV and 375/430px overflow checks passed.');
 
+  // Release A/B: synthetic update timings and an actual commit followed by response loss.
+  await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[users[0].id]);
+  const perfProject=(await db.query("SELECT create_workspace_project('Save performance QA','', $1::uuid[],true) id",[users.slice(1).map(u=>u.id)])).rows[0].id;
+  const perfTask=(await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_ids) VALUES($1,'Save benchmark',$2,$3::uuid[]) RETURNING id",[perfProject,users[0].id,users.slice(1).map(u=>u.id)])).rows[0].id;
+  await db.query("SELECT set_config('request.jwt.claim.sub','',false)");
+  async function openUpdates(page){await page.goto(base+`/dashboard/projects/${perfProject}?task=${perfTask}&discussion=true`);await expect(page.getByRole('heading',{name:'Task history',exact:true})).toBeVisible();await expect(page.getByText('Loading remarks…',{exact:true})).toHaveCount(0);}
+  await openUpdates(admin);
+  const saveTimings=[];
+  for(let i=0;i<30;i++){
+    await admin.getByLabel('Write a task update',{exact:true}).fill('Save timing '+i);
+    const started=Date.now();await admin.getByRole('button',{name:'Post update',exact:true}).click();
+    await expect(admin.getByRole('status').filter({hasText:'Saved.'})).toBeVisible();
+    await expect(admin.getByLabel('Write a task update',{exact:true})).toHaveValue('');saveTimings.push(Date.now()-started);
+  }
+  const sorted=[...saveTimings].sort((a,b)=>a-b);
+  console.log('Release A confirmed-save timings: '+JSON.stringify({samples:30,medianMs:sorted[14],p95Ms:sorted[28],maxMs:sorted[29]}));
+  await admin.getByLabel('Write a task update',{exact:true}).fill('Lost response QA');
+  let intercepted=false;
+  await admin.route('**/dashboard/projects/**',async route=>{if(!intercepted&&route.request().method()==='POST'&&(route.request().postData()||'').includes('Lost response QA')){intercepted=true;await route.fetch();await route.abort('failed');}else await route.continue();});
+  await admin.getByRole('button',{name:'Post update',exact:true}).click();
+  await expect(admin.getByRole('alert').filter({hasText:'Your draft is kept'})).toBeVisible();
+  await expect(admin.getByLabel('Write a task update',{exact:true})).toHaveValue('Lost response QA');
+  await admin.unroute('**/dashboard/projects/**');
+  await admin.getByRole('button',{name:'Post update',exact:true}).click();await expect(admin.getByRole('status').filter({hasText:'Saved.'})).toBeVisible();
+  assert.equal((await db.query("SELECT count(*)::int n FROM task_comments WHERE task_id=$1 AND content='Lost response QA'",[perfTask])).rows[0].n,1);
+  await Promise.all(pages.map(openUpdates));
+  const parallelSaves=await Promise.all(pages.map(async(page,n)=>{await page.getByLabel('Write a task update',{exact:true}).fill('Concurrent save '+n);const started=Date.now();await page.getByRole('button',{name:'Post update',exact:true}).click();await expect(page.getByRole('status').filter({hasText:'Saved.'})).toBeVisible();return Date.now()-started;}));
+  console.log('Release A eight concurrent confirmed saves (ms): '+JSON.stringify(parallelSaves));
+  assert.equal((await db.query("SELECT count(*)::int n FROM task_comments WHERE task_id=$1 AND content LIKE 'Concurrent save %'",[perfTask])).rows[0].n,8);
+  // Notes and board remain reachable when the initial server route is table-only.
+  await admin.goto(base+`/dashboard/projects/${perfProject}?view=table`);
+  await expect(admin.getByRole('button',{name:'Save benchmark',exact:true})).toBeVisible();
+  await admin.getByRole('button',{name:'Save benchmark',exact:true}).click();await expect(admin.getByRole('heading',{name:'Save benchmark',exact:true})).toBeVisible();
+  await admin.getByRole('button',{name:'Close dialog'}).click();await admin.getByRole('button',{name:'Board',exact:true}).click();await expect(admin.getByRole('button',{name:'Open task: Save benchmark',exact:true})).toBeVisible();
+  await db.query("INSERT INTO notifications(user_id,title,message) SELECT $1,'Pagination QA '||n,'Synthetic notice' FROM generate_series(1,65) n",[users[0].id]);
+  await admin.goto(base+'/dashboard/notifications');await expect(admin.locator('article')).toHaveCount(50);await admin.getByRole('link',{name:'Next',exact:true}).click();await expect(admin.locator('article').first()).toBeVisible();
+  console.log('Release A/B browser: draft retained after lost response, retry stored once, table-to-task/board and paginated notifications passed.');
+
   assert.equal(external.length,0,'Staging must not contact Supabase');
   console.log('Eight browser logins, private project, task assignment, local upload/download, outsider denial, review and admin approval passed against PostgreSQL 16.');
 }finally{await browser.close();await db.end();}

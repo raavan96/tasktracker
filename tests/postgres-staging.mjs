@@ -266,4 +266,29 @@ await assert.rejects(()=>planning.previewPlanning({kind:'project',id:rp}),/100 a
 await as(admin);await rows("SELECT set_member_active($1,false,'Planning inactive test')",[member]);planActor=member;await assert.rejects(()=>planning.planningOptions(),/inactive/i);await as(admin);await rows("SELECT set_member_active($1,true,'Planning test complete')",[member]);
 console.log('Release 5: private templates, revoked/inactive access, date shifting, shared assignments, unchecked checklists, dependency remapping, source-version validation, atomic invalid-copy rollback, idempotent retries and private calendar passed.');
 
+
+// Release A: exercise the actual save helper under database row-level security.
+await as(admin);
+const remarkProject=(await rows("SELECT create_workspace_project('Save reliability QA','',ARRAY[$1::uuid],true) id",[member]))[0].id;
+const remarkTask=(await rows("INSERT INTO tasks(project_id,title,created_by,assignee_ids) VALUES($1,'Save reliability',$2,ARRAY[$3::uuid]) RETURNING id",[remarkProject,admin,member]))[0].id;
+const remarkModule={exports:{}};
+new Function('exports',require('typescript').transpileModule(read('src/lib/postgres/remarks.ts'),{compilerOptions:{module:require('typescript').ModuleKind.CommonJS,target:require('typescript').ScriptTarget.ES2022}}).outputText)(remarkModule.exports);
+const write=remarkModule.exports.writeRemark;
+const connection={query:async(sql,args)=>{const result=await db.query(sql,args);return {...result,rowCount:result.affectedRows??result.rows.length};}};
+const request='11111111-2222-4333-8444-555555555555';
+const first=await write(connection,admin,remarkTask,'Confirmed once',[member],undefined,undefined,request);
+const again=await write(connection,admin,remarkTask,'Confirmed once',[member],undefined,undefined,request);
+assert.equal(first.id,again.id);
+assert.equal((await rows('SELECT id FROM task_comments WHERE id=$1',[request])).length,1);
+await as(member);assert.equal((await rows("SELECT id FROM notifications WHERE dedupe_key LIKE $1",['mention:'+request+':%'])).length,1);await as(admin);
+const edited=await write(connection,admin,remarkTask,'Edited once',[member],first.id,0);
+const retriedEdit=await write(connection,admin,remarkTask,'Edited once',[member],first.id,0);
+assert.equal(Number(edited.edit_version),Number(retriedEdit.edit_version));
+assert.equal((await rows('SELECT id FROM remark_edits WHERE comment_id=$1',[request])).length,1);
+await assert.rejects(()=>write(connection,admin,remarkTask,'Conflicting overwrite',[],first.id,0));
+await as(member);await assert.rejects(()=>write(connection,member,remarkTask,'Edited once',[member],undefined,undefined,request));
+await as(outsider);await assert.rejects(()=>write(connection,outsider,remarkTask,'Private task',[],undefined,undefined,'11111111-2222-4333-8444-555555555556'));
+await as(admin);await rows("SELECT set_archive('project',$1,true,true,false)",[remarkProject]);
+await assert.rejects(()=>write(connection,admin,remarkTask,'Archived task',[]));
+console.log('Release A: retry-safe creation and edits, one mention notification/history entry, conflict, ownership, privacy and archive checks passed.');
 await db.close();

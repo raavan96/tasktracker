@@ -13,20 +13,21 @@ async function accessTask(taskId: string, projectId: string) {
   if (!access.isAdmin && data.created_by !== access.user.id && !assignedIds(data).includes(access.user.id)) return { error: 'Only the creator, assignee, or admin can change task details.' } as const;
   return access;
 }
-export async function getTaskExtras(taskId: string, projectId: string, historyPage=0) {
+export async function getTaskExtras(taskId: string, projectId: string, historyPage=0, section: 'details' | 'updates' | 'all' = 'all') {
   if(!Number.isInteger(historyPage)||historyPage<0||historyPage>10000)return {error:'Invalid history page.'};
   const supabase = await createClient();
   const { data: task } = await supabase.from('tasks').select('id').eq('id',taskId).eq('project_id',projectId).single();
   if (!task) return { error: 'Task not found or access denied.' };
-  const [checklist, history, dependencies, attachments, reviews] = await Promise.all([
-    supabase.from('task_checklist').select('*').eq('task_id',taskId).order('created_at'),
-    supabase.from('task_history').select('*,actor:profiles(full_name,email)').eq('task_id',taskId).order('created_at',{ascending:false}).range(historyPage*100,historyPage*100+99),
-    supabase.from('task_dependencies').select('depends_on').eq('task_id',taskId),
-    supabase.from('task_attachments').select('*').eq('task_id',taskId).order('created_at'),
-    supabase.from('task_reviews').select('*,actor:profiles(full_name,email)').eq('task_id',taskId).order('created_at',{ascending:false}).range(historyPage*100,historyPage*100+99),
+  const [checklist, history, dependencies, attachments, reviews, taskOptions] = await Promise.all([
+    section==='updates' ? Promise.resolve({data:[],error:null}) : supabase.from('task_checklist').select('*').eq('task_id',taskId).order('created_at'),
+    section==='details' ? Promise.resolve({data:[],error:null}) : supabase.from('task_history').select('*,actor:profiles(full_name,email)').eq('task_id',taskId).order('created_at',{ascending:false}).range(historyPage*100,historyPage*100+99),
+    section==='updates' ? Promise.resolve({data:[],error:null}) : supabase.from('task_dependencies').select('depends_on').eq('task_id',taskId),
+    section==='updates' ? Promise.resolve({data:[],error:null}) : supabase.from('task_attachments').select('*').eq('task_id',taskId).order('created_at'),
+    section==='details' ? Promise.resolve({data:[],error:null}) : supabase.from('task_reviews').select('*,actor:profiles(full_name,email)').eq('task_id',taskId).order('created_at',{ascending:false}).range(historyPage*100,historyPage*100+99),
+    section==='updates' ? Promise.resolve({data:[],error:null}) : supabase.from('tasks').select('id,title,status,is_archived').eq('project_id',projectId).order('title'),
   ]);
-  if ([checklist,history,dependencies,attachments,reviews].some(r=>r.error)) return {error:'Task details could not load. Check that the workspace migration is installed.'};
-  return {historyMore:(history.data?.length===100||reviews.data?.length===100), reviews:reviews.data||[], checklist:checklist.data || [], history:history.data || [], dependencies:dependencies.data || [], attachments:attachments.data || [] };
+  if ([checklist,history,dependencies,attachments,reviews,taskOptions].some(r=>r.error)) return {error:'Task details could not load. Check that the workspace migration is installed.'};
+  return {taskOptions:taskOptions.data||[],historyMore:(history.data?.length===100||reviews.data?.length===100), reviews:reviews.data||[], checklist:checklist.data || [], history:history.data || [], dependencies:dependencies.data || [], attachments:attachments.data || [] };
 }
 export async function saveChecklist(taskId:string, projectId:string, title:string, itemId?:string, completed?:boolean) {
   const access=await accessTask(taskId,projectId); if(access.error) return {error:access.error};

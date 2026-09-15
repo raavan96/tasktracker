@@ -21,8 +21,8 @@ export function matchesSummary(task: SummaryTask, filter: string, today: string)
   if (filter === 'undated') return !due;
   if (filter === 'pending') return task.status !== 'done';
   if (filter === 'blocked') return task.status === 'blocked';
-  if (filter === 'overdue') return task.status !== 'done' && !!due && due < today;
-  if (filter === 'today') return task.status !== 'done' && due === today;
+  if (filter === 'overdue') return !['done','in_review'].includes(task.status) && !!due && due < today;
+  if (filter === 'today') return !['done','in_review'].includes(task.status) && due === today;
   if (filter === 'in_progress') return task.status === 'in_progress';
   if (filter === 'in_review') return task.status === 'in_review';
   if (filter === 'done') return task.status === 'done';
