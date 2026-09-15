@@ -403,4 +403,18 @@ await rows('INSERT INTO auth.users(id,email) VALUES($1,$2)',[newcomer,'newcomer@
 await rows('INSERT INTO profiles(id,email,full_name,role) VALUES($1,$2,$3,$4)',[newcomer,'newcomer@collegedunia.com','New member','member']);
 assert.equal((await rows('SELECT enabled AND assignments AND mentions AND reviews AND deadline_digest AND weekly_report subscribed FROM email_preferences WHERE user_id=$1',[newcomer]))[0].subscribed,true);
 console.log('Managed email: existing and future members subscribed; member/admin preference mutations denied.');
+await db.exec(read('postgres/015_admin_self_review.sql'));
+await as(admin);
+const selfProject=(await rows("SELECT create_workspace_project('Admin review QA','',ARRAY[$1::uuid],true) id",[owner]))[0].id;
+const selfTask=(await rows("INSERT INTO tasks(project_id,title,created_by,assignee_ids) VALUES($1,'Admin shared review',$2,ARRAY[$2::uuid,$3::uuid]) RETURNING id",[selfProject,admin,owner]))[0].id;
+await assert.rejects(()=>rows("SELECT review_task($1,0,'approve','')",[selfTask]));
+await rows("SELECT review_task($1,0,'submit','')",[selfTask]);
+await assert.rejects(()=>rows("SELECT review_task($1,0,'approve','')",[selfTask]));
+await rows("SELECT review_task($1,1,'approve','')",[selfTask]);
+assert.equal((await rows('SELECT status FROM tasks WHERE id=$1',[selfTask]))[0].status,'done');
+assert.equal((await rows("SELECT count(*) n FROM task_reviews WHERE task_id=$1 AND actor_id=$2 AND decision='approve'",[selfTask,admin]))[0].n,1);
+await as(owner);
+const memberSelf=(await rows("INSERT INTO tasks(project_id,title,created_by,assignee_ids) VALUES($1,'Member self review denied',$2,ARRAY[$2::uuid]) RETURNING id",[selfProject,owner]))[0].id;
+await rows("SELECT review_task($1,0,'submit','')",[memberSelf]);await assert.rejects(()=>rows("SELECT review_task($1,1,'approve','')",[memberSelf]));
+console.log('Admin self-approval succeeds with audit trail; wrong status, stale version and member self-approval remain blocked.');
 await db.close();

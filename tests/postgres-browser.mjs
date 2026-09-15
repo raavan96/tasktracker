@@ -213,7 +213,7 @@ try{
   await admin.goto(projectURL+'?task='+delegated);
   await admin.getByRole('button',{name:'Ready for review',exact:true}).click();
   await expect.poll(async()=>(await db.query('SELECT status FROM tasks WHERE id=$1',[delegated])).rows[0].status).toBe('in_review');
-  await expect(admin.getByRole('button',{name:'Approve & complete',exact:true})).toBeHidden();
+  await expect(admin.getByRole('button',{name:'Approve & complete',exact:true})).toBeVisible();
   await member.goto(projectURL+'?task='+delegated);
   await expect(member.getByRole('button',{name:'Request changes',exact:true})).toBeDisabled();
   await member.getByLabel('Review feedback / reason').fill('Please revise the deliverable');
@@ -234,10 +234,15 @@ try{
   await admin.getByLabel('Reason for access change').fill('Restore synthetic access');
   await admin.getByRole('button',{name:'Confirm reactivation',exact:true}).click();
   await expect.poll(async()=>(await db.query('SELECT disabled FROM auth.users WHERE id=$1',[users[1].id])).rows[0].disabled).toBe(false);
-  console.log('Release 3 browser: member creator requests changes and approves delegated work; admin cannot self-approve; deactivation revokes existing browser session; reactivation preserves account.');
+  console.log('Release 3 browser: member creator requests changes and approves delegated work; admin self-review available; deactivation revokes existing browser session; reactivation preserves account.');
   console.log('UI audit: completion archive, project/task restore, read-only archived work, retained download, settings permissions, team details, project notes, workload and CSV export passed.');
   await outsider.goto(projectURL);await expect(outsider.getByText('Verify local task workflow',{exact:true})).toHaveCount(0);
   await Promise.all(pages.map(p=>p.goto(base+'/dashboard')));
+  const ownReview=(await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_ids) VALUES($1,'Admin self review QA',$2,ARRAY[$2::uuid]) RETURNING id",[projectURL.split('/').pop(),users[0].id])).rows[0].id;
+  await admin.goto(projectURL+'?task='+ownReview);await admin.getByRole('button',{name:'Ready for review',exact:true}).click();
+  await expect(admin.getByRole('button',{name:'Approve & complete',exact:true})).toBeVisible();
+  await admin.getByRole('button',{name:'Approve & complete',exact:true}).click();
+  await expect.poll(async()=>(await db.query('SELECT status FROM tasks WHERE id=$1',[ownReview])).rows[0].status).toBe('done');
   // Real PostgreSQL row locks: two eligible reviewers cannot approve one version twice.
   await db.query('INSERT INTO project_members(project_id,user_id) VALUES($1,$2)',[projectURL.split('/').pop(),users[3].id]);
   const raceTask=(await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_id,status) VALUES($1,'Concurrent review QA',$2,$3,'in_review') RETURNING id",[projectURL.split('/').pop(),users[1].id,users[3].id])).rows[0].id;
