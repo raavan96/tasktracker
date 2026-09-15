@@ -411,7 +411,8 @@ try{
   assert.equal((await db.query('SELECT enabled FROM email_delivery_settings')).rows[0].enabled,false);
   assert.equal(Number((await db.query('SELECT count(*) n FROM profiles p LEFT JOIN email_preferences e ON e.user_id=p.id WHERE e.enabled IS DISTINCT FROM true')).rows[0].n),0);
   assert.equal(Number((await db.query('SELECT count(*) n FROM email_queue')).rows[0].n),0);
-  await admin.getByRole('button',{name:'Notification settings',exact:true}).click();
+  await db.query("INSERT INTO notifications(user_id,task_id,title,message) VALUES($1,$2,'Task assigned','Notification layout sample')",[users[0].id,ownReview]);
+  await admin.goto(base+'/dashboard/notifications');
   for(const width of [430,1280]){
    await admin.setViewportSize({width,height:932});
    await admin.evaluate(()=>document.documentElement.dataset.theme='dark');
