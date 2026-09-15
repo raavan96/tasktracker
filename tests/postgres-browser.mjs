@@ -91,7 +91,7 @@ try{
     await admin.getByRole('button',{name:'Table & export',exact:true}).click();
     await expect(admin.getByRole('region',{name:'Table view',exact:true})).toBeVisible();
     if(width===430)for(const select of await admin.locator('.task-table-view select').all())assert.ok((await select.boundingBox()).width>=140,'Mobile filters must keep their selected values readable');
-    await admin.getByLabel('Show Created by column').check();
+    await admin.getByText('More filters & columns',{exact:true}).click();await admin.getByLabel('Show Created by column').check();
     await expect(admin.getByRole('columnheader',{name:'Created by',exact:true})).toBeVisible();
     await expect(admin.getByRole('cell',{name:'Staging 0',exact:true})).toBeVisible();
     await expect(admin.getByRole('region',{name:'Board view',exact:true})).toHaveCount(0);
@@ -128,7 +128,7 @@ try{
 
   await member.goto(projectURL+'?task='+task);
   await expect(member.getByText('Created by Staging 0',{exact:true}).last()).toBeVisible();
-  await member.getByLabel('Task attachment').setInputFiles({name:'proof.txt',mimeType:'text/plain',buffer:Buffer.from('Synthetic task attachment')});
+  await member.getByText('Add attachments',{exact:true}).click();await member.getByLabel('Task attachment').setInputFiles({name:'proof.txt',mimeType:'text/plain',buffer:Buffer.from('Synthetic task attachment')});
   await member.getByRole('button',{name:'Upload file',exact:true}).click();
   await expect(member.getByRole('button',{name:/^proof.txt/})).toBeVisible();
   const attachment=(await db.query('SELECT id FROM task_attachments')).rows[0].id;
@@ -224,13 +224,13 @@ try{
   await member.reload();await member.getByRole('button',{name:'Approve & complete',exact:true}).click();
   await expect.poll(async()=>(await db.query('SELECT status FROM tasks WHERE id=$1',[delegated])).rows[0].status).toBe('done');
   await admin.goto(base+'/admin/users');await admin.getByRole('textbox',{name:'Search members'}).fill(users[1].email);
-  await admin.getByRole('button',{name:'Deactivate / reassign',exact:true}).click();
+  await admin.getByText('Member actions',{exact:true}).click();await admin.getByRole('button',{name:'Deactivate / reassign',exact:true}).click();
   await admin.getByLabel('Reason for access change').fill('Synthetic lifecycle test');
   await admin.getByRole('button',{name:'Confirm deactivation',exact:true}).click();
   await expect.poll(async()=>(await db.query('SELECT disabled FROM auth.users WHERE id=$1',[users[1].id])).rows[0].disabled).toBe(true);
   await member.goto(base+'/dashboard');await member.waitForURL('**/login');
   await admin.getByLabel('Member account status').selectOption('inactive');
-  await admin.getByRole('button',{name:'Reactivate / reassign',exact:true}).click();
+  await admin.getByText('Member actions',{exact:true}).click();await admin.getByRole('button',{name:'Reactivate / reassign',exact:true}).click();
   await admin.getByLabel('Reason for access change').fill('Restore synthetic access');
   await admin.getByRole('button',{name:'Confirm reactivation',exact:true}).click();
   await expect.poll(async()=>(await db.query('SELECT disabled FROM auth.users WHERE id=$1',[users[1].id])).rows[0].disabled).toBe(false);
@@ -278,7 +278,7 @@ try{
   await expect.poll(async()=>(await db.query('SELECT paused FROM task_schedules WHERE task_id=$1',[r4task])).rows[0].paused).toBe(true);
   assert.equal((await db.query('SELECT title FROM tasks WHERE id=$1',[r4task])).rows[0].title,'Discovery specimen');
   const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII=','base64');
-  await admin.getByLabel('Task attachment').setInputFiles({name:'preview.png',mimeType:'image/png',buffer:png});
+  await admin.getByText('Add attachments',{exact:true}).click();await admin.getByLabel('Task attachment').setInputFiles({name:'preview.png',mimeType:'image/png',buffer:png});
   await admin.getByRole('button',{name:'Upload file',exact:true}).click();
   await expect.poll(async()=>Number((await db.query('SELECT count(*) FROM task_attachments WHERE task_id=$1',[r4task])).rows[0].count)).toBe(1);
   const previewId=(await db.query('SELECT id FROM task_attachments WHERE task_id=$1',[r4task])).rows[0].id;
@@ -376,6 +376,24 @@ try{
   await db.query("INSERT INTO notifications(user_id,title,message) SELECT $1,'Pagination QA '||n,'Synthetic notice' FROM generate_series(1,65) n",[users[0].id]);
   await admin.goto(base+'/dashboard/notifications');await expect(admin.locator('article')).toHaveCount(50);await admin.getByRole('link',{name:'Next',exact:true}).click();await expect(admin.locator('article').first()).toBeVisible();
   console.log('Release A/B browser: draft retained after lost response, retry stored once, table-to-task/board and paginated notifications passed.');
+
+  // Release C/D: private saved filters, guarded bulk edits and account preferences.
+  await admin.goto(base+'/dashboard/tasks?project='+perfProject);
+  await admin.getByText('Saved views',{exact:true}).click();
+  await admin.getByLabel('Saved view name').fill('My delivery view');await admin.getByRole('button',{name:'Save current view',exact:true}).click();
+  await expect(admin.getByRole('link',{name:'My delivery view',exact:true})).toBeVisible();
+  await admin.reload();await admin.getByText('Saved views (1)',{exact:true}).click();await expect(admin.getByRole('link',{name:'My delivery view',exact:true})).toBeVisible();
+  await member.goto(base+'/dashboard/tasks');await member.getByText('Saved views',{exact:true}).click();await expect(member.getByRole('link',{name:'My delivery view',exact:true})).toHaveCount(0);
+  await admin.getByLabel('Select task Save benchmark',{exact:true}).check();await admin.getByRole('button',{name:'Bulk actions (1)',exact:true}).click();
+  await admin.getByLabel('New deadline',{exact:true}).fill('2026-12-01');await admin.getByRole('button',{name:'Preview changes',exact:true}).click();
+  await expect(admin.getByText('New deadline: 2026-12-01',{exact:true})).toBeVisible();await admin.getByRole('button',{name:'Confirm 1 changes',exact:true}).click();await expect(admin.getByText('Batch results',{exact:true})).toBeVisible();await expect(admin.getByText('Updated',{exact:true})).toBeVisible();await admin.getByRole('button',{name:'Done',exact:true}).click();
+  assert.equal((await db.query('SELECT due_date::text due FROM tasks WHERE id=$1',[perfTask])).rows[0].due,'2026-12-01');
+  await admin.goto(base+'/dashboard/notifications');await admin.getByText('Notification preferences',{exact:true}).click();await admin.getByLabel('Deadline reminders per task',{exact:true}).selectOption('7');await admin.getByLabel('Mentions',{exact:true}).uncheck();await admin.getByRole('button',{name:'Save preferences',exact:true}).click();await expect(admin.getByText('Preferences saved.',{exact:true})).toBeVisible();
+  await admin.reload();await admin.getByText('Notification preferences',{exact:true}).click();await expect(admin.getByLabel('Deadline reminders per task',{exact:true})).toHaveValue('7');await expect(admin.getByLabel('Mentions',{exact:true})).not.toBeChecked();
+  await admin.goto(base+'/dashboard/tasks?preset=delegated');await expect(admin.getByRole('link',{name:'Save benchmark',exact:true})).toBeVisible();
+  for(const width of [375,430,1280]){await admin.setViewportSize({width,height:932});await expect.poll(()=>admin.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await admin.screenshot({path:`/tmp/release5-cd-${width}.png`,fullPage:true,animations:'disabled'});}
+  await admin.getByText('My account',{exact:true}).click();await expect(admin.getByRole('link',{name:'Change password',exact:true})).toBeVisible();
+  console.log('Release C/D browser: private saved views persist, bulk preview/confirmation saves, notification settings persist, delegated quick view, account menu and 375/430/1280 widths passed.');
 
   assert.equal(external.length,0,'Staging must not contact Supabase');
   console.log('Eight browser logins, private project, task assignment, local upload/download, outsider denial, review and admin approval passed against PostgreSQL 16.');

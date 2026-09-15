@@ -2,13 +2,17 @@ import 'server-only';
 import {currentUser} from './postgres/auth';
 import {transaction} from './postgres/db';
 import type {PoolClient} from 'pg';
+import type {SavedTaskView} from './task-views';
 import type {TableTask} from '@/components/TaskTable';
 export async function workspaceRead<T>(work:(db:PoolClient,userId:string)=>Promise<T>){const user=await currentUser();if(!user)throw new Error('Please sign in again.');return transaction(user.id,async db=>{await db.query('SELECT public.assert_active()');return work(db,user.id);});}
-export type TaskFilters={includeOptions?:boolean;q?:string;summary?:string;assignee?:string;sort?:string;project?:string;page?:number;archived?:boolean;mine?:boolean;status?:string;priority?:string};
+export type TaskFilters={preset?:string;includeOptions?:boolean;q?:string;summary?:string;assignee?:string;sort?:string;project?:string;page?:number;archived?:boolean;mine?:boolean;status?:string;priority?:string};
 export async function taskPage(filters:TaskFilters,exportAll=false){return workspaceRead(async(db,user)=>{
  const args:unknown[]=[];const bind=(v:unknown)=>{args.push(v);return '$'+args.length;};
  const where=[filters.archived?'(t.is_archived OR p.is_archived)':'NOT t.is_archived AND NOT p.is_archived'];
  if(filters.project)where.push('t.project_id='+bind(filters.project)+'::uuid');
+ if(filters.preset==='delegated')where.push('t.created_by='+bind(user)+'::uuid AND EXISTS(SELECT 1 FROM unnest(t.assignee_ids) person WHERE person<>'+bind(user)+'::uuid)');
+ if(filters.preset==='review')where.push("t.status='in_review' AND NOT("+bind(user)+"::uuid=ANY(t.assignee_ids)) AND (public.is_admin() OR (public.review_enabled() AND t.created_by="+bind(user)+"::uuid))");
+ if(filters.preset==='stale')where.push("t.status<>'done' AND (activity.last_activity AT TIME ZONE 'Asia/Kolkata')::date <= (now() AT TIME ZONE 'Asia/Kolkata')::date-7");
  if(filters.mine)where.push(bind(user)+'::uuid=ANY(t.assignee_ids)');
  if(filters.assignee&&filters.assignee!=='all')where.push(filters.assignee==='unassigned'?'cardinality(t.assignee_ids)=0':bind(filters.assignee)+'::uuid=ANY(t.assignee_ids)');
  if(filters.q?.trim())where.push("concat_ws(' ',t.title,t.description,a.full_name,a.email,c.full_name,c.email,p.name) ILIKE "+bind('%'+filters.q.trim().slice(0,200).replace(/[\\%_]/g,'\\$&')+'%'));
@@ -17,15 +21,16 @@ export async function taskPage(filters:TaskFilters,exportAll=false){return works
  if(filters.summary&&summaries[filters.summary])where.push(summaries[filters.summary]);
  if(filters.status&&filters.status!=='all')where.push('t.status::text='+bind(filters.status));
  if(filters.priority&&filters.priority!=='all')where.push('t.priority::text='+bind(filters.priority));
- const from=` FROM tasks t JOIN projects p ON p.id=t.project_id LEFT JOIN LATERAL (SELECT string_agg(coalesce(m.full_name,m.email),', ' ORDER BY m.full_name,m.id) full_name,string_agg(m.email,' ' ORDER BY m.id) email,bool_and(m.is_active) is_active FROM profiles m WHERE m.id=ANY(t.assignee_ids)) a ON true LEFT JOIN profiles c ON c.id=t.created_by WHERE `+where.join(' AND ');
+ const from=` FROM tasks t JOIN projects p ON p.id=t.project_id LEFT JOIN LATERAL (SELECT string_agg(coalesce(m.full_name,m.email),', ' ORDER BY m.full_name,m.id) full_name,string_agg(m.email,' ' ORDER BY m.id) email,bool_and(m.is_active) is_active FROM profiles m WHERE m.id=ANY(t.assignee_ids)) a ON true LEFT JOIN profiles c ON c.id=t.created_by LEFT JOIN LATERAL (SELECT greatest(t.updated_at,(SELECT max(greatest(created_at,edited_at)) FROM task_comments WHERE task_id=t.id),(SELECT max(created_at) FROM task_history WHERE task_id=t.id)) last_activity) activity ON true WHERE `+where.join(' AND ');
  const total=Number((await db.query<{n:string}>('SELECT count(*) n'+from,args)).rows[0].n);
  if(exportAll&&total>10000)throw new Error('This export exceeds 10,000 rows. Narrow the filters first.');
  const page=Math.min(Math.max(1,Math.trunc(Number(filters.page)||1)),Math.max(1,Math.ceil(total/25)));
  const sorts:Record<string,string>={deadline:'t.due_date ASC NULLS LAST',title:'lower(t.title)',assignee:"lower(coalesce(a.full_name,a.email,''))",priority:"CASE t.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END"};
- const items=(await db.query<TableTask & {review_version:number;description:string|null}>("SELECT t.id,t.project_id,t.title,t.status,t.priority,t.description,t.due_date,t.assignee_id,t.assignee_ids,t.review_version,jsonb_build_object('full_name',a.full_name,'email',a.email,'is_active',a.is_active) assignee,jsonb_build_object('full_name',c.full_name,'email',c.email) creator,jsonb_build_object('name',p.name) project"+from+' ORDER BY '+(sorts[filters.sort||'deadline']||sorts.deadline)+',t.id LIMIT '+(exportAll?10000:25)+' OFFSET '+(exportAll?0:(page-1)*25),args)).rows;
- const people=filters.includeOptions===false?[]:(await db.query<{id:string;full_name:string|null;email:string}>('SELECT id,full_name,email FROM profiles ORDER BY full_name,id')).rows;
+ const items=(await db.query<TableTask & {review_version:number;description:string|null}>("SELECT t.id,t.project_id,t.title,t.status,t.priority,t.description,t.due_date,t.assignee_id,t.assignee_ids,t.review_version,activity.last_activity,(NOT t.is_archived AND NOT p.is_archived AND (public.is_admin() OR t.created_by=auth.uid())) can_manage,jsonb_build_object('full_name',a.full_name,'email',a.email,'is_active',a.is_active) assignee,jsonb_build_object('full_name',c.full_name,'email',c.email) creator,jsonb_build_object('name',p.name) project"+from+' ORDER BY '+(sorts[filters.sort||'deadline']||sorts.deadline)+',t.id LIMIT '+(exportAll?10000:25)+' OFFSET '+(exportAll?0:(page-1)*25),args)).rows;
+ const people=filters.includeOptions===false?[]:(await db.query<{id:string;full_name:string|null;email:string;is_active:boolean}>('SELECT id,full_name,email,is_active FROM profiles ORDER BY full_name,id')).rows;
  const projects=filters.includeOptions===false?[]:(await db.query<{id:string;name:string}>('SELECT id,name FROM projects ORDER BY name,id')).rows;
- return {items,total,page,people,projects};
+ const views=filters.includeOptions===false?[]:(await db.query<SavedTaskView>('SELECT id,name,filters FROM saved_task_views WHERE user_id=$1 ORDER BY name,id',[user])).rows;
+ return {items,total,page,people,projects,views};
 });}
 export async function searchWorkspace(query:string,archived:boolean,page=1){return workspaceRead(async db=>{
  const q=query.trim().slice(0,200);if(!q)return {items:[],total:0,page:1};

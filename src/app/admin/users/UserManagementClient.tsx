@@ -1,4 +1,5 @@
 'use client';
+import ActionsMenu from '@/components/ActionsMenu';
 
 import { useState } from 'react';
 import { createMember, resetMemberPassword, updateMemberDetails, updateUserRole } from '@/app/auth/actions';
@@ -77,7 +78,7 @@ export default function UserManagementClient({
 
   return (
     <div className="space-y-8">
-      <section className="rounded-xl border bg-surface p-4 space-y-2"><h2 className="font-semibold">Review policy</h2><p className="text-sm text-gray-500">{reviewEnabled?'Creator or admin approval is enabled. No self-approval.':'Only admins can review. Self-approval is blocked.'}</p><button disabled={policyBusy} className="rounded-lg border px-3 py-2 text-sm" onClick={async()=>{if(!window.confirm(reviewEnabled?'Limit approval to admins? Self-approval will remain blocked.':'Enable creator/admin review with no self-approval?'))return;setPolicyBusy(true);try{const r=await changeReviewPolicy(!reviewEnabled);if(r.error)setFeedback({error:r.error});}catch{setFeedback({error:'Policy change failed.'});}finally{setPolicyBusy(false);}}}>{reviewEnabled?'Use admin-only review':'Enable creator review'}</button></section>
+      <details className="rounded-xl border bg-surface p-4 space-y-2"><summary className="cursor-pointer font-semibold">Review policy</summary><p className="text-sm text-gray-500">{reviewEnabled?'Creator or admin approval is enabled. No self-approval.':'Only admins can review. Self-approval is blocked.'}</p><button disabled={policyBusy} className="rounded-lg border px-3 py-2 text-sm" onClick={async()=>{if(!window.confirm(reviewEnabled?'Limit approval to admins? Self-approval will remain blocked.':'Enable creator/admin review with no self-approval?'))return;setPolicyBusy(true);try{const r=await changeReviewPolicy(!reviewEnabled);if(r.error)setFeedback({error:r.error});}catch{setFeedback({error:'Policy change failed.'});}finally{setPolicyBusy(false);}}}>{reviewEnabled?'Use admin-only review':'Enable creator review'}</button></details>
       {lifecycle&&<MemberLifecycle member={lifecycle} onClose={()=>setLifecycle(null)}/>}
 
       {feedback?.error && (
@@ -210,17 +211,17 @@ export default function UserManagementClient({
                     <td className="px-6 py-4 text-right space-x-2">
                       <button onClick={() => { setFeedback(null); setEditMember(u); }} className="text-xs text-blue-700 font-medium">Edit details</button>
                       {!isSelf && (
-                        <>
-                          <button onClick={() => { setResetTarget(u); setFeedback(null); }} disabled={resetBusy} className="text-xs text-blue-600 font-medium disabled:opacity-50">Reset password</button>
+                        <ActionsMenu label="Member actions">
+                          <button onClick={() => { setResetTarget(u); setFeedback(null); }} disabled={resetBusy} className="block min-h-11 w-full rounded-lg px-3 text-left text-sm hover:bg-gray-100 disabled:opacity-50">Reset password</button>
                           <button
                             onClick={() => handleRoleChange(u.id, u.role === 'admin' ? 'member' : 'admin')}
                             disabled={isPending}
-                            className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+                            className="block min-h-11 w-full rounded-lg px-3 text-left text-sm hover:bg-gray-100 disabled:opacity-50"
                           >
                             Make {u.role === 'admin' ? 'Member' : 'Admin'}
                           </button>
-                          <button onClick={()=>setLifecycle(u)} className="rounded-lg border px-3 py-2 text-xs">{u.is_active===false?'Reactivate / reassign':'Deactivate / reassign'}</button>
-                        </>
+                          <div className="my-2 border-t"/><button onClick={()=>setLifecycle(u)} className="rounded-lg border px-3 py-2 text-xs">{u.is_active===false?'Reactivate / reassign':'Deactivate / reassign'}</button>
+                        </ActionsMenu>
                       )}
                     </td>
                   </tr>

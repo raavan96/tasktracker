@@ -175,7 +175,7 @@ await as(admin);assert.ok((await rows('SELECT * FROM member_events WHERE member_
 await as(null);await db.exec('SET SESSION AUTHORIZATION tasktracker_runtime');await assert.rejects(()=>rows('DELETE FROM auth.users WHERE id=$1',[member]));await db.exec('SET SESSION AUTHORIZATION postgres');
 console.log('Release 3: creator review, no self-approval, stale decisions, required reasons, immutable submissions, lifecycle/session revocation, inactive RLS, protected admins, and reassignment passed.');
 
-await as(null);await db.exec(read('postgres/008_reporting_collaboration.sql'));
+await as(null);await db.exec(read('postgres/008_reporting_collaboration.sql'));await db.exec(read('postgres/011_workspace_preferences.sql'));
 await as(owner);
 const comment=(await rows("INSERT INTO task_comments(task_id,author_id,content,mentions) VALUES($1,$2,'Please inspect this result',ARRAY[$3::uuid]) RETURNING id",[rt,owner,member]))[0].id;
 await assert.rejects(()=>rows('UPDATE task_comments SET mentions=ARRAY[$1::uuid] WHERE id=$2',[outsider,comment]));
@@ -292,4 +292,34 @@ await as(outsider);await assert.rejects(()=>write(connection,outsider,remarkTask
 await as(admin);await rows("SELECT set_archive('project',$1,true,true,false)",[remarkProject]);
 await assert.rejects(()=>write(connection,admin,remarkTask,'Archived task',[]));
 console.log('Release A: retry-safe creation and edits, one mention notification/history entry, conflict, ownership, privacy and archive checks passed.');
+
+// Release C/D: private settings, notification delivery and actual bulk mutations.
+await as(owner);const privateView=(await rows("INSERT INTO saved_task_views(user_id,name,filters) VALUES($1,'Owner review','{\"preset\":\"review\"}') RETURNING id",[owner]))[0].id;
+await rows('INSERT INTO notification_preferences(user_id,deadline_days,mentions,assignments,reviews) VALUES($1,0,false,false,false)',[owner]);
+await as(outsider);assert.equal((await rows('SELECT * FROM saved_task_views WHERE id=$1',[privateView])).length,0);assert.equal((await rows('SELECT * FROM notification_preferences WHERE user_id=$1',[owner])).length,0);
+await assert.rejects(()=>rows("INSERT INTO saved_task_views(user_id,name,filters) VALUES($1,'Stolen','{}')",[owner]));
+await as(owner);
+const bulkProject=(await rows("SELECT create_workspace_project('Bulk QA','',ARRAY[$1::uuid],true) id",[member]))[0].id;
+const bulkIds=[];for(const title of ['Editable','Submitted','Completed'])bulkIds.push((await rows("INSERT INTO tasks(project_id,title,created_by,assignee_ids) VALUES($1,$2,$3,ARRAY[$4::uuid]) RETURNING id",[bulkProject,title,owner,member]))[0].id);
+await as(member);for(const task of bulkIds.slice(1))await rows("SELECT review_task($1,0,'submit','')",[task]);
+await as(owner);await rows("SELECT review_task($1,(SELECT review_version FROM tasks WHERE id=$1),'approve','')",[bulkIds[2]]);
+const bulkModule={exports:{}};new Function('exports',ts.transpileModule(read('src/lib/postgres/bulk-tasks.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(bulkModule.exports);
+const bulk=bulkModule.exports.bulkTasks;
+const selections=(await rows('SELECT id,review_version FROM tasks WHERE id=ANY($1::uuid[])',[bulkIds])).map(t=>({id:t.id,version:Number(t.review_version)}));
+await db.exec('BEGIN');const cdPreview=await bulk(db,owner,selections,{action:'deadline',deadline:'2026-12-01'});await db.exec('COMMIT');assert.equal(cdPreview.filter(x=>x.eligible).length,1);
+await db.exec('BEGIN');const cdApplied=await bulk(db,owner,selections,{action:'deadline',deadline:'2026-12-01'},true);await db.exec('COMMIT');assert.equal(cdApplied.filter(x=>x.eligible).length,1);
+await db.exec('BEGIN');const cdReplay=await bulk(db,owner,selections,{action:'deadline',deadline:'2026-12-02'},true);await db.exec('COMMIT');assert.equal(cdReplay.filter(x=>x.eligible).length,0);
+const cdLatest=(await rows('SELECT id,review_version FROM tasks WHERE id=$1',[bulkIds[0]])).map(t=>({id:t.id,version:Number(t.review_version)}));
+await db.exec('BEGIN');assert.equal((await bulk(db,owner,cdLatest,{action:'assign',assignee_ids:[outsider]},true))[0].eligible,false);await db.exec('COMMIT');
+await as(member);await db.exec('BEGIN');assert.equal((await bulk(db,member,cdLatest,{action:'deadline',deadline:'2026-12-03'},true))[0].eligible,false);await db.exec('COMMIT');
+await as(outsider);await db.exec('BEGIN');const cdHidden=await bulk(db,outsider,cdLatest,{action:'deadline',deadline:'2026-12-03'},true);await db.exec('COMMIT');assert.equal(cdHidden[0].title,'Unavailable task');
+await as(owner);await db.exec('BEGIN');assert.equal((await bulk(db,owner,[selections.find(x=>x.id===bulkIds[2])],{action:'archive'},true))[0].eligible,true);await db.exec('COMMIT');
+await as(null);
+for(const [title,key] of [['Due today','a:deadline'],['You were mentioned','mention:qa'],['Task assigned',null],['Ready for review','qa-review:owner']])assert.equal((await rows("INSERT INTO notifications(user_id,task_id,title,message,dedupe_key) VALUES($1,$2,$3,'test',$4) RETURNING id",[owner,bulkIds[0],title,key])).length,0);
+await as(owner);await rows('UPDATE notification_preferences SET deadline_days=7 WHERE user_id=$1',[owner]);await as(null);
+const cdNotice=(await rows("INSERT INTO notifications(user_id,task_id,title,message,dedupe_key) VALUES($1,$2,'Due today','test','first:deadline') RETURNING id",[owner,bulkIds[0]]))[0];assert.ok(cdNotice);
+assert.equal((await rows("INSERT INTO notifications(user_id,task_id,title,message,dedupe_key) VALUES($1,$2,'Due today','test','second:deadline') RETURNING id",[owner,bulkIds[0]])).length,0);
+await rows("UPDATE notifications SET created_at=now()-interval '8 days' WHERE id=$1",[cdNotice.id]);
+assert.equal((await rows("INSERT INTO notifications(user_id,task_id,title,message,dedupe_key) VALUES($1,$2,'Due today','test','third:deadline') RETURNING id",[owner,bulkIds[0]])).length,1);
+console.log('Release C/D database: saved-view/settings privacy; bulk cdPreview, partial results, stale versions, immutable review, ownership, private tasks, assignment validation and completed archive; notification opt-out and weekly frequency passed.');
 await db.close();

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { signOut } from '@/app/auth/actions';
 import ArchiveNotice from './ArchiveNotice';
+import ActionsMenu from './ActionsMenu';
 import WorkspaceNav from './WorkspaceNav';
 import { ThemeToggle } from './ThemeProvider';
 import { 
@@ -51,13 +52,12 @@ export default async function WorkspaceLayout({
               <span>TaskTracker</span>
             </Link>
 
-            <div className="workspace-top-nav hidden xl:block"><WorkspaceNav isAdmin={isAdmin} /></div>
             <span className="workspace-context">Central Team Workspace</span>
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">
             <ThemeToggle />
-            <Link href="/reset-password" title="Change password" aria-label="Change password" className="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"><KeyRound className="w-5 h-5" /></Link>
+
             {/* Notification Indicator */}
             <Link
               href="/dashboard/notifications"
@@ -70,11 +70,11 @@ export default async function WorkspaceLayout({
               )}
             </Link>
 
-            {/* Profile & Role Tag */}
-            <div className="flex items-center space-x-3 sm:border-l sm:pl-4 border-gray-200">
-              <div className="text-right hidden sm:block">
+            <ActionsMenu label="My account">            <Link href="/reset-password" title="Change password" aria-label="Change password" className="flex min-h-11 items-center gap-2 rounded-lg p-2 text-sm hover:bg-gray-100"><KeyRound className="w-4 h-4" />Change password</Link>
+            <div className="space-y-3 p-2">
+              <div className="text-left">
                 <div className="text-sm font-medium text-gray-900">{profile?.full_name || profile?.email}</div>
-                <div className="text-xs text-gray-500 flex items-center justify-end">
+                <div className="text-xs text-gray-500 flex items-center">
                   {isAdmin && <ShieldCheck className="w-3 h-3 mr-1 text-purple-600" />}
                   <span className="capitalize">{profile?.role}</span>
                 </div>
@@ -83,13 +83,14 @@ export default async function WorkspaceLayout({
               <form action={signOut}>
                 <button
                   type="submit"
-                  className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                  className="flex min-h-11 items-center gap-2 rounded-lg p-2 text-sm hover:bg-red-50"
                   title="Sign Out" aria-label="Sign out"
                 >
-                  <LogOut className="w-5 h-5" />
+                  <LogOut className="w-4 h-4" /><span>Sign out</span>
                 </button>
               </form>
             </div>
+            </ActionsMenu>
           </div>
         </div>
         <div className="xl:hidden px-4 pb-3"><WorkspaceNav isAdmin={isAdmin} mobile /></div>
