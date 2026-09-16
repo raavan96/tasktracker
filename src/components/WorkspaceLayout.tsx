@@ -7,6 +7,7 @@ import ActionsMenu from './ActionsMenu';
 import WorkspaceNav from './WorkspaceNav';
 import WorkspaceAppearance from './WorkspaceAppearance';
 import WorkspaceTooltips from './WorkspaceTooltips';
+import DashboardLauncher from './DashboardLauncher';
 import { ThemeToggle } from './ThemeProvider';
 import { 
   FolderKanban, 
@@ -101,6 +102,7 @@ export default async function WorkspaceLayout({
       </header>
 
       <ArchiveNotice />
+      <DashboardLauncher />
       {/* Main Content Area */}
       <main className="workspace-main flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}

@@ -490,6 +490,35 @@ try{
   await admin.keyboard.press('Tab');
   console.log('Glass appearance: upload, persistence, presets, reset, opacity and tooltip checks passed.');
 
+  // Insights must aggregate all visible records under the requesting user's RLS.
+  for(const index of [0,1,2]){
+   const response=await contexts[index].request.get(base+'/api/dashboard-insights');assert.equal(response.status(),200);
+   assert.match(response.headers()['cache-control'],/no-store/);const insights=await response.json();
+   await db.query('BEGIN');await db.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[users[index].id]);await db.query('SET LOCAL ROLE authenticated');
+   const visible=(await db.query('SELECT id FROM projects ORDER BY id')).rows.map(p=>p.id);
+   const activeCount=Number((await db.query('SELECT count(*) n FROM tasks t JOIN projects p ON p.id=t.project_id WHERE NOT t.is_archived AND NOT p.is_archived')).rows[0].n);
+   await db.query('ROLLBACK');
+   assert.deepEqual(insights.projects.map(p=>p.id).sort(),visible.sort());
+   assert.equal(insights.status.reduce((n,x)=>n+x.count,0),activeCount);
+   if(index!==0){assert.equal(insights.isAdmin,false);assert.ok(insights.workload.every(p=>p.id===users[index].id));}
+  }
+  assert.equal((await contexts[0].request.get(base+'/api/dashboard-insights?month=2026-13')).status(),400);
+  assert.equal((await contexts[0].request.get(base+'/api/dashboard-insights?month=2026-02&day=2026-02-30')).status(),400);
+  const anonymous=await browser.newContext();assert.equal((await anonymous.request.get(base+'/api/dashboard-insights')).status(),401);await anonymous.close();
+  await admin.goto(base+'/dashboard');await admin.getByRole('button',{name:'Dashboard',exact:true}).click();
+  await expect(admin.getByRole('dialog',{name:'Dashboard',exact:true})).toBeVisible();
+  await expect(admin.getByText('Loading dashboard…',{exact:true})).toBeHidden();
+  await expect(admin.getByRole('heading',{name:'Project health',exact:true})).toBeVisible();
+  await admin.getByRole('button',{name:/Needs attention.*View projects|Needs attention.*Subset/}).click().catch(async()=>{await admin.locator('.insights-project-stats button').nth(2).click();});
+  await expect(admin.getByRole('heading',{name:/Projects needing attention/})).toBeVisible();
+  await admin.getByRole('button',{name:'Next month',exact:true}).click();await expect(admin.getByText('Loading dashboard…',{exact:true})).toBeHidden();
+  await expect(admin.getByRole('heading',{name:'Completion trend',exact:true})).toBeVisible();
+  await admin.keyboard.press('Escape');await expect(admin.getByRole('dialog')).toHaveCount(0);
+  await admin.route('**/api/dashboard-insights?*',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Temporary test error'})}));
+  await admin.getByRole('button',{name:'Dashboard',exact:true}).click();await expect(admin.getByRole('alert')).toContainText('Temporary test error');
+  await admin.unroute('**/api/dashboard-insights?*');await admin.getByRole('button',{name:'Retry dashboard',exact:true}).click();await expect(admin.getByRole('heading',{name:'Project health',exact:true})).toBeVisible();await admin.keyboard.press('Escape');
+  console.log('Dashboard insights: RLS, aggregate counts, member workload scope, validation, calendar and retry passed.');
+
   // Theme changes must not remove controls or change action/field state.
   async function themeControls(theme){
    await admin.evaluate(value=>document.documentElement.dataset.theme=value,theme);
@@ -546,6 +575,12 @@ try{
       await auditLight(name,width);
       await admin.keyboard.press('Escape');
      }
+     await admin.getByRole('button',{name:'Dashboard',exact:true}).click();
+     await expect(admin.getByRole('heading',{name:'Project health',exact:true})).toBeVisible();
+     await auditLight('Dashboard insights',width);
+     for(const theme of ['light','dark']){await themeControls(theme);await admin.waitForTimeout(250);await admin.screenshot({path:`/tmp/release5-insights-${theme}-${width}.png`,fullPage:true});}
+     assert.ok(await admin.locator('.insights-drawer').evaluate(el=>el.scrollWidth<=el.clientWidth+1),'Dashboard must not overflow horizontally');
+     await admin.keyboard.press('Escape');await themeControls('light');
      await admin.getByRole('button',{name:'New Project',exact:true}).click();
      await expect(admin.getByRole('heading',{name:'Create new project',exact:true})).toBeVisible();
      await auditLight('Create project form and member picker',width);
