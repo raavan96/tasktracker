@@ -287,7 +287,7 @@ try{
   await admin.getByRole('button',{name:'Edit history',exact:true}).click();
   await expect(admin.getByRole('heading',{name:'Previous remark versions'})).toBeVisible();
   assert.equal(Number((await db.query("SELECT count(*) FROM notifications WHERE user_id=$1 AND task_id=$2 AND dedupe_key LIKE 'mention:%'",[users[3].id,r4task])).rows[0].count),1);
-  // Loading a recurring schedule and opening its fields is not an edit.
+  { // Loading a recurring schedule and opening its fields is not an edit.
   await admin.setViewportSize({width:1440,height:1000});
   await admin.goto(projectURL+'?task='+r4task);
   await admin.getByText('Edit future occurrences',{exact:true}).click();
@@ -312,6 +312,7 @@ try{
   admin.on('dialog',dismissUnexpected);
   await admin.keyboard.press('Escape');await expect(admin.locator('dialog[open]')).toHaveCount(0);
   admin.off('dialog',dismissUnexpected);assert.deepEqual(unexpectedPrompts,[],'Reverted edits must close quietly');
+  }
   await admin.goto(projectURL+'?task='+r4task);
   await admin.getByText('Edit future occurrences',{exact:true}).click();
   await admin.getByLabel('Future task title',{exact:true}).fill('Next specimen');
