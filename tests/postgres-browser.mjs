@@ -477,7 +477,7 @@ try{
   await expect(admin.locator('html')).toHaveAttribute('data-opaque-glass','true');
   await admin.getByRole('button',{name:'Customize background',exact:true}).click();
   await expect(admin.getByRole('button',{name:'Coast',exact:true})).toHaveAttribute('aria-pressed','true');
-  await admin.getByLabel('Background image',{exact:true}).setInputFiles({name:'background.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jf1sAAAAASUVORK5CYII=','base64')});
+  await admin.getByLabel('Background image',{exact:true}).setInputFiles({name:'background.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=','base64')});
   await expect(admin.getByRole('status')).toContainText('Saved for your account');
   await expect.poll(()=>admin.evaluate(()=>document.documentElement.style.getPropertyValue('--user-wallpaper').startsWith('url('))).toBe(true);
   await admin.getByRole('button',{name:'Reset background',exact:true}).click();
@@ -500,9 +500,12 @@ try{
   }
   const contrastFailures=[];
   async function auditLight(label,width){
+   for(const theme of ['light','dark']){
+    await themeControls(theme);
+    const result=await new AxeBuilder({page:admin}).withRules(['color-contrast']).analyze();
+    for(const v of result.violations)contrastFailures.push({width,theme,route:label,id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))});
+   }
    await themeControls('light');
-   const result=await new AxeBuilder({page:admin}).withRules(['color-contrast']).analyze();
-   for(const v of result.violations)contrastFailures.push({width,route:label,id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))});
   }
   for(const width of [430,1440]){
    await admin.setViewportSize({width,height:1000});
