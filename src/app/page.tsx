@@ -28,7 +28,6 @@ export default function HomePage() {
           ].map(({ icon: Icon, title, text }) => <section key={title} className="rounded-2xl border bg-surface p-6"><Icon className="mb-5 h-6 w-6 text-blue-500" /><h2 className="text-lg font-semibold">{title}</h2><p className="mt-2 text-sm leading-relaxed text-gray-500">{text}</p></section>)}
         </div>
       </main>
-      <footer className="mx-auto max-w-6xl border-t px-6 py-6 text-sm text-gray-500">TaskTracker · collegedunia.com</footer>
     </div>
   );
 }

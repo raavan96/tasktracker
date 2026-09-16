@@ -4,6 +4,7 @@ import "./globals.css";
 import "./glass.css";
 import { cookies } from 'next/headers';
 import ThemeProvider from '@/components/ThemeProvider';
+import AppFooter from '@/components/AppFooter';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,7 +29,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       data-theme={theme}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col"><ThemeProvider initialTheme={theme}>{children}</ThemeProvider></body>
+      <body className="min-h-full flex flex-col"><ThemeProvider initialTheme={theme}>{children}<AppFooter /></ThemeProvider></body>
     </html>
   );
 }
