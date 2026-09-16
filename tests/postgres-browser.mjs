@@ -211,8 +211,9 @@ try{
   await expect(member.getByText('You’re all caught up.',{exact:true})).toBeVisible();
   // Release 3 member-created delegation and lifecycle flow, synthetic accounts only.
   const delegated=(await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_id) VALUES($1,'Member delegation QA',$2,$3) RETURNING id",[projectURL.split('/').pop(),users[1].id,users[0].id])).rows[0].id;
+  await member.goto(projectURL+'?task='+delegated);
+  await member.getByRole('button',{name:'Ready for review',exact:true}).click();
   await admin.goto(projectURL+'?task='+delegated);
-  await admin.getByRole('button',{name:'Ready for review',exact:true}).click();
   await expect.poll(async()=>(await db.query('SELECT status FROM tasks WHERE id=$1',[delegated])).rows[0].status).toBe('in_review');
   await expect(admin.getByRole('button',{name:'Approve & complete',exact:true})).toBeVisible();
   await member.goto(projectURL+'?task='+delegated);
@@ -518,6 +519,11 @@ try{
   await expect(admin.getByRole('heading',{name:'Project health',exact:true})).toBeVisible();
   await admin.getByRole('button',{name:/Needs attention.*View projects|Needs attention.*Subset/}).click().catch(async()=>{await admin.locator('.insights-project-stats button').nth(2).click();});
   await expect(admin.getByRole('heading',{name:/Projects needing attention/})).toBeVisible();
+  const calendarDate=admin.locator('.insights-calendar button[aria-pressed="false"]').first();
+  await calendarDate.scrollIntoViewIfNeeded();const calendarScroll=await admin.evaluate(()=>window.scrollY);
+  await calendarDate.click();await expect(admin.getByText('Loading dashboard…',{exact:true})).toHaveCount(0);
+  await expect(admin.locator('.insights-agenda')).toHaveAttribute('aria-busy','false');
+  assert.ok(Math.abs((await admin.evaluate(()=>window.scrollY))-calendarScroll)<8,'Selecting a dashboard date must preserve scroll');
   await admin.getByRole('button',{name:'Next month',exact:true}).click();await expect(admin.getByText('Loading dashboard…',{exact:true})).toBeHidden();
   await expect(admin.getByRole('heading',{name:'Completion trend',exact:true})).toBeVisible();
   await admin.goto(base+'/dashboard');
@@ -525,6 +531,21 @@ try{
   await openDashboard();await expect(admin.locator('.insights-page').getByRole('alert')).toContainText('Temporary test error');
   await admin.unroute('**/api/dashboard-insights?*');await admin.getByRole('button',{name:'Retry dashboard',exact:true}).click();await expect(admin.getByRole('heading',{name:'Project health',exact:true})).toBeVisible();await admin.goto(base+'/dashboard');
   console.log('Dashboard insights: RLS, aggregate counts, member workload scope, validation, calendar and retry passed.');
+
+  await admin.getByRole('button',{name:'Filter projects',exact:true}).click();
+  await admin.getByLabel('Search projects',{exact:true}).fill('View controls QA B');
+  await expect(admin.locator('[data-project-id]')).toHaveCount(1);
+  await admin.getByRole('button',{name:'Clear filters',exact:true}).click();
+  await admin.getByLabel('Created by',{exact:true}).selectOption(users[0].id);
+  await expect(admin.getByText('Filters applied',{exact:false})).toBeVisible();
+  await admin.getByRole('button',{name:'Clear filters',exact:true}).click();
+  await admin.getByRole('button',{name:'Filter projects',exact:true}).click();
+  await admin.getByRole('button',{name:'Help and tutorial',exact:true}).click();
+  await expect(admin.getByRole('dialog',{name:'TaskTracker help',exact:true})).toBeVisible();
+  for(let step=0;step<4;step++)await admin.getByRole('button',{name:'Next',exact:true}).click();
+  await admin.getByRole('button',{name:'Finish tutorial',exact:true}).click();
+  await expect(admin.getByRole('button',{name:'Start tutorial',exact:true})).toHaveCount(0);
+  console.log('Dashboard scroll preservation, project filters and first-time tutorial passed.');
 
   // Theme changes must not remove controls or change action/field state.
   async function themeControls(theme){
@@ -600,6 +621,10 @@ try{
   console.log('CONTRAST_AUDIT '+JSON.stringify(contrastFailures));
   assert.deepEqual(contrastFailures,[],'Light-mode contrast failures');
   console.log('Light/dark control parity: 11 pages including task drawer, at phone and desktop widths; names, destinations, visibility, enabled state and field values match.');
+  await admin.goto(base+'/dashboard');
+  await admin.locator('aside').getByRole('link',{name:'All Tasks',exact:true}).click();
+  await expect(admin).toHaveURL(base+'/dashboard/tasks');await admin.getByRole('button',{name:'Go back',exact:true}).click();await expect(admin).toHaveURL(base+'/dashboard');
+  await admin.getByText('My account',{exact:true}).click();await admin.getByRole('button',{name:'Sign out',exact:true}).click();await expect(admin).toHaveURL(base+'/');
   assert.equal(external.length,0,'Staging must not contact Supabase');
   console.log('Eight browser logins, private project, task assignment, local upload/download, outsider denial, review and admin approval passed against PostgreSQL 16.');
 }finally{await browser.close();await db.end();}

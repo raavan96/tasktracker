@@ -9,11 +9,16 @@ export async function claimEmail(db) {
 export async function prepareEmail(db,job) {
  const person=(await db.query(`SELECT u.email,p.full_name,p.role,e.* FROM email_preferences e JOIN profiles p ON p.id=e.user_id JOIN auth.users u ON u.id=p.id WHERE e.user_id=$1 AND e.enabled AND p.is_active AND NOT u.disabled AND EXISTS(SELECT 1 FROM email_delivery_settings WHERE id AND enabled)`,[job.user_id])).rows[0];
  if(!person)return null;
- const group=job.category==='assignment'?'assignments':job.category==='mention'?'mentions':job.category==='deadline_digest'?'deadline_digest':job.category==='weekly_report'?'weekly_report':'reviews';
+ const group=['assignment','project_assignment'].includes(job.category)?'assignments':job.category==='mention'?'mentions':job.category==='deadline_digest'?'deadline_digest':job.category==='weekly_report'?'weekly_report':'reviews';
  if(!person[group])return null;
  const date=(await db.query("SELECT (now() AT TIME ZONE 'Asia/Kolkata')::date::text today")).rows[0].today;
  let data={name:person.full_name||'there'};
- if(job.category==='weekly_report'){
+ if(job.category==='project_assignment'){
+  if(Date.now()-new Date(job.created_at).getTime()>86400000)return null;
+  const project=(await db.query('SELECT p.id,p.name FROM projects p WHERE p.id=$1 AND can_email_project($2,p.id)',[job.project_id,job.user_id])).rows[0];
+  if(!project)return null;
+  data={...data,projectId:project.id,projectName:project.name};
+ } else if(job.category==='weekly_report'){
   const week=(await db.query("SELECT date_trunc('week',now() AT TIME ZONE 'Asia/Kolkata')::date::text week")).rows[0].week;
   if(job.event_key!==`weekly:${job.user_id}:${week}`)return null;
   const report=await weeklyReportData(db,job.user_id,week);if(!report)return null;

@@ -1,8 +1,9 @@
 // Dependency-free, table-based email templates. All user-supplied text is escaped.
 export const categories = {
+ project_assignment:{label:'Project assignment',headline:'You have joined a project',intro:'You have been added to a project. Open it to see the team, tasks and project details.',cta:'Open project',accent:'#84dcec'},
  assignment:{label:'Task assignment',headline:'A new task is yours',intro:'You have been assigned a task. Review the details and coordinate with the other assignees.',cta:'Open task',accent:'#84dcec'},
  mention:{label:'Mention',headline:'You were mentioned',intro:'A teammate mentioned you in a task update.',cta:'Read the update',accent:'#84dcec'},
- review_requested:{label:'Ready for review',headline:'Your review is requested',intro:'The assignees have submitted this task for review. Open it to approve the work or request changes.',cta:'Review task',accent:'#c4b5fd'},
+ review_requested:{label:'Ready for review',headline:'Your review is requested',intro:'This task has been submitted for review. Open it to approve the work or request changes.',cta:'Review task',accent:'#c4b5fd'},
  approved:{label:'Task approved',headline:'Your work is approved',intro:'This task has been approved and marked complete.',cta:'View completed task',accent:'#79d6a7'},
  changes_requested:{label:'Changes requested',headline:'A few changes are needed',intro:'A reviewer has requested changes. Read the feedback, update the work and submit it again when ready.',cta:'View feedback',accent:'#f2c785'},
  review_updated:{label:'Review update',headline:'The task review has changed',intro:'There is a new review update. Open the task for its current status and next steps.',cta:'Open task',accent:'#c4b5fd'},
@@ -18,7 +19,7 @@ export function renderEmail(kind,data,{origin='https://tasktracker.top-menus.com
  const spec=categories[kind];if(!spec)throw new Error('Unknown email category');
  const base=new URL(origin);if(base.protocol!=='https:'||base.username||base.password||base.pathname!=='/'||base.search||base.hash)throw new Error('Use a trusted HTTPS app origin.');
  const url=path=>new URL(path,base).href;
- const path=data.task?taskPath(data.task):kind==='project_completed'?`/dashboard/projects/${encodeURIComponent(data.projectId)}`:kind==='weekly_report'?'/dashboard':kind==='deadline_digest'?'/dashboard/my-tasks':'/dashboard';
+ const path=data.task?taskPath(data.task):['project_completed','project_assignment'].includes(kind)?`/dashboard/projects/${encodeURIComponent(data.projectId)}`:kind==='weekly_report'?'/dashboard':kind==='deadline_digest'?'/dashboard/my-tasks':'/dashboard';
  const details=[];
  if(data.projectName)details.push(['Project',data.projectName]);
  if(data.assignees)details.push(['Assigned to',data.assignees]);

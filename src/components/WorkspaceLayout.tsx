@@ -5,6 +5,8 @@ import { signOut } from '@/app/auth/actions';
 import ArchiveNotice from './ArchiveNotice';
 import ActionsMenu from './ActionsMenu';
 import WorkspaceNav from './WorkspaceNav';
+import WorkspaceBack from './WorkspaceBack';
+import WorkspaceHelp from './WorkspaceHelp';
 import WorkspaceAppearance from './WorkspaceAppearance';
 import WorkspaceTooltips from './WorkspaceTooltips';
 import { ThemeToggle } from './ThemeProvider';
@@ -59,6 +61,8 @@ export default async function WorkspaceLayout({
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">
+            <WorkspaceBack />
+            <WorkspaceHelp userId={user.id} buttonOnly />
             <WorkspaceAppearance userId={user.id} />
             <ThemeToggle />
 
@@ -103,6 +107,7 @@ export default async function WorkspaceLayout({
       <ArchiveNotice />
       {/* Main Content Area */}
       <main className="workspace-main flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <WorkspaceHelp userId={user.id} />
         {children}
       </main>
     </div>
