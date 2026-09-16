@@ -502,7 +502,9 @@ try{
      const pageName=route==='/dashboard'?'projects':route.split('/').at(-1);
      for(const theme of ['light','dark']){
       await themeControls(theme);
-      await admin.evaluate(()=>Promise.all(document.getAnimations().filter(a=>a.effect?.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{}))));
+      // Theme CSS transitions take 180ms; avoid awaiting paused background animations.
+      await admin.waitForTimeout(250);
+      await expect(admin.getByText('Loading tasks…',{exact:true})).toBeHidden({timeout:10000});
       await admin.screenshot({path:`/tmp/release5-overview-${pageName}-${theme}-${width}.png`,fullPage:true});
      }
      await themeControls('light');
