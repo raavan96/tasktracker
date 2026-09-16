@@ -1,5 +1,5 @@
 'use client';
-import {useEffect,useState,useRef,useId} from 'react';
+import {useEffect,useLayoutEffect,useState,useRef,useId} from 'react';
 import {listRemarks,saveRemark,remarkHistory,type Remark} from '@/app/dashboard/discussion/actions';
 import type {Member} from '@/lib/task-types';
 import RemarkText from './RemarkText';
@@ -9,6 +9,8 @@ export default function TaskDiscussion({taskId,userId,members,readOnly,onBusyCha
  const request=useRef<{key:string;id:string}|null>(null);const saving=useRef(false);const [saved,setSaved]=useState(false);
  useEffect(()=>{if(!active||loaded)return;let activeRequest=true;listRemarks(taskId).then(r=>{if(activeRequest){setItems(r.items);setMore(r.more);setLoaded(true);}}).catch(()=>{if(activeRequest)setError('Remarks could not load. Refresh to retry.');});return()=>{activeRequest=false};},[taskId,active,loaded]);
  const input=useRef<HTMLTextAreaElement>(null),listId=useId();
+ const pendingCaret=useRef<number|null>(null);
+ useLayoutEffect(()=>{if(pendingCaret.current!==null){const position=pendingCaret.current;pendingCaret.current=null;input.current?.focus();input.current?.setSelectionRange(position,position);}},[text]);
  const [caret,setCaret]=useState(0),[selected,setSelected]=useState(0),[dismissed,setDismissed]=useState<string|null>(null);
  const prefix=text.slice(0,caret),match=prefix.match(/(?:^|\s)@([^@\n]*)$/);
  const suggestions=match&&dismissed!==prefix?members.filter(m=>m.is_active!==false&&`${m.full_name||''} ${m.email}`.toLowerCase().includes(match[1].toLowerCase())).slice(0,8):[];
@@ -16,8 +18,8 @@ export default function TaskDiscussion({taskId,userId,members,readOnly,onBusyCha
  function mention(m:Member){
   if(!match)return;
   const start=prefix.lastIndexOf('@'),replacement='@'+(m.full_name||m.email)+' ',next=text.slice(0,start)+replacement+text.slice(caret),position=start+replacement.length;
+  pendingCaret.current=position;
   setMentions(previous=>[...new Set([...previous,m.id])]);setText(next);setCaret(position);setSelected(0);setDismissed(next.slice(0,position));setSaved(false);
-  requestAnimationFrame(()=>{input.current?.focus();input.current?.setSelectionRange(position,position);});
  }
  function keys(e:React.KeyboardEvent<HTMLTextAreaElement>){
   if(e.nativeEvent.isComposing||!suggestions.length)return;
