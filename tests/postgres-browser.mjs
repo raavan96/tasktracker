@@ -492,8 +492,8 @@ try{
   console.log('Glass appearance: upload, persistence, presets, reset, opacity and tooltip checks passed.');
 
   async function openDashboard(){
-   if(!await admin.getByRole('link',{name:'Dashboard',exact:true}).isVisible())await admin.locator('.workspace-mobile-nav > summary').click();
-   await admin.getByRole('link',{name:'Dashboard',exact:true}).click();
+   const desktop=admin.locator('aside').getByRole('link',{name:'Dashboard',exact:true});
+   await (await desktop.isVisible()?desktop:admin.locator('.workspace-mobile-nav').getByRole('link',{name:'Dashboard',exact:true})).click();
   }
 
   // Insights must aggregate all visible records under the requesting user's RLS.
@@ -622,6 +622,18 @@ try{
   assert.deepEqual(contrastFailures,[],'Light-mode contrast failures');
   console.log('Light/dark control parity: 11 pages including task drawer, at phone and desktop widths; names, destinations, visibility, enabled state and field values match.');
   await admin.goto(base+'/dashboard');
+  await admin.setViewportSize({width:430,height:932});
+  await expect(admin.locator('.workspace-mobile-nav summary')).toHaveCount(0);
+  await expect(admin.locator('.workspace-mobile-nav a')).toHaveCount(11);
+  await admin.locator('.app-footer').scrollIntoViewIfNeeded();
+  await admin.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+  const geometry=await admin.evaluate(()=>({gap:document.documentElement.scrollHeight-(document.querySelector('.app-footer').getBoundingClientRect().bottom+window.scrollY),top:document.querySelector('.workspace-header').getBoundingClientRect().top,radius:getComputedStyle(document.querySelector('.workspace-header')).borderTopLeftRadius}));
+  assert.ok(geometry.gap<=32,'No excessive space after footer');assert.ok(Math.abs(geometry.top)<2,'Header is flush with viewport');assert.equal(geometry.radius,'0px');
+  await admin.getByRole('button',{name:'Support via UPI',exact:true}).click();
+  await expect(admin.getByRole('dialog')).toContainText('naidu.aishwarya9-1@okhdfcbank');
+  await expect(admin.getByRole('link',{name:'Open UPI app'})).toHaveAttribute('href',/upi:\/\/pay\?pa=naidu\.aishwarya9-1%40okhdfcbank/);
+  await admin.getByRole('button',{name:'Close dialog',exact:true}).click();
+  await admin.setViewportSize({width:1440,height:1000});
   await admin.locator('aside').getByRole('link',{name:'All Tasks',exact:true}).click();
   await expect(admin).toHaveURL(base+'/dashboard/tasks');await admin.getByRole('button',{name:'Go back',exact:true}).click();await expect(admin).toHaveURL(base+'/dashboard');
   await admin.getByText('My account',{exact:true}).click();await admin.getByRole('button',{name:'Sign out',exact:true}).click();await expect(admin).toHaveURL(base+'/');

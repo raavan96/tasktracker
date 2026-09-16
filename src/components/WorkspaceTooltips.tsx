@@ -13,7 +13,7 @@ export default function WorkspaceTooltips() {
     }
     function show(element: EventTarget | null) {
       const button = element instanceof Element ? element.closest<HTMLElement>('[data-tooltip],button[aria-label],a[aria-label]') : null;
-      if (!button || button.closest('.workspace-mobile-nav')) { hide(); return; }
+      if (!button) { hide(); return; }
       const label = button.dataset.tooltip || button.getAttribute('aria-label'); if (!label) return;
       hide(); target = button; tip.textContent = label; (button.closest('dialog') || document.body).append(tip); tip.hidden = false;
       button.setAttribute('aria-describedby', [button.getAttribute('aria-describedby'), tip.id].filter(Boolean).join(' '));

@@ -1,13 +1,14 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChartNoAxesCombined, FolderKanban, CheckSquare, Users, Menu, Archive, Search, BarChart3, CalendarDays, Copy } from 'lucide-react';
+import { ChartNoAxesCombined, FolderKanban, CheckSquare, Users, Archive, Search, BarChart3, CalendarDays, Copy } from 'lucide-react';
 
 export default function WorkspaceNav({ isAdmin, mobile = false }: { isAdmin: boolean; mobile?: boolean }) {
-  const menu = useRef<HTMLDetailsElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  useEffect(()=>{const rail=menu.current;const active=rail?.querySelector<HTMLElement>('[aria-current="page"]');if(rail&&active)rail.scrollLeft=Math.max(0,active.offsetLeft-rail.offsetLeft-rail.clientWidth/2+active.offsetWidth/2);},[pathname]);
   const links = [
     {href:'/dashboard/search',label:'Search',icon:Search,active:pathname==='/dashboard/search'},
     {href:'/dashboard/insights',label:'Dashboard',icon:ChartNoAxesCombined,active:pathname==='/dashboard/insights'},
@@ -20,15 +21,12 @@ export default function WorkspaceNav({ isAdmin, mobile = false }: { isAdmin: boo
     {href:'/dashboard/archive',label:'Archive',icon:Archive,active:pathname==='/dashboard/archive'},
     ...(isAdmin?[{href:'/dashboard/workload',label:'Workload',icon:Users,active:pathname==='/dashboard/workload'},{href:'/admin/users',label:'Team Users',icon:Users,active:pathname.startsWith('/admin')}]:[]),
   ];
-  const navigation = <nav aria-label="Workspace" className={mobile ? "grid gap-1 py-2 text-sm font-medium" : "flex items-center gap-1 text-sm font-medium"}>
-    {links.map(({ href, label, icon: Icon, active }) => <Link onClick={() => { if(menu.current) menu.current.open = false; }} key={href} href={href} aria-label={label} data-tooltip={!mobile ? label : undefined} title={label==='Search'?'Search workspace':undefined} aria-current={active ? 'page' : undefined}
+  const navigation = <nav aria-label="Workspace" className={mobile ? "flex items-center gap-1 text-sm font-medium" : "flex items-center gap-1 text-sm font-medium"}>
+    {links.map(({ href, label, icon: Icon, active }) => <Link key={href} href={href} aria-label={label} data-tooltip={label} title={label} aria-current={active ? 'page' : undefined}
       className={`${label==='Search'?'workspace-search-icon w-11 self-start justify-self-start justify-center':''} flex shrink-0 items-center gap-2 rounded-lg px-3 py-2.5 transition ${active ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-100'}`}>
       <Icon aria-hidden="true" className="h-4 w-4" /><span className="workspace-nav-label">{label}</span>
     </Link>)}
   </nav>;
   if (!mobile) return navigation;
-  return <details ref={menu} className="workspace-mobile-nav rounded-lg border border-gray-200 bg-surface" onKeyDown={e => {if(e.key==='Escape' && menu.current) {menu.current.open=false; menu.current.querySelector('summary')?.focus();}}}>
-    <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-sm font-medium"><span>{links.find(link=>link.active)?.label || 'Workspace'}</span><span className="flex items-center gap-2"><Menu className="h-4 w-4"/>Menu</span></summary>
-    {navigation}
-  </details>;
+  return <div ref={menu} className="workspace-mobile-nav" aria-label="Workspace navigation — swipe for more">{navigation}</div>;
 }
