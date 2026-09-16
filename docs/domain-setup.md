@@ -11,3 +11,5 @@ The notification template default origin now uses the domain. This standalone em
 Verified the public HTTPS login response (200), HTTP redirect preserving `/dashboard/insights`, browser login form and active app/Nginx/email/automation/renewal services. Cookies are host-specific, so existing users sign in again at the new domain.
 
 Server configuration and previous email template backup: `/var/backups/tasktracker/domain-20260916T144637Z/`. The app was not restarted and no database changes were needed. Repository Nginx configuration: `deploy/tasktracker-domain-nginx.conf`.
+
+Automatic renewal validation: `certbot renew --cert-name tasktracker.top-menus.com --dry-run --no-random-sleep-on-renew` succeeded.
