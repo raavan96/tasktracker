@@ -15,3 +15,5 @@ Preview gallery: `http://127.0.0.1:3122/index.html`. Real rendered screenshots u
 Initial verified build `8a0174fcd9c2740da7ad74ddda0347d1cf1aedf4`, CI https://github.com/raavan96/tasktracker/actions/runs/35073467431 passed. Includes database comparisons of personal/team task summary counts and destinations, full browser workflows, contrast and theme parity. Screenshot capture subsequently adjusted to await theme transition completion.
 
 Final verified preview: `e07a3de7ea36fe4fa13f141e0344bcde6f9e2b60`, https://github.com/raavan96/tasktracker/actions/runs/35074464651 — all checks passed. Gallery refreshed with final screenshots. Not deployed.
+
+Compact card revision: `44f4702937793776dba2f1bab0e22b259baa0acd`. Reduced vertical padding and count size on desktop/mobile; labels and destinations retained. CI https://github.com/raavan96/tasktracker/actions/runs/35077978996 passed. Gallery refreshed; production unchanged.
