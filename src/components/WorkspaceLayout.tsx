@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { signOut } from '@/app/auth/actions';
 import ArchiveNotice from './ArchiveNotice';
+import AppFooter from './AppFooter';
 import ActionsMenu from './ActionsMenu';
 import WorkspaceNav from './WorkspaceNav';
 import {WorkspaceBackProvider} from './WorkspaceBack';
@@ -109,6 +110,7 @@ export default async function WorkspaceLayout({
         <WorkspaceHelp userId={user.id} />
         {children}
       </main>
+      <AppFooter workspace />
     </div></WorkspaceBackProvider>
   );
 }
