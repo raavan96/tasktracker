@@ -502,6 +502,7 @@ try{
   async function auditLight(label,width){
    for(const theme of ['light','dark']){
     await themeControls(theme);
+    await admin.waitForTimeout(250); // Measure the settled theme after control transitions.
     const result=await new AxeBuilder({page:admin}).withRules(['color-contrast']).analyze();
     for(const v of result.violations)contrastFailures.push({width,theme,route:label,id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))});
    }
