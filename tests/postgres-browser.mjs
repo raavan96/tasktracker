@@ -449,20 +449,36 @@ try{
    }));
   }
   const contrastFailures=[];
+  async function auditLight(label,width){
+   await themeControls('light');
+   const result=await new AxeBuilder({page:admin}).withRules(['color-contrast']).analyze();
+   for(const v of result.violations)contrastFailures.push({width,route:label,id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))});
+  }
   for(const width of [430,1440]){
    await admin.setViewportSize({width,height:1000});
    for(const route of ['/dashboard','/dashboard/my-tasks','/dashboard/tasks','/dashboard/calendar','/dashboard/reports','/dashboard/templates','/dashboard/archive','/dashboard/workload','/admin/users','/dashboard/notifications',projectURL.replace(base,'')+'?task='+r4task+'&discussion=true']){
     await admin.goto(base+route);await expect(admin.locator('.workspace-main')).toBeVisible();await admin.evaluate(()=>document.fonts.ready);
     if(route.includes('discussion=true')){await expect(admin.getByLabel('Write a task update',{exact:true})).toBeVisible();await expect(admin.getByText('Loading remarks…',{exact:true})).toBeHidden();}
     await expect(async()=>{assert.deepEqual(await themeControls('light'),await themeControls('dark'),`Theme controls differ: ${width} ${route}`);}).toPass({timeout:10000});
-    await themeControls('light');
-    const contrast=await new AxeBuilder({page:admin}).withRules(['color-contrast']).analyze();
-    for(const v of contrast.violations)contrastFailures.push({width,route,id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))});
+    await auditLight(route,width);
     if(route==='/dashboard'){
      await themeControls('light');await admin.screenshot({path:`/tmp/release5-light-theme-${width}.png`,fullPage:true});
+     await admin.getByRole('button',{name:'Grid view',exact:true}).click();
+     for(const name of ['Sort projects','Grid size']){
+      await admin.getByRole('button',{name,exact:true}).click();
+      await expect(admin.getByRole('menu',{name,exact:true})).toBeVisible();
+      await auditLight(name,width);
+      await admin.keyboard.press('Escape');
+     }
+     await admin.getByRole('button',{name:'New Project',exact:true}).click();
+     await expect(admin.getByRole('heading',{name:'Create new project',exact:true})).toBeVisible();
+     await auditLight('Create project form and member picker',width);
+     await admin.screenshot({path:`/tmp/release5-light-form-${width}.png`,fullPage:true});
+     await admin.keyboard.press('Escape');
     }
    }
   }
+  for(const route of ['/','/login']){await admin.goto(base+route);await auditLight(route,1440);}
   console.log('CONTRAST_AUDIT '+JSON.stringify(contrastFailures));
   assert.deepEqual(contrastFailures,[],'Light-mode contrast failures');
   console.log('Light/dark control parity: 11 pages including task drawer, at phone and desktop widths; names, destinations, visibility, enabled state and field values match.');
