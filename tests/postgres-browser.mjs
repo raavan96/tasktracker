@@ -515,7 +515,7 @@ try{
   await expect(admin.getByRole('heading',{name:'Completion trend',exact:true})).toBeVisible();
   await admin.keyboard.press('Escape');await expect(admin.getByRole('dialog')).toHaveCount(0);
   await admin.route('**/api/dashboard-insights?*',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Temporary test error'})}));
-  await admin.getByRole('button',{name:'Dashboard',exact:true}).click();await expect(admin.getByRole('alert')).toContainText('Temporary test error');
+  await admin.getByRole('button',{name:'Dashboard',exact:true}).click();await expect(admin.getByRole('dialog',{name:'Dashboard',exact:true}).getByRole('alert')).toContainText('Temporary test error');
   await admin.unroute('**/api/dashboard-insights?*');await admin.getByRole('button',{name:'Retry dashboard',exact:true}).click();await expect(admin.getByRole('heading',{name:'Project health',exact:true})).toBeVisible();await admin.keyboard.press('Escape');
   console.log('Dashboard insights: RLS, aggregate counts, member workload scope, validation, calendar and retry passed.');
 
