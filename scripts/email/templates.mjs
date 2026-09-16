@@ -14,7 +14,7 @@ export const categories = {
 };
 export const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function taskPath(task){return `/dashboard/projects/${encodeURIComponent(task.projectId)}?task=${encodeURIComponent(task.id)}`;}
-export function renderEmail(kind,data,{origin='https://168.144.155.51'}={}){
+export function renderEmail(kind,data,{origin='https://tasktracker.top-menus.com'}={}){
  const spec=categories[kind];if(!spec)throw new Error('Unknown email category');
  const base=new URL(origin);if(base.protocol!=='https:'||base.username||base.password||base.pathname!=='/'||base.search||base.hash)throw new Error('Use a trusted HTTPS app origin.');
  const url=path=>new URL(path,base).href;
