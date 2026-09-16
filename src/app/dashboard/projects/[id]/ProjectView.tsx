@@ -1,4 +1,5 @@
 'use client';
+import WorkspaceHeading from '@/components/WorkspaceHeading';
 import {assignedIds,assigneeNames} from '@/lib/task-types';
 
 import {projectTasks,projectNotes} from '../data';
@@ -158,7 +159,7 @@ export default function ProjectView({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center space-x-3">
-              <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
+              <WorkspaceHeading className="text-2xl font-bold text-gray-900">{project.name}</WorkspaceHeading>
               {project.is_archived && (
                 <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-medium">
                   Archived

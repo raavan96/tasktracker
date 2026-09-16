@@ -5,7 +5,7 @@ import { signOut } from '@/app/auth/actions';
 import ArchiveNotice from './ArchiveNotice';
 import ActionsMenu from './ActionsMenu';
 import WorkspaceNav from './WorkspaceNav';
-import WorkspaceBack from './WorkspaceBack';
+import {WorkspaceBackProvider} from './WorkspaceBack';
 import WorkspaceHelp from './WorkspaceHelp';
 import WorkspaceAppearance from './WorkspaceAppearance';
 import WorkspaceTooltips from './WorkspaceTooltips';
@@ -36,7 +36,7 @@ export default async function WorkspaceLayout({
   const isAdmin = profile?.role === 'admin';
 
   return (
-    <div className="workspace-shell min-h-screen bg-gray-50 flex flex-col">
+    <WorkspaceBackProvider><div className="workspace-shell min-h-screen bg-gray-50 flex flex-col">
       <div className="workspace-wallpaper" aria-hidden="true" /><WorkspaceTooltips />
       <aside className="dark-workspace-sidebar" aria-label="Sidebar">
         <Link href="/dashboard" className="workspace-brand flex items-center gap-3 font-semibold">
@@ -61,7 +61,6 @@ export default async function WorkspaceLayout({
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">
-            <WorkspaceBack />
             <WorkspaceHelp userId={user.id} buttonOnly />
             <WorkspaceAppearance userId={user.id} />
             <ThemeToggle />
@@ -110,6 +109,6 @@ export default async function WorkspaceLayout({
         <WorkspaceHelp userId={user.id} />
         {children}
       </main>
-    </div>
+    </div></WorkspaceBackProvider>
   );
 }

@@ -1,3 +1,4 @@
+import WorkspaceHeading from '@/components/WorkspaceHeading';
 import OverviewCards from '@/components/OverviewCards';
 import Link from 'next/link';
 import {redirect} from 'next/navigation';
@@ -17,7 +18,7 @@ export default async function ArchivePage({searchParams}:{searchParams:Promise<{
  const archiveTasks=(tasksResult.data||[]).map(t=>({...t,project:Array.isArray(t.project)?t.project[0]:t.project})).filter(t=>(t.is_archived||t.project?.is_archived)&&!t.project?.completed_at);
  const projects=(projectsResult.data||[]).filter(p=>Boolean(p.completed_at)===completed&&p.name.toLowerCase().includes(search));
  const tasks=(tasksResult.data||[]).map(t=>({...t,project:Array.isArray(t.project)?t.project[0]:t.project})).filter(t=>(t.is_archived||t.project?.is_archived)&&!t.project?.completed_at&&`${t.title} ${t.project?.name}`.toLowerCase().includes(search));
- return <div className="space-y-6"><div><h1 className="text-2xl font-bold">Archive</h1><p className="mt-2 text-sm text-gray-500">Archived work is read-only. Details, notes, files and history remain available.</p></div>
+ return <div className="space-y-6"><div><WorkspaceHeading className="text-2xl font-bold">Archive</WorkspaceHeading><p className="mt-2 text-sm text-gray-500">Archived work is read-only. Details, notes, files and history remain available.</p></div>
  <OverviewCards label="Archive overview" items={[
  {id:'archived',label:'Archived projects',value:archiveProjects.filter(p=>!p.completed_at).length,href:'/dashboard/archive#archive-projects',hint:'General archive'},
  {id:'done',label:'Completed projects',value:archiveProjects.filter(p=>Boolean(p.completed_at)).length,href:'/dashboard/archive?section=completed#archive-projects',hint:'Explicitly completed'},

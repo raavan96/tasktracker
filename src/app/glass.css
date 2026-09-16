@@ -103,3 +103,8 @@ body {font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 :root[data-theme] .workspace-header{top:0;background:var(--surface);isolation:isolate;z-index:50;backdrop-filter:none;-webkit-backdrop-filter:none}
 .insights-agenda{min-height:200px}
 .workspace-welcome{margin:12px 0 22px;padding:14px 18px;border:1px solid var(--glass-line);border-radius:18px;background:var(--glass-card);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:14px}
+
+/* Keep page navigation beside the title in both themes and at narrow widths. */
+:root .workspace-page-heading h1 { margin-top:0; margin-bottom:0; }
+:root .workspace-page-heading + p { margin-top:.5rem; line-height:1.6; }
+:root .workspace-page-back { color:var(--foreground); }

@@ -1,3 +1,4 @@
+import WorkspaceHeading from '@/components/WorkspaceHeading';
 import OverviewCards from '@/components/OverviewCards';
 import {assignedIds} from '@/lib/task-types';
 import { createClient } from '@/lib/supabase/server';
@@ -49,7 +50,7 @@ export default async function DashboardPage({searchParams}:{searchParams:Promise
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
+          <WorkspaceHeading className="text-2xl font-bold text-gray-900">Projects</WorkspaceHeading>
           <p className="text-sm text-gray-500">
             {isAdmin ? 'Manage workspace projects and team assignments' : 'Projects you are currently working on'}
           </p>

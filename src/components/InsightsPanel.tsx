@@ -1,4 +1,5 @@
 'use client';
+import WorkspaceHeading from '@/components/WorkspaceHeading';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
@@ -18,7 +19,7 @@ export default function InsightsPanel(){
  const total=data?.status.reduce((a,b)=>a+b.count,0)||0,done=data?.status.find(x=>x.status==='done')?.count||0;
  let angle=0;const gradient=states.map(([id,,color])=>{const start=angle;angle+=(data?.status.find(x=>x.status===id)?.count||0)/Math.max(1,total)*100;return `${color} ${start}% ${angle}%`;}).join(',');
  const month=day.slice(0,7),first=new Date(month+'-01T12:00:00Z'),days=new Date(first.getUTCFullYear(),first.getUTCMonth()+1,0).getDate(),offset=(first.getUTCDay()+6)%7;
- return <div className="insights-page"><h1 className="text-2xl font-bold mb-3">Dashboard</h1>
+ return <div className="insights-page"><WorkspaceHeading className="text-2xl font-bold mb-3">Dashboard</WorkspaceHeading>
  <div className="insights-toolbar"><p>Central Team Workspace · Your accessible projects</p><div className="flex items-center gap-2"><button type="button" aria-label="Refresh dashboard" className="rounded-full border p-2" onClick={()=>{setError('');setRetry(x=>x+1);}}><RefreshCw className="h-4 w-4"/></button></div></div>
  {error&&<div role="alert" className="rounded-xl border p-5"><p>{error}</p><button type="button" className="mt-3 rounded-full border px-4 py-2" onClick={()=>{setError('');setRetry(x=>x+1);}}>Retry dashboard</button></div>}{loading&&!error?<p role="status" className="py-10">Loading dashboard…</p>:data&&<>
  <section aria-label="Project insights"><h3 className="insights-section-title">Project overview</h3><p className="insights-note">All accessible projects, including archived work. Completion is confirmed by the creator or admin.</p><div className="insights-stats insights-project-stats">{[['all','All projects',data.projects.length],['active','Active',active.length],['attention','Needs attention',attention.length],['completed','Completed projects',completed.length],['archived','Archived',archived.length]].map(([key,label,count])=><button type="button" key={key} className="insights-stat" aria-pressed={projectFilter===key} onClick={()=>setProjectFilter(String(key))}><span>{label}</span><strong>{count}</strong><small>{key==='attention'?'Subset of active projects':'View projects'}</small></button>)}</div>
