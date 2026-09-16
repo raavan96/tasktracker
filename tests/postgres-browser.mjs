@@ -487,6 +487,25 @@ try{
     if(route.includes('discussion=true')){await expect(admin.getByLabel('Write a task update',{exact:true})).toBeVisible();await expect(admin.getByText('Loading remarks…',{exact:true})).toBeHidden();}
     await expect(async()=>{assert.deepEqual(await themeControls('light'),await themeControls('dark'),`Theme controls differ: ${width} ${route}`);}).toPass({timeout:10000});
     await auditLight(route,width);
+    if(width===1440&&['/dashboard/tasks','/dashboard/my-tasks'].includes(route)){
+     const isMine=route.includes('my-tasks');
+     const expected=(await db.query(`SELECT t.status,t.due_date::text FROM tasks t JOIN projects p ON p.id=t.project_id WHERE NOT t.is_archived AND NOT p.is_archived AND (NOT $1::boolean OR $2::uuid=ANY(t.assignee_ids))`,[isMine,users[0].id])).rows;
+     const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+     for(const id of ['overdue','today','in_progress','in_review','done']){
+      const count=expected.filter(t=>id==='overdue'?!['done','in_review'].includes(t.status)&&t.due_date&&t.due_date<today:id==='today'?!['done','in_review'].includes(t.status)&&t.due_date===today:t.status===id).length;
+      const card=admin.locator(`.overview-cards [data-summary="${id}"]`);
+      await expect(card.locator('.text-3xl')).toHaveText(String(count));
+      await expect(card).toHaveAttribute('href',`${route}?summary=${id}`);
+     }
+    }
+    if(['/dashboard','/dashboard/tasks','/dashboard/my-tasks','/dashboard/archive','/dashboard/workload'].includes(route)){
+     const pageName=route==='/dashboard'?'projects':route.split('/').at(-1);
+     for(const theme of ['light','dark']){
+      await themeControls(theme);
+      await admin.screenshot({path:`/tmp/release5-overview-${pageName}-${theme}-${width}.png`,fullPage:false});
+     }
+     await themeControls('light');
+    }
     if(route==='/dashboard'){
      await themeControls('light');await admin.screenshot({path:`/tmp/release5-light-theme-${width}.png`,fullPage:true});
      await admin.getByRole('button',{name:'Grid view',exact:true}).click();

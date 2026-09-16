@@ -60,3 +60,15 @@ export async function reportData(f:ReportFilters,exportAll=false){
  return {summary,items,trend,overdue,projects,people,page,total};
  });
 }
+
+// Aggregate the complete RLS-visible scope, not just the current table page.
+export async function taskOverview(mine=false){return workspaceRead(async(db,user)=>{
+ return (await db.query<{overdue:string;today:string;in_progress:string;in_review:string;done:string}>(`SELECT
+ count(*) FILTER(WHERE t.status NOT IN ('done','in_review') AND t.due_date<(now() AT TIME ZONE 'Asia/Kolkata')::date) overdue,
+ count(*) FILTER(WHERE t.status NOT IN ('done','in_review') AND t.due_date=(now() AT TIME ZONE 'Asia/Kolkata')::date) today,
+ count(*) FILTER(WHERE t.status='in_progress') in_progress,
+ count(*) FILTER(WHERE t.status='in_review') in_review,
+ count(*) FILTER(WHERE t.status='done') done
+ FROM tasks t JOIN projects p ON p.id=t.project_id
+ WHERE NOT t.is_archived AND NOT p.is_archived AND (NOT $1::boolean OR $2::uuid=ANY(t.assignee_ids))`,[mine,user])).rows[0];
+});}
