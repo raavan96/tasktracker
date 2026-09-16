@@ -490,6 +490,11 @@ try{
   await admin.keyboard.press('Tab');
   console.log('Glass appearance: upload, persistence, presets, reset, opacity and tooltip checks passed.');
 
+  async function openDashboard(){
+   if(!await admin.getByRole('button',{name:'Dashboard',exact:true}).isVisible())await admin.locator('.workspace-mobile-nav > summary').click();
+   await admin.getByRole('button',{name:'Dashboard',exact:true}).click();
+  }
+
   // Insights must aggregate all visible records under the requesting user's RLS.
   for(const index of [0,1,2]){
    const response=await contexts[index].request.get(base+'/api/dashboard-insights');assert.equal(response.status(),200);
@@ -505,7 +510,7 @@ try{
   assert.equal((await contexts[0].request.get(base+'/api/dashboard-insights?month=2026-13')).status(),400);
   assert.equal((await contexts[0].request.get(base+'/api/dashboard-insights?month=2026-02&day=2026-02-30')).status(),400);
   const anonymous=await browser.newContext();assert.equal((await anonymous.request.get(base+'/api/dashboard-insights')).status(),401);await anonymous.close();
-  await admin.goto(base+'/dashboard');await admin.getByRole('button',{name:'Dashboard',exact:true}).click();
+  await admin.goto(base+'/dashboard');await openDashboard();
   await expect(admin.getByRole('dialog',{name:'Dashboard',exact:true})).toBeVisible();
   await expect(admin.getByText('Loading dashboard…',{exact:true})).toBeHidden();
   await expect(admin.getByRole('heading',{name:'Project health',exact:true})).toBeVisible();
@@ -515,7 +520,7 @@ try{
   await expect(admin.getByRole('heading',{name:'Completion trend',exact:true})).toBeVisible();
   await admin.keyboard.press('Escape');await expect(admin.getByRole('dialog')).toHaveCount(0);
   await admin.route('**/api/dashboard-insights?*',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Temporary test error'})}));
-  await admin.getByRole('button',{name:'Dashboard',exact:true}).click();await expect(admin.getByRole('dialog',{name:'Dashboard',exact:true}).getByRole('alert')).toContainText('Temporary test error');
+  await openDashboard();await expect(admin.getByRole('dialog',{name:'Dashboard',exact:true}).getByRole('alert')).toContainText('Temporary test error');
   await admin.unroute('**/api/dashboard-insights?*');await admin.getByRole('button',{name:'Retry dashboard',exact:true}).click();await expect(admin.getByRole('heading',{name:'Project health',exact:true})).toBeVisible();await admin.keyboard.press('Escape');
   console.log('Dashboard insights: RLS, aggregate counts, member workload scope, validation, calendar and retry passed.');
 
@@ -575,7 +580,7 @@ try{
       await auditLight(name,width);
       await admin.keyboard.press('Escape');
      }
-     await admin.getByRole('button',{name:'Dashboard',exact:true}).click();
+     await openDashboard();
      await expect(admin.getByRole('heading',{name:'Project health',exact:true})).toBeVisible();
      await auditLight('Dashboard insights',width);
      for(const theme of ['light','dark']){await themeControls(theme);await admin.waitForTimeout(250);await admin.screenshot({path:`/tmp/release5-insights-${theme}-${width}.png`,fullPage:true});}
