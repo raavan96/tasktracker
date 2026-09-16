@@ -7,10 +7,10 @@
 }
 :root:not([data-theme="dark"]) { --background:#e8eef9; --foreground:#192334; --surface:#f7f9fe; --field-border:#7889a4; --placeholder:#53627a; --workspace-border:#bcc7d9; --workspace-accent:#0054b8; --workspace-gradient:linear-gradient(130deg,#0064d8,#0064d8); }
 :root[data-theme="dark"] {
- --glass-panel:rgba(22,29,49,.92); --glass-card:rgba(29,38,60,.96); --glass-line:#576783; --glass-muted:#c0cbe0;
- --background:#182239; --foreground:#f4f7ff; --surface:#202a40; --field-border:#657692; --placeholder:#b0bdd3;
- --workspace-border:#53617c; --workspace-accent:#a5c8ff; --workspace-gradient:linear-gradient(130deg,#0064d8,#0064d8);
- --glass-accent:#a5c8ff; --glass-selected:#2c4266; --glass-shadow:0 16px 60px #0005;
+ --glass-panel:rgba(6,15,34,.95); --glass-card:rgba(12,25,47,.97); --glass-line:#455875; --glass-muted:#c0cbe0;
+ --background:#050d1c; --foreground:#f4f7ff; --surface:#0c1930; --field-border:#657692; --placeholder:#b0bdd3;
+ --workspace-border:#455875; --workspace-accent:#a5c8ff; --workspace-gradient:linear-gradient(130deg,#0064d8,#0064d8);
+ --glass-accent:#a5c8ff; --glass-selected:#173454; --glass-shadow:0 16px 60px #0005;
  --color-gray-400:#b0bdd3; --color-gray-500:#c0cbe0; --color-gray-600:#ccd5e5;
  --color-slate-400:#b0bdd3; --color-slate-500:#c0cbe0; --color-slate-600:#ccd5e5;
 }
@@ -36,7 +36,7 @@ body {font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 :root[data-theme] .task-dialog::backdrop{background:#101d4055;backdrop-filter:blur(5px)}
 :root[data-theme] .task-drawer::backdrop{backdrop-filter:none}
 :root[data-theme] :is(input,textarea,select){border-color:var(--field-border)}
-:root[data-theme="dark"] :is(input,textarea,select){background:#192238;border-color:var(--field-border)}
+:root[data-theme="dark"] :is(input,textarea,select){background:#081327;border-color:var(--field-border)}
 :root[data-theme] :is(button,summary).border:not([class*="border-red"]){border-color:var(--field-border)}
 :root[data-theme] nav a[aria-current="page"],:root[data-theme] button[aria-pressed="true"]:not(.bg-blue-600){background:var(--glass-selected);color:var(--glass-accent);border-color:var(--glass-line);box-shadow:inset 0 1px 0 #fff2}
 :root[data-theme] .compact-segmented{border-radius:999px;background:var(--surface)}
@@ -79,3 +79,6 @@ body {font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 :root[data-opaque-glass="true"] :is(.workspace-header,.dark-workspace-sidebar){backdrop-filter:none;-webkit-backdrop-filter:none}
 @media(prefers-reduced-transparency:reduce){:root{--glass-panel:var(--surface);--glass-card:var(--surface)}:root[data-theme] :is(.workspace-header,.dark-workspace-sidebar){backdrop-filter:none;-webkit-backdrop-filter:none}}
 @media(prefers-reduced-motion:reduce){:root[data-theme] .workspace-shell *{scroll-behavior:auto!important}}
+
+/* A navy veil retains the chosen wallpaper while avoiding a pale blue cast. */
+:root[data-theme="dark"] .workspace-wallpaper::after{content:"";position:absolute;inset:0;background:rgba(2,10,29,.42)}
