@@ -349,3 +349,12 @@ body {
 @media (max-width:767px) {
  [data-actions-menu] > :is(a,button), [data-actions-menu] > div > button { min-height:44px; }
 }
+
+/* Compact overview cards, with the same readable labels in both themes. */
+:root .summary-card { padding:14px 16px; }
+:root .summary-card .text-3xl { margin-top:4px; font-size:1.75rem; line-height:1.15; }
+:root .summary-card .text-xs { margin-top:5px; line-height:1.35; }
+@media (max-width:767px) {
+ :root .summary-card { padding:12px; }
+ :root .summary-card .text-3xl { font-size:1.625rem; }
+}
