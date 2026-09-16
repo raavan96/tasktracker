@@ -336,3 +336,16 @@ body {
 /* Keep menu labels fully legible throughout the entrance transition. */
 :root:not([data-theme="dark"]) .icon-choice-menu { animation-name:light-menu-enter; }
 @keyframes light-menu-enter { from { transform:translateY(-3px); } to { transform:none; } }
+
+/* Match every project/task menu action, including nested archive triggers. */
+[data-actions-menu] > :is(a,button),
+[data-actions-menu] > div > button {
+ display:flex; align-items:center; gap:.625rem; width:100%; min-height:40px;
+ padding:.625rem .75rem; border:0; border-radius:.5rem;
+ text-align:left; font-size:.875rem; font-weight:400;
+}
+[data-actions-menu] > :is(a,button) > svg,
+[data-actions-menu] > div > button > svg { width:1rem; height:1rem; flex-shrink:0; }
+@media (max-width:767px) {
+ [data-actions-menu] > :is(a,button), [data-actions-menu] > div > button { min-height:44px; }
+}
