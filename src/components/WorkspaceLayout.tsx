@@ -5,6 +5,8 @@ import { signOut } from '@/app/auth/actions';
 import ArchiveNotice from './ArchiveNotice';
 import ActionsMenu from './ActionsMenu';
 import WorkspaceNav from './WorkspaceNav';
+import WorkspaceAppearance from './WorkspaceAppearance';
+import WorkspaceTooltips from './WorkspaceTooltips';
 import { ThemeToggle } from './ThemeProvider';
 import { 
   FolderKanban, 
@@ -33,6 +35,7 @@ export default async function WorkspaceLayout({
 
   return (
     <div className="workspace-shell min-h-screen bg-gray-50 flex flex-col">
+      <div className="workspace-wallpaper" aria-hidden="true" /><WorkspaceTooltips />
       <aside className="dark-workspace-sidebar" aria-label="Sidebar">
         <Link href="/dashboard" className="workspace-brand flex items-center gap-3 font-semibold">
           <span className="workspace-mark"><FolderKanban className="h-5 w-5" /></span>
@@ -49,13 +52,14 @@ export default async function WorkspaceLayout({
               <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center">
                 <FolderKanban className="w-5 h-5" />
               </div>
-              <span>TaskTracker</span>
+              <span>TaskTracker<span className="workspace-brand-caption">collegedunia.com</span></span>
             </Link>
 
             <span className="workspace-context">Central Team Workspace</span>
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">
+            <WorkspaceAppearance userId={user.id} />
             <ThemeToggle />
 
             {/* Notification Indicator */}

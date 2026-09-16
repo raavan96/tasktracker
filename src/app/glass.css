@@ -1,0 +1,81 @@
+/* Glass navigation above readable content. No filters on scrolling task cards. */
+:root {
+ --glass-panel:rgba(240,245,255,.88); --glass-card:rgba(255,255,255,.94); --glass-line:#b7c3d7; --glass-muted:#42516a;
+ --background:#e8eef9; --foreground:#192334; --surface:#f7f9fe; --field-border:#7889a4; --placeholder:#53627a;
+ --workspace-border:#bcc7d9; --workspace-accent:#0054b8; --workspace-gradient:linear-gradient(130deg,#0064d8,#0064d8);
+ --glass-accent:#0054b8; --glass-selected:#dbe9ff; --glass-shadow:0 16px 60px #081b4020;
+}
+:root:not([data-theme="dark"]) { --background:#e8eef9; --foreground:#192334; --surface:#f7f9fe; --field-border:#7889a4; --placeholder:#53627a; --workspace-border:#bcc7d9; --workspace-accent:#0054b8; --workspace-gradient:linear-gradient(130deg,#0064d8,#0064d8); }
+:root[data-theme="dark"] {
+ --glass-panel:rgba(22,29,49,.92); --glass-card:rgba(29,38,60,.96); --glass-line:#576783; --glass-muted:#c0cbe0;
+ --background:#182239; --foreground:#f4f7ff; --surface:#202a40; --field-border:#657692; --placeholder:#b0bdd3;
+ --workspace-border:#53617c; --workspace-accent:#a5c8ff; --workspace-gradient:linear-gradient(130deg,#0064d8,#0064d8);
+ --glass-accent:#a5c8ff; --glass-selected:#2c4266; --glass-shadow:0 16px 60px #0005;
+ --color-gray-400:#b0bdd3; --color-gray-500:#c0cbe0; --color-gray-600:#ccd5e5;
+ --color-slate-400:#b0bdd3; --color-slate-500:#c0cbe0; --color-slate-600:#ccd5e5;
+}
+body {font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+:root .workspace-shell {isolation:isolate;background:transparent;padding:20px 20px 0;gap:0}
+.workspace-wallpaper{position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:var(--user-wallpaper,radial-gradient(ellipse at 15% 90%,#ff976980,transparent 55%),radial-gradient(ellipse at 85% 15%,#887afa,transparent 60%),linear-gradient(140deg,#2543a4,#123659 55%,#457b92));background-size:cover;background-position:center;filter:brightness(var(--wallpaper-brightness,.8533))}
+:root .workspace-header{background:var(--glass-panel);border:1px solid var(--glass-line);border-radius:28px 28px 0 0;backdrop-filter:blur(22px) saturate(135%);-webkit-backdrop-filter:blur(22px) saturate(135%);box-shadow:inset 0 1px 0 #ffffff55;top:12px}
+:root .workspace-main{background:var(--glass-panel);border:1px solid var(--glass-line);border-top:0;border-radius:0 0 28px 28px;max-width:none;margin-bottom:24px;padding-top:24px;box-shadow:var(--glass-shadow);min-width:0}
+:root .workspace-context,:root .workspace-brand-caption{color:var(--glass-muted)}
+:root .workspace-header-brand{display:flex}.workspace-brand-caption{display:block;font-weight:500;font-size:10px;letter-spacing:.5px;margin-top:3px}
+:root .workspace-header-inner{max-width:none;min-height:78px;height:auto;padding-top:12px;padding-bottom:12px;gap:10px}
+:root .workspace-header-brand>div,:root .workspace-mark{background:linear-gradient(145deg,#6fb9ff,#007aff);color:white;border:1px solid #ffffff60;box-shadow:0 3px 10px #007aff22}
+:root .workspace-header :is(button,a)[aria-label]{min-width:44px;min-height:44px;display:inline-flex;justify-content:center;align-items:center}
+:root :is(button,a).bg-blue-600{background:#0064d8;color:#fff;border-color:#0064d8;border-radius:999px;box-shadow:inset 0 1px 0 #fff3;font-weight:600}
+:root :is(button,a).bg-blue-600:hover{background:#0055bc;filter:none}
+:root :is(.summary-card,.project-card,.task-card){background:var(--glass-card);border:1px solid var(--glass-line);border-radius:22px;box-shadow:inset 0 1px 0 #ffffff18}
+:root :is(.summary-card,.project-card,.task-card):hover{border-color:var(--glass-accent)}
+:root .summary-card .text-xs{color:var(--glass-muted)}
+:root .workspace-main :is(section.bg-surface,.border.bg-surface){border-radius:22px}
+:root .board-column{background:var(--glass-panel);border-color:var(--glass-line);border-radius:22px}
+:root .task-dialog{background:var(--surface);color:var(--foreground);border-color:var(--glass-line);border-radius:26px;box-shadow:0 24px 90px #0005}
+:root .task-drawer{border-radius:26px 0 0 26px}
+:root .task-dialog::backdrop{background:#101d4055;backdrop-filter:blur(5px)}
+:root .task-drawer::backdrop{backdrop-filter:none}
+:root :is(input,textarea,select){border-color:var(--field-border)}
+:root[data-theme="dark"] :is(input,textarea,select){background:#192238;border-color:var(--field-border)}
+:root :is(button,summary).border:not([class*="border-red"]){border-color:var(--field-border)}
+:root nav a[aria-current="page"],:root button[aria-pressed="true"]:not(.bg-blue-600){background:var(--glass-selected);color:var(--glass-accent);border-color:var(--glass-line);box-shadow:inset 0 1px 0 #fff2}
+:root .compact-segmented{border-radius:999px;background:var(--surface)}
+:root .compact-segmented button{border-radius:999px;min-height:40px}
+:root .compact-segmented-indicator{border-radius:999px;background:var(--glass-selected);box-shadow:inset 0 0 0 1px var(--glass-line)}
+:root .compact-segmented button[aria-pressed="true"]{background:transparent;color:var(--glass-accent);box-shadow:none}
+:root .task-view-indicator{background:#0064d8}
+:root .task-view-switch button[aria-pressed="true"]{background:transparent;color:#fff;box-shadow:none}
+:root .task-table-view thead{background:var(--surface)}
+:root .icon-choice-menu{background:var(--surface);color:var(--foreground);border-color:var(--field-border)}
+:root details[open]>summary{color:var(--glass-accent)}
+:root :is(button,a,input,textarea,select,summary,[role="button"]):focus-visible{outline:3px solid var(--glass-accent);outline-offset:3px}
+.workspace-tooltip{position:fixed;z-index:1000;max-width:min(280px,calc(100vw - 24px));padding:9px 12px;border-radius:12px;background:#172237;color:#fff;border:1px solid #73839d;box-shadow:0 5px 20px #0003;font-size:13px;line-height:1.4;pointer-events:none}
+.workspace-tooltip[hidden]{display:none}
+.wallpaper-presets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.wallpaper-presets button{min-height:72px;border-radius:18px;border:2px solid var(--field-border)}
+.wallpaper-presets button[aria-pressed="true"]{outline:3px solid var(--glass-accent);outline-offset:2px}
+.wallpaper-presets span{background:#17243df2;color:white;border-radius:99px;padding:5px 9px;font-size:12px}
+@media(min-width:1280px){
+ :root .workspace-shell{padding:24px 28px 0 108px}
+ :root .dark-workspace-sidebar{inset:130px auto auto 26px;width:64px;max-height:calc(100dvh - 155px);overflow:auto;padding:10px 7px;border:1px solid var(--glass-line);border-radius:32px;background:var(--glass-panel);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:inset 0 1px 0 #ffffff55,var(--glass-shadow)}
+ :root .dark-workspace-sidebar .workspace-brand,:root .workspace-nav-caption{display:none}
+ :root .dark-workspace-sidebar nav{gap:5px}
+ :root .dark-workspace-sidebar nav a{width:48px;height:44px;padding:10px;justify-content:center;border-radius:999px;color:var(--glass-muted)}
+ :root .dark-workspace-sidebar nav a[aria-current="page"]{color:var(--glass-accent)}
+ .dark-workspace-sidebar .workspace-nav-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ :root .workspace-context{display:block}
+}
+.workspace-mobile-nav .workspace-search-icon{width:auto;justify-content:flex-start}
+@media(max-width:767px){
+ :root .workspace-shell{padding:10px 8px 0}
+ :root .workspace-header{top:0;border-radius:22px 22px 0 0}
+ :root .workspace-header-inner{flex-wrap:wrap;padding:12px;gap:8px}
+ :root .workspace-header-brand{font-size:15px}
+ :root .workspace-main{padding:20px 14px 28px;border-radius:0 0 22px 22px}
+ :root .task-drawer{border-radius:22px 22px 0 0}
+ :root .workspace-header-inner>div:last-child{gap:0}
+}
+:root[data-opaque-glass="true"]{--glass-panel:var(--surface);--glass-card:var(--surface)}
+:root[data-opaque-glass="true"] :is(.workspace-header,.dark-workspace-sidebar){backdrop-filter:none;-webkit-backdrop-filter:none}
+@media(prefers-reduced-transparency:reduce){:root{--glass-panel:var(--surface);--glass-card:var(--surface)}:root :is(.workspace-header,.dark-workspace-sidebar){backdrop-filter:none;-webkit-backdrop-filter:none}}
+@media(prefers-reduced-motion:reduce){:root .workspace-shell *{scroll-behavior:auto!important}}

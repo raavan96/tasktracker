@@ -336,7 +336,7 @@ try{
   await admin.getByRole('button',{name:'Grid view',exact:true}).click();await admin.getByRole('button',{name:'Grid size',exact:true}).click();await admin.getByRole('menuitemradio',{name:'Small grid',exact:true}).click();await expect(admin.locator('[data-grid-size="small"]')).toBeVisible();await admin.getByRole('button',{name:'Sort projects',exact:true}).click();await admin.getByRole('menuitemradio',{name:'Name A–Z',exact:true}).click();await admin.reload();await expect(admin.getByRole('button',{name:'Grid size',exact:true})).toHaveAttribute('title','Grid size: Small grid');await expect(admin.getByRole('button',{name:'Sort projects',exact:true})).toHaveAttribute('title','Sort projects: Name A–Z');
   await admin.getByRole('button',{name:'Sort projects',exact:true}).click();await admin.keyboard.press('Escape');await expect(admin.getByRole('button',{name:'Sort projects',exact:true})).toBeFocused();await expect(admin.getByRole('menu',{name:'Sort projects'})).toHaveCount(0);
   for(const width of [375,430,1280]){await admin.setViewportSize({width,height:932});await admin.getByRole('button',{name:'List view',exact:true}).click();await admin.getByRole('button',{name:'Grid view',exact:true}).click();await expect.poll(()=>admin.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await admin.evaluate(()=>window.scrollTo(0,0));await admin.screenshot({path:`/tmp/release5-controls-${width}.png`,fullPage:true,animations:'disabled'});}
-  const nav=admin.locator('aside').getByRole('navigation',{name:'Workspace',exact:true});await expect(nav.getByRole('link')).toHaveText(['','Projects','My Tasks','All Tasks','Calendar','Reports','Templates','Archive','Workload','Team Users']);await expect(nav.getByRole('link',{name:'Search',exact:true})).toBeVisible();
+  const nav=admin.locator('aside').getByRole('navigation',{name:'Workspace',exact:true});await expect(nav.getByRole('link')).toHaveText(['Search','Projects','My Tasks','All Tasks','Calendar','Reports','Templates','Archive','Workload','Team Users']);await expect(nav.getByRole('link',{name:'Search',exact:true})).toBeVisible();
   await admin.emulateMedia({reducedMotion:'reduce'});await admin.getByRole('button',{name:'List view',exact:true}).click();await expect(admin.locator('[data-project-view="list"]')).toBeVisible();assert.equal(await admin.locator('[data-project-view]').evaluate(el=>el.getAnimations({subtree:true}).filter(a=>a.playState==='running'&&a.constructor.name==='Animation').length),0);await admin.emulateMedia({reducedMotion:'no-preference'});
   await admin.goto(projectURL);await admin.getByRole('button',{name:'Archived tasks',exact:true}).click();await expect(admin.getByRole('button',{name:'Archived tasks',exact:true})).toHaveAttribute('aria-pressed','true');await admin.getByRole('button',{name:'Active tasks',exact:true}).click();await expect(admin.getByRole('button',{name:'Active tasks',exact:true})).toHaveAttribute('aria-pressed','true');
 
@@ -465,6 +465,30 @@ try{
   await admin.setViewportSize({width:1440,height:1000});
   console.log('Managed email and compact notification settings; mobile/desktop action alignment passed.');
 
+
+  // Glass appearance persists per account/browser, with opaque fallback and unclipped labels.
+  await admin.goto(base+'/dashboard');
+  await admin.getByRole('button',{name:'Customize background',exact:true}).click();
+  await admin.getByRole('button',{name:'Coast',exact:true}).click();
+  await admin.getByRole('checkbox',{name:'Reduce transparency',exact:true}).check();
+  await expect(admin.locator('html')).toHaveAttribute('data-opaque-glass','true');
+  await admin.getByRole('button',{name:'Close dialog',exact:true}).click();
+  await admin.reload();
+  await expect(admin.locator('html')).toHaveAttribute('data-opaque-glass','true');
+  await admin.getByRole('button',{name:'Customize background',exact:true}).click();
+  await expect(admin.getByRole('button',{name:'Coast',exact:true})).toHaveAttribute('aria-pressed','true');
+  await admin.getByLabel('Background image',{exact:true}).setInputFiles({name:'background.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jf1sAAAAASUVORK5CYII=','base64')});
+  await expect(admin.getByRole('status')).toContainText('Saved for your account');
+  await expect.poll(()=>admin.evaluate(()=>document.documentElement.style.getPropertyValue('--user-wallpaper').startsWith('url('))).toBe(true);
+  await admin.getByRole('button',{name:'Reset background',exact:true}).click();
+  await admin.getByRole('button',{name:'Close dialog',exact:true}).click();
+  const projectNav=admin.locator('aside').getByRole('link',{name:'Projects',exact:true});
+  await projectNav.hover();await expect(admin.getByRole('tooltip')).toHaveText('Projects');
+  await expect(admin.getByRole('tooltip')).toBeVisible();
+  await admin.keyboard.press('Escape');await expect(admin.getByRole('tooltip')).toBeHidden();
+  await projectNav.focus();await expect(admin.getByRole('tooltip')).toBeVisible();
+  await admin.keyboard.press('Tab');
+  console.log('Glass appearance: upload, persistence, presets, reset, opacity and tooltip checks passed.');
 
   // Theme changes must not remove controls or change action/field state.
   async function themeControls(theme){

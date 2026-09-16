@@ -20,13 +20,13 @@ export default function WorkspaceNav({ isAdmin, mobile = false }: { isAdmin: boo
     ...(isAdmin?[{href:'/dashboard/workload',label:'Workload',icon:Users,active:pathname==='/dashboard/workload'},{href:'/admin/users',label:'Team Users',icon:Users,active:pathname.startsWith('/admin')}]:[]),
   ];
   const navigation = <nav aria-label="Workspace" className={mobile ? "grid gap-1 py-2 text-sm font-medium" : "flex items-center gap-1 text-sm font-medium"}>
-    {links.map(({ href, label, icon: Icon, active }) => <Link onClick={() => { if(menu.current) menu.current.open = false; }} key={href} href={href} aria-label={label==='Search'?'Search':undefined} title={label==='Search'?'Search workspace':undefined} aria-current={active ? 'page' : undefined}
+    {links.map(({ href, label, icon: Icon, active }) => <Link onClick={() => { if(menu.current) menu.current.open = false; }} key={href} href={href} aria-label={label} data-tooltip={!mobile ? label : undefined} title={label==='Search'?'Search workspace':undefined} aria-current={active ? 'page' : undefined}
       className={`${label==='Search'?'workspace-search-icon w-11 self-start justify-self-start justify-center':''} flex shrink-0 items-center gap-2 rounded-lg px-3 py-2.5 transition ${active ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-100'}`}>
-      <Icon aria-hidden="true" className="h-4 w-4" />{label!=='Search'&&label}
+      <Icon aria-hidden="true" className="h-4 w-4" /><span className="workspace-nav-label">{label}</span>
     </Link>)}
   </nav>;
   if (!mobile) return navigation;
-  return <details ref={menu} className="rounded-lg border border-gray-200 bg-surface" onKeyDown={e => {if(e.key==='Escape' && menu.current) {menu.current.open=false; menu.current.querySelector('summary')?.focus();}}}>
+  return <details ref={menu} className="workspace-mobile-nav rounded-lg border border-gray-200 bg-surface" onKeyDown={e => {if(e.key==='Escape' && menu.current) {menu.current.open=false; menu.current.querySelector('summary')?.focus();}}}>
     <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-sm font-medium"><span>{links.find(link=>link.active)?.label || 'Workspace'}</span><span className="flex items-center gap-2"><Menu className="h-4 w-4"/>Menu</span></summary>
     {navigation}
   </details>;
