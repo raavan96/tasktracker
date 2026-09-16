@@ -333,3 +333,6 @@ body {
 :root:not([data-theme="dark"]) .icon-choice-menu { background:#fff; color:#173536; border-color:#70878a; box-shadow:0 8px 24px #17353624; }
 /* This comes after the generic pressed-button rule: the indicator is dark teal. */
 :root:not([data-theme="dark"]) .task-view-switch button[aria-pressed="true"] { color:#fff; background:transparent; }
+/* Keep menu labels fully legible throughout the entrance transition. */
+:root:not([data-theme="dark"]) .icon-choice-menu { animation-name:light-menu-enter; }
+@keyframes light-menu-enter { from { transform:translateY(-3px); } to { transform:none; } }
