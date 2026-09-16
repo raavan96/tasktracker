@@ -29,3 +29,9 @@ Existing records were fingerprinted during the maintenance window and preserved.
 Released `bd64e6fb2d59056e133643d64bc03d76ae75b632`: Dashboard is directly below Search and above Projects in desktop and mobile navigation. Removed the floating right-edge launcher. The panel and data permissions are unchanged. CI run `35100616241` passed all checks, including mobile menu opening and existing dashboard checks. Live navigation order and successful panel loading were verified.
 
 Backup: `/var/backups/tasktracker/20260916T132039548388Z`; database SHA256 `2345ae84ca99a966ebdf5d5540b5007780650e9805e6bb349a76f0e6cdd1b5eb`. Deployment took 6.9 seconds with existing records preserved. Previous release: `fa5de90`. Evidence: `/var/backups/tasktracker/release-dashboard-nav-deployment.json`.
+
+## Full-page Dashboard — 16 September 2026
+
+Released `43d968fd971d7988eda22fb627d11f09143247f7`. Dashboard now navigates to `/dashboard/insights` inside the normal workspace layout, directly below Search. Removed the launcher and modal wrapper; the shared workspace theme controls remain. CI run `35102444821` passed, including route navigation, no-dialog assertion, dashboard controls, both themes and mobile overflow checks. Live verification confirmed loaded project health, Dashboard selected in navigation and zero open dialogs.
+
+Backup: `/var/backups/tasktracker/20260916T133739620478Z`; database SHA256 `46f3bafe1bfd6597370e2c0750688171f05ede383ec7f41bf9f6872894d8f538`. Previous release: `bd64e6f`. Deployment took 5.9 seconds; records preserved. Evidence: `/var/backups/tasktracker/release-dashboard-page-deployment.json`.
