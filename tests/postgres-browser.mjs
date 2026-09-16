@@ -278,7 +278,10 @@ try{
   await remarkInput.fill('Please @Staging 3 after');await remarkInput.press('End');for(let n=0;n<6;n++)await remarkInput.press('ArrowLeft');
   await expect(admin.getByRole('option',{name:'Mention Staging 3',exact:true})).toBeVisible();await remarkInput.press('Enter');
   await expect(remarkInput).toHaveValue('Please @Staging 3  after');
+  // Mention insertion restores its caret on the next animation frame.
+  await admin.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   await remarkInput.fill('Discovery remark revised');
+  await expect(remarkInput).toHaveValue('Discovery remark revised');
   await admin.getByRole('button',{name:'Save remark',exact:true}).click();
   await expect(admin.getByText('Discovery remark revised',{exact:true})).toBeVisible();
   await admin.getByRole('button',{name:'Edit history',exact:true}).click();
@@ -445,6 +448,7 @@ try{
     return {tag:e.tagName,name:(e.getAttribute('aria-label')||e.textContent||'').trim().replace(/Switch to (light|dark) mode/,'Theme toggle'),href:e.getAttribute('href'),type:e.getAttribute('type'),disabled:e.matches(':disabled'),visible:r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none',pointer:s.pointerEvents,value:'value' in e?e.value:null};
    }));
   }
+  const contrastFailures=[];
   for(const width of [430,1440]){
    await admin.setViewportSize({width,height:1000});
    for(const route of ['/dashboard','/dashboard/my-tasks','/dashboard/tasks','/dashboard/calendar','/dashboard/reports','/dashboard/templates','/dashboard/archive','/dashboard/workload','/admin/users','/dashboard/notifications',projectURL.replace(base,'')+'?task='+r4task+'&discussion=true']){
@@ -453,12 +457,14 @@ try{
     await expect(async()=>{assert.deepEqual(await themeControls('light'),await themeControls('dark'),`Theme controls differ: ${width} ${route}`);}).toPass({timeout:10000});
     await themeControls('light');
     const contrast=await new AxeBuilder({page:admin}).withRules(['color-contrast']).analyze();
-    assert.deepEqual(contrast.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))})),[],`Light contrast: ${width} ${route}`);
+    for(const v of contrast.violations)contrastFailures.push({width,route,id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))});
     if(route==='/dashboard'){
      await themeControls('light');await admin.screenshot({path:`/tmp/release5-light-theme-${width}.png`,fullPage:true});
     }
    }
   }
+  console.log('CONTRAST_AUDIT '+JSON.stringify(contrastFailures));
+  assert.deepEqual(contrastFailures,[],'Light-mode contrast failures');
   console.log('Light/dark control parity: 11 pages including task drawer, at phone and desktop widths; names, destinations, visibility, enabled state and field values match.');
   assert.equal(external.length,0,'Staging must not contact Supabase');
   console.log('Eight browser logins, private project, task assignment, local upload/download, outsider denial, review and admin approval passed against PostgreSQL 16.');
