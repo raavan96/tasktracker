@@ -317,3 +317,19 @@ body {
 :root:not([data-theme="dark"]) .compact-segmented button[aria-pressed="true"] { background:transparent; color:#075f60; }
 :root:not([data-theme="dark"]) .workspace-home { background:radial-gradient(ellipse at 55% 0%,#cfe7eb,transparent 65%),var(--background); }
 :root:not([data-theme="dark"]) :where(button,a,input,textarea,select):focus-visible { outline-color:#086b6b; }
+
+/* Light-mode legibility: shared structure and icons remain unchanged. */
+:root:not([data-theme="dark"]) {
+ --field-border:#70878a; --placeholder:#506769;
+ --color-gray-400:#526970; --color-gray-500:#4b6467; --color-gray-600:#3e595c;
+ --color-slate-400:#526970; --color-slate-500:#4b6467;
+}
+:root:not([data-theme="dark"]) :is(.text-gray-300,.text-slate-300) { color:#60777a; }
+:root:not([data-theme="dark"]) :is(.text-blue-400,.text-blue-500) { color:#086b6b; }
+:root:not([data-theme="dark"]) :is(input,textarea,select) { border-color:var(--field-border); }
+:root:not([data-theme="dark"]) :is(button,summary).border { border-color:#70878a; }
+:root:not([data-theme="dark"]) :is(.summary-card,.project-card,.task-card) { border-color:#bacfd1; }
+:root:not([data-theme="dark"]) :is(.summary-card .text-xs,.task-priority-label) { color:#4b6467; }
+:root:not([data-theme="dark"]) .icon-choice-menu { background:#fff; color:#173536; border-color:#70878a; box-shadow:0 8px 24px #17353624; }
+/* This comes after the generic pressed-button rule: the indicator is dark teal. */
+:root:not([data-theme="dark"]) .task-view-switch button[aria-pressed="true"] { color:#fff; background:transparent; }

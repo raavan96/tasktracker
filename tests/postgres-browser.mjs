@@ -1,5 +1,6 @@
 import {chromium,expect} from '@playwright/test';
 import pg from 'pg';
+import AxeBuilder from '@axe-core/playwright';
 import {randomBytes,scrypt as callback} from 'node:crypto';
 import {promisify} from 'node:util';
 import assert from 'node:assert/strict';
@@ -450,6 +451,9 @@ try{
     await admin.goto(base+route);await expect(admin.locator('.workspace-main')).toBeVisible();await admin.evaluate(()=>document.fonts.ready);
     if(route.includes('discussion=true')){await expect(admin.getByLabel('Write a task update',{exact:true})).toBeVisible();await expect(admin.getByText('Loading remarks…',{exact:true})).toBeHidden();}
     await expect(async()=>{assert.deepEqual(await themeControls('light'),await themeControls('dark'),`Theme controls differ: ${width} ${route}`);}).toPass({timeout:10000});
+    await themeControls('light');
+    const contrast=await new AxeBuilder({page:admin}).withRules(['color-contrast']).analyze();
+    assert.deepEqual(contrast.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))})),[],`Light contrast: ${width} ${route}`);
     if(route==='/dashboard'){
      await themeControls('light');await admin.screenshot({path:`/tmp/release5-light-theme-${width}.png`,fullPage:true});
     }
