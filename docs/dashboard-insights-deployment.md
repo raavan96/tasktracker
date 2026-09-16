@@ -23,3 +23,9 @@ Live verification: HTTPS login returned 200; the authenticated dashboard loaded 
 - Previous service unit: `/etc/tasktracker-release-insights-fa5de90.service.previous`
 
 Existing records were fingerprinted during the maintenance window and preserved. Previous static assets were retained for already-open browser tabs.
+
+## Navigation follow-up — 16 September 2026
+
+Released `bd64e6fb2d59056e133643d64bc03d76ae75b632`: Dashboard is directly below Search and above Projects in desktop and mobile navigation. Removed the floating right-edge launcher. The panel and data permissions are unchanged. CI run `35100616241` passed all checks, including mobile menu opening and existing dashboard checks. Live navigation order and successful panel loading were verified.
+
+Backup: `/var/backups/tasktracker/20260916T132039548388Z`; database SHA256 `2345ae84ca99a966ebdf5d5540b5007780650e9805e6bb349a76f0e6cdd1b5eb`. Deployment took 6.9 seconds with existing records preserved. Previous release: `fa5de90`. Evidence: `/var/backups/tasktracker/release-dashboard-nav-deployment.json`.
