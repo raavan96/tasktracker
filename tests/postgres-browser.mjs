@@ -629,6 +629,7 @@ try{
   await admin.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
   const geometry=await admin.evaluate(()=>({gap:document.documentElement.scrollHeight-(document.querySelector('.app-footer').getBoundingClientRect().bottom+window.scrollY),top:document.querySelector('.workspace-header').getBoundingClientRect().top,radius:getComputedStyle(document.querySelector('.workspace-header')).borderTopLeftRadius}));
   assert.ok(geometry.gap<=32,'No excessive space after footer');assert.ok(Math.abs(geometry.top-10)<2,'Wallpaper gap remains above the sticky header');assert.equal(geometry.radius,'22px');
+  await admin.screenshot({path:'/tmp/release5-rounded-header-scrolled-430.png',fullPage:false});
   await admin.getByRole('button',{name:'Support via UPI',exact:true}).click();
   await expect(admin.getByRole('dialog')).toContainText('naidu.aishwarya9-1@okhdfcbank');
   await expect(admin.getByRole('link',{name:'Open UPI app'})).toHaveAttribute('href',/upi:\/\/pay\?pa=naidu\.aishwarya9-1%40okhdfcbank/);
