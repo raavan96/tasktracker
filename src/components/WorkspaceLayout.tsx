@@ -48,7 +48,7 @@ export default async function WorkspaceLayout({
         <WorkspaceNav isAdmin={isAdmin} />
       </aside>
       {/* Top Navigation */}
-      <header className="workspace-header bg-surface border-b border-gray-200 sticky top-0 z-30">
+      <div className="workspace-header-mask"><header className="workspace-header bg-surface border-b border-gray-200 sticky top-0 z-30">
         <div className="workspace-header-inner max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-8">
             <Link href="/dashboard" className="workspace-header-brand flex items-center space-x-2 font-bold text-gray-900 text-base sm:text-lg">
@@ -102,7 +102,7 @@ export default async function WorkspaceLayout({
           </div>
         </div>
         <div className="xl:hidden px-4 pb-3"><WorkspaceNav isAdmin={isAdmin} mobile /></div>
-      </header>
+      </header></div>
 
       <ArchiveNotice />
       {/* Main Content Area */}

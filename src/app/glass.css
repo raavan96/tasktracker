@@ -16,7 +16,7 @@
 }
 body {font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 :root[data-theme] .workspace-shell {isolation:isolate;background:transparent;padding:20px 20px 0;gap:0}
-.workspace-wallpaper{position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:var(--user-wallpaper,radial-gradient(ellipse at 15% 90%,#ff976980,transparent 55%),radial-gradient(ellipse at 85% 15%,#887afa,transparent 60%),linear-gradient(140deg,#2543a4,#123659 55%,#457b92));background-size:cover;background-position:center;filter:brightness(var(--wallpaper-brightness,.8533))}
+.workspace-wallpaper{position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:var(--workspace-wallpaper-image);background-size:cover;background-position:center;filter:brightness(var(--wallpaper-brightness,.8533))}
 :root[data-theme] .workspace-header{background:var(--glass-panel);border:1px solid var(--glass-line);border-radius:28px 28px 0 0;backdrop-filter:blur(22px) saturate(135%);-webkit-backdrop-filter:blur(22px) saturate(135%);box-shadow:inset 0 1px 0 #ffffff55;top:12px}
 :root[data-theme] .workspace-main{background:var(--glass-panel);border:1px solid var(--glass-line);border-top:0;border-radius:0 0 28px 28px;max-width:none;margin-bottom:24px;padding-top:24px;box-shadow:var(--glass-shadow);min-width:0}
 :root[data-theme] .workspace-context,:root[data-theme] .workspace-brand-caption{color:var(--glass-muted)}
@@ -128,3 +128,11 @@ body{min-height:100dvh;overflow-x:clip}
 :root[data-theme] .workspace-mobile-nav nav a{width:44px;height:44px;min-width:44px;padding:0;justify-content:center;border-radius:12px}
 .workspace-mobile-nav .workspace-nav-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 @media(max-width:767px){:root[data-theme] .workspace-main{padding-bottom:20px;margin-bottom:12px}.app-footer{margin-bottom:max(12px,env(safe-area-inset-bottom))}}
+
+/* Wallpaper-backed sticky frame masks content above and around rounded corners. */
+:root{--workspace-wallpaper-image:var(--user-wallpaper,radial-gradient(ellipse at 15% 90%,#ff976980,transparent 55%),radial-gradient(ellipse at 85% 15%,#887afa,transparent 60%),linear-gradient(140deg,#2543a4,#123659 55%,#457b92));--workspace-top-gap:20px;--workspace-top-radius:28px}
+.workspace-header-mask{position:sticky;top:0;z-index:50;padding-top:var(--workspace-top-gap);isolation:isolate}
+.workspace-header-mask::before{content:"";position:fixed;inset:0;clip-path:inset(0 0 calc(100% - var(--workspace-top-gap) - var(--workspace-top-radius)) 0);z-index:-1;pointer-events:none;background-image:var(--workspace-wallpaper-image);background-size:cover;background-position:center;filter:brightness(var(--wallpaper-brightness,.8533))}
+:root[data-theme] .workspace-header-mask .workspace-header{position:relative;top:auto;border-radius:var(--workspace-top-radius) var(--workspace-top-radius) 0 0}
+@media(min-width:1280px){:root{--workspace-top-gap:24px}}
+@media(max-width:767px){:root{--workspace-top-gap:10px;--workspace-top-radius:22px}}
