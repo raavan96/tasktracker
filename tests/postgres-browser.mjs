@@ -541,6 +541,15 @@ try{
    await db.query('BEGIN');await db.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[users[index].id]);await db.query('SET LOCAL ROLE authenticated');
    const visible=(await db.query('SELECT id FROM projects ORDER BY id')).rows.map(p=>p.id);
    const activeCount=Number((await db.query('SELECT count(*) n FROM tasks t JOIN projects p ON p.id=t.project_id WHERE NOT t.is_archived AND NOT p.is_archived')).rows[0].n);
+   const taskRows=(await db.query('SELECT t.id,t.project_id,t.status,t.is_archived,t.due_date::text,t.assignee_ids,p.is_archived project_archived FROM tasks t JOIN projects p ON p.id=t.project_id')).rows;
+   const eventCount=Number((await db.query("SELECT count(*) n FROM completion_events WHERE occurred_at>=($1::date::timestamp AT TIME ZONE 'Asia/Kolkata') AND occurred_at<(($1::date+interval '1 month')::timestamp AT TIME ZONE 'Asia/Kolkata')",[insights.month+'-01'])).rows[0].n);
+   const activeRows=taskRows.filter(t=>!t.is_archived&&!t.project_archived);
+   assert.equal(insights.overdue,activeRows.filter(t=>!['done','in_review'].includes(t.status)&&t.due_date&&t.due_date<insights.today).length);
+   assert.equal(insights.trend.reduce((n,w)=>n+w.count,0),eventCount);
+   for(const project of insights.projects){const tasks=taskRows.filter(t=>t.project_id===project.id);assert.equal(project.total,tasks.length);assert.equal(project.done,tasks.filter(t=>t.status==='done').length);}
+   for(const person of insights.workload)assert.equal(person.count,activeRows.filter(t=>t.status!=='done'&&(person.id?t.assignee_ids.includes(person.id):!t.assignee_ids.length)).length);
+   for(const date of insights.calendar)assert.equal(date.count,activeRows.filter(t=>t.status!=='done'&&t.due_date===date.day).length);
+   assert.equal(insights.deadlineTotal,activeRows.filter(t=>t.status!=='done'&&t.due_date===insights.day).length);
    await db.query('ROLLBACK');
    assert.deepEqual(insights.projects.map(p=>p.id).sort(),visible.sort());
    assert.equal(insights.status.reduce((n,x)=>n+x.count,0),activeCount);
@@ -564,6 +573,12 @@ try{
   assert.ok(Math.abs((await admin.evaluate(()=>window.scrollY))-calendarScroll)<8,'Selecting a dashboard date must preserve scroll');
   await admin.getByRole('button',{name:'Next month',exact:true}).click();await expect(admin.getByText('Loading dashboard…',{exact:true})).toBeHidden();
   await expect(admin.getByRole('heading',{name:'Completion trend',exact:true})).toBeVisible();
+  await expect(admin.locator('.insights-bars')).toHaveAttribute('aria-busy','false');
+  const buckets=await admin.locator('.insights-bars>div').count();assert.ok(buckets>=4&&buckets<=6);
+  for(const value of await admin.locator('.insights-bars>div>span').evaluateAll(nodes=>nodes.map(n=>n.style.height)))assert.ok(Number.isFinite(parseFloat(value)));
+  const statLinks=admin.locator('section[aria-label="Task insights"] .insights-stat');
+  for(const [i,summary] of ['', 'pending','overdue','done'].entries())await expect(statLinks.nth(i)).toHaveAttribute('href','/dashboard/tasks'+(summary?'?summary='+summary:''));
+
   await admin.goto(base+'/dashboard');
   await admin.route('**/api/dashboard-insights?*',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Temporary test error'})}));
   await openDashboard();await expect(admin.locator('.insights-page').getByRole('alert')).toContainText('Temporary test error');

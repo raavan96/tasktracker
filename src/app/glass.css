@@ -180,3 +180,6 @@ body{min-height:100dvh;overflow-x:clip}
 .workspace-nav-stack-mobile>.workspace-nav-main{min-width:0;flex:1;padding:4px}
 :root[data-opaque-glass="true"] .workspace-nav-pill{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--surface)}
 @media(prefers-reduced-transparency:reduce){:root[data-theme] .workspace-nav-pill{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--surface)}}
+
+/* Keep weekly zero buckets legible and align all bars on one baseline. */
+.insights-bars{height:150px;min-height:150px;border-bottom:1px solid var(--glass-line);padding-bottom:8px;gap:8px}.insights-bars>div{font-variant-numeric:tabular-nums}.insights-bars span{flex-shrink:0}.insights-bars b{line-height:18px}.insights-bars small{line-height:16px}
