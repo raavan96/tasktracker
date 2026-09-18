@@ -687,6 +687,31 @@ try{
   await admin.setViewportSize({width:1440,height:1000});
   await admin.locator('aside').getByRole('link',{name:'All Tasks',exact:true}).click();
   await expect(admin).toHaveURL(base+'/dashboard/tasks');await admin.getByRole('button',{name:'Go back',exact:true}).click();await expect(admin).toHaveURL(base+'/dashboard');
+  // Preview adjustable transparency using the real appearance controls; no production defaults changed.
+  await admin.goto(base+'/dashboard');await expect(admin.getByRole('heading',{name:'Projects',exact:true})).toBeVisible();
+  for(const theme of ['dark','light']){
+   await themeControls(theme);
+   for(const level of [10,25,40]){
+    await admin.getByRole('button',{name:'Customize background',exact:true}).click();
+    await admin.getByRole('button',{name:'Aurora',exact:true}).click();
+    await admin.getByRole('checkbox',{name:'Reduce transparency',exact:true}).uncheck();
+    const slider=admin.getByRole('slider',{name:'Window transparency',exact:true});
+    await slider.press('Home');for(let step=0;step<level/5;step++)await slider.press('ArrowRight');
+    await expect(slider).toHaveValue(String(level));
+    await admin.getByRole('button',{name:'Close dialog',exact:true}).click();
+    await expect.poll(()=>admin.evaluate(()=>document.documentElement.style.getPropertyValue('--window-opacity'))).toBe(String(1-level/100));
+    await admin.screenshot({path:`/tmp/release5-transparency-${theme}-${level}.png`,fullPage:false});
+   }
+  }
+  await admin.reload();await admin.getByRole('button',{name:'Customize background',exact:true}).click();
+  await expect(admin.getByRole('slider',{name:'Window transparency',exact:true})).toHaveValue('40');
+  await admin.screenshot({path:'/tmp/release5-transparency-settings.png',fullPage:false});
+  await admin.getByRole('checkbox',{name:'Reduce transparency',exact:true}).check();
+  await expect(admin.getByRole('slider',{name:'Window transparency',exact:true})).toBeDisabled();
+  assert.equal(await admin.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--effective-window-opacity').trim()),'1');
+  await admin.getByRole('button',{name:'Reset background',exact:true}).click();
+  await expect(admin.getByRole('slider',{name:'Window transparency',exact:true})).toHaveValue('0');
+  await admin.getByRole('button',{name:'Close dialog',exact:true}).click();
   await admin.getByText('My account',{exact:true}).click();await admin.getByRole('button',{name:'Sign out',exact:true}).click();await expect(admin).toHaveURL(base+'/');
   assert.equal(external.length,0,'Staging must not contact Supabase');
   console.log('Eight browser logins, private project, task assignment, local upload/download, outsider denial, review and admin approval passed against PostgreSQL 16.');
