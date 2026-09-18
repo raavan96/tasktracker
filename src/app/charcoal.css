@@ -110,7 +110,7 @@
 :root[data-theme] .workspace-header::before{background-image:var(--workspace-wallpaper-image);background-size:cover;background-position:center;background-attachment:fixed;filter:brightness(var(--wallpaper-brightness,.8533))}
 :root[data-theme] .workspace-header::after{background:rgb(var(--window-rgb) / var(--effective-window-opacity))}
 :root[data-theme="dark"] .workspace-header::before{filter:brightness(calc(var(--wallpaper-brightness,.8533) * .88))}
-:root[data-theme]:not([data-theme="dark"]){--glass-muted:#35404d}
-:root[data-theme="dark"]{--glass-muted:#d9dde3}
+:root[data-theme]:not([data-theme="dark"]){--glass-muted:#35404d;--color-gray-400:#46505e;--color-gray-500:#46505e;--color-slate-400:#46505e;--color-slate-500:#46505e}
+:root[data-theme="dark"]{--glass-muted:#d9dde3;--color-gray-400:#c3c9d2;--color-gray-500:#c3c9d2;--color-slate-400:#c3c9d2;--color-slate-500:#c3c9d2}
 :root[data-opaque-glass="true"]{--effective-window-opacity:1}
 @media(prefers-reduced-transparency:reduce){:root[data-theme]{--effective-window-opacity:1}}

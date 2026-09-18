@@ -700,6 +700,8 @@ try{
     await expect(slider).toHaveValue(String(level));
     await admin.getByRole('button',{name:'Close dialog',exact:true}).click();
     await expect.poll(()=>admin.evaluate(()=>document.documentElement.style.getPropertyValue('--window-opacity'))).toBe(String(1-level/100));
+    const transparencyContrast=await new AxeBuilder({page:admin}).withRules(['color-contrast']).analyze();
+    assert.deepEqual(transparencyContrast.violations,[],`Transparency contrast ${theme} ${level}`);
     await admin.screenshot({path:`/tmp/release5-transparency-${theme}-${level}.png`,fullPage:false});
    }
   }
