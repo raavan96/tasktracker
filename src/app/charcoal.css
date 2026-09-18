@@ -1,0 +1,87 @@
+/* Approved charcoal design: shared geometry, neutral surfaces, restrained blue data. */
+:root[data-theme] {
+ --workspace-wallpaper-image:var(--user-wallpaper,linear-gradient(135deg,#959ca4,#68717c));
+ --glass-shadow:inset 0 1px 0 #ffffff06;
+ --charcoal-primary:#17202e; --charcoal-on-primary:#fff;
+ --charcoal-canvas:#f8f9fb; --charcoal-raised:#edf0f4; --charcoal-input:#f4f6f8;
+ --background:#f8f9fb; --foreground:#17202e; --surface:#fff;
+ --glass-panel:#fff; --glass-card:#fff; --glass-line:#d9dee6; --glass-muted:#586271;
+ --field-border:#84909f; --placeholder:#637081; --workspace-border:#d9dee6;
+ --workspace-accent:#1e60bf; --glass-accent:#1e60bf; --glass-selected:#eaf2ff;
+ --workspace-gradient:linear-gradient(#1e60bf,#1e60bf);
+ --color-gray-400:#667181; --color-gray-500:#586271; --color-gray-600:#4d5868;
+ --color-slate-400:#667181; --color-slate-500:#586271; --color-slate-600:#4d5868;
+ --color-blue-50:#eaf2ff; --color-blue-100:#dfebfc;
+}
+:root[data-theme="dark"] {
+ --charcoal-primary:#f3f4f6; --charcoal-on-primary:#080909;
+ --charcoal-canvas:#050606; --charcoal-raised:#202325; --charcoal-input:#101213;
+ --background:#050606; --foreground:#f3f4f6; --surface:#141617;
+ --glass-panel:#141617; --glass-card:#141617; --glass-line:#34383c; --glass-muted:#aeb4bc;
+ --field-border:#66707a; --placeholder:#a3abb5; --workspace-border:#34383c;
+ --workspace-accent:#82b4ff; --glass-accent:#82b4ff; --glass-selected:#1c2c40;
+ --workspace-gradient:linear-gradient(#4a94ff,#4a94ff);
+ --color-gray-50:#101213; --color-gray-100:#202325; --color-gray-200:#34383c; --color-gray-300:#66707a;
+ --color-gray-400:#a3abb5; --color-gray-500:#aeb4bc; --color-gray-600:#c2c7cd; --color-gray-700:#d4d8dd; --color-gray-800:#e4e7eb; --color-gray-900:#f3f4f6;
+ --color-slate-50:#101213; --color-slate-100:#202325; --color-slate-200:#34383c; --color-slate-300:#66707a;
+ --color-slate-400:#a3abb5; --color-slate-500:#aeb4bc; --color-slate-600:#c2c7cd; --color-slate-700:#d4d8dd; --color-slate-800:#e4e7eb; --color-slate-900:#f3f4f6;
+ --color-blue-50:#1c2c40; --color-blue-100:#1c2c40;
+}
+:root[data-theme] .workspace-header,:root[data-theme] .workspace-main{background:var(--charcoal-canvas);box-shadow:none;border-color:var(--glass-line);backdrop-filter:none;-webkit-backdrop-filter:none}
+:root[data-theme="dark"] .workspace-wallpaper::after{background:rgba(0,0,0,.12)}
+:root[data-theme] .workspace-header-brand>div,:root[data-theme] .workspace-mark{background:var(--charcoal-raised);color:var(--foreground);border:1px solid var(--glass-line);box-shadow:none;border-radius:12px}
+:root[data-theme] .workspace-header-inner{min-height:86px}
+:root[data-theme] :is(.workspace-nav-pill,.app-footer){background:var(--surface);border-color:var(--glass-line);box-shadow:var(--glass-shadow);backdrop-filter:none;-webkit-backdrop-filter:none}
+:root[data-theme] .workspace-back-slot{height:44px;width:44px;flex:0 0 44px}
+:root[data-theme] .workspace-back-slot>.workspace-back-pill{width:100%;height:100%}
+@media(min-width:1280px){:root[data-theme] .dark-workspace-sidebar .workspace-back-slot{width:64px;height:60px;flex-basis:60px}}
+:root[data-theme] :is(.summary-card,.project-card,.task-card,.board-column,.insights-box,.insights-stat){background:var(--surface);border:1px solid var(--glass-line);box-shadow:var(--glass-shadow)}
+:root[data-theme] :is(.summary-card,.project-card,.insights-box){border-radius:24px}
+:root[data-theme] .task-card{border-radius:16px}
+:root[data-theme] .board-column{background:var(--charcoal-input);border-radius:20px}
+:root[data-theme] :is(.summary-card,.project-card,.task-card):hover{border-color:var(--field-border);box-shadow:var(--glass-shadow)}
+:root[data-theme] .workspace-main h1{font-weight:600;letter-spacing:-.035em}
+:root[data-theme] .workspace-main :is(h2,h3){font-weight:550;letter-spacing:-.025em}
+:root[data-theme] :is(.summary-card,.insights-stat) strong{font-weight:500;letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+:root[data-theme] .summary-card::before{background:var(--glass-accent)}
+:root[data-theme] .summary-card[data-summary="in_review"]::before{background:#bb9454}
+:root[data-theme] .summary-card[data-summary="overdue"]::before{background:#d67c93}
+:root[data-theme] .summary-card[data-summary="done"]::before{background:#727b86}
+:root[data-theme] :is(button,a).bg-blue-600{background:var(--charcoal-primary);color:var(--charcoal-on-primary);border-color:var(--charcoal-primary);border-radius:12px;box-shadow:none}
+:root[data-theme] :is(button,a).bg-blue-600:hover{background:var(--charcoal-primary);filter:brightness(.92)}
+:root[data-theme] :is(.text-blue-600,.text-blue-700,.text-blue-800){color:var(--glass-accent)}
+:root[data-theme] :is(input,textarea,select),:root[data-theme="dark"] select option{background:var(--charcoal-input);color:var(--foreground);border-color:var(--field-border)}
+:root[data-theme] input:is([type="checkbox"],[type="radio"]){accent-color:var(--glass-accent)}
+:root[data-theme] :is(button,summary).border:not([class*="border-red"]){border-color:var(--field-border);box-shadow:none}
+:root[data-theme] .task-dialog{border-color:var(--glass-line);background:var(--surface);box-shadow:0 8px 30px #0003}
+:root[data-theme] .task-dialog::backdrop{background:#0008;backdrop-filter:none}
+:root[data-theme] .task-table-view>.overflow-x-auto{border-color:var(--glass-line);box-shadow:none;background:var(--surface)}
+:root[data-theme] .task-table-view thead{background:var(--surface)}
+:root[data-theme] .task-table-view tbody tr{border-color:var(--glass-line)}
+:root[data-theme] .task-table-view tbody tr:hover{background:var(--charcoal-raised)}
+:root[data-theme] .task-table-view td:first-child :is(a,button){color:var(--foreground)}
+:root[data-theme] .task-table-view td:first-child :is(a,button):hover{color:var(--glass-accent)}
+:root[data-theme] nav a[aria-current="page"],:root[data-theme] button[aria-pressed="true"]:not(.bg-blue-600){background:var(--glass-selected);color:var(--glass-accent);box-shadow:none}
+:root[data-theme] .compact-segmented{border-radius:12px;background:var(--charcoal-input)}
+:root[data-theme] .compact-segmented button,:root[data-theme] .compact-segmented-indicator{border-radius:9px}
+:root[data-theme] .compact-segmented button[aria-pressed="true"]{background:transparent}
+:root[data-theme] .task-view-indicator{background:var(--charcoal-raised)}
+:root[data-theme] .task-view-switch button[aria-pressed="true"]{background:transparent;color:var(--foreground)}
+:root[data-theme] .project-card .bg-blue-600{background:var(--glass-accent)}
+:root[data-theme] .task-status-label{color:var(--glass-muted);background:rgba(125,137,148,.08);border-color:var(--glass-line)}
+:root[data-theme] .task-status-label[data-status="in_progress"]{color:var(--glass-accent);background:var(--glass-selected);border-color:var(--glass-line)}
+:root[data-theme] .task-status-label[data-status="in_review"]{color:#8b5c0c;background:#d6a54e10;border-color:#d6a54e40}
+:root[data-theme="dark"] .task-status-label[data-status="in_review"]{color:#e4c387}
+:root[data-theme] .task-status-label[data-status="blocked"]{color:#a52849;background:#e34c7110;border-color:#e34c7140}
+:root[data-theme="dark"] .task-status-label[data-status="blocked"]{color:#eaa7b5}
+:root[data-theme] .task-status-label[data-status="done"]{color:var(--glass-muted);background:#7d899408;border-color:var(--glass-line)}
+:root[data-theme] .insights-trend{background:linear-gradient(155deg,var(--surface) 40%,var(--glass-selected))}
+:root[data-theme] .insights-track{background:var(--charcoal-raised);height:5px}
+:root[data-theme] .insights-track span{background:var(--glass-accent)}
+:root[data-theme] .insights-health{height:12px;border-radius:5px;gap:3px}
+:root[data-theme] .insights-health span{border-radius:3px}
+:root[data-theme] .insights-bars span{background:linear-gradient(#84b5ff,#286bdd);border-radius:5px 5px 2px 2px}
+:root[data-theme] .insights-project-row{padding:16px 12px}
+:root[data-theme] .insights-project-row:hover{background:var(--charcoal-raised)}
+:root[data-theme] .insights-calendar button{border-radius:50%}
+:root[data-theme] .workspace-tooltip{background:var(--charcoal-raised);color:var(--foreground);border-color:var(--field-border);box-shadow:0 2px 6px #0002}

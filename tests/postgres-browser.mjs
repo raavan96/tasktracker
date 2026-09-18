@@ -31,6 +31,25 @@ try{
   await Promise.all(pages.map(async(page,n)=>{await page.goto(base+'/login');await page.locator('input[name=email]').fill(users[n].email);await page.locator('input[name=password]').fill(password);await page.getByRole('button',{name:'Sign In',exact:true}).click();await page.waitForURL('**/dashboard',{timeout:30000});}));
   const admin=pages[0],member=pages[1],outsider=pages[2];
   await expect(admin.getByRole('button',{name:'Go back',exact:true})).toHaveCount(0);
+
+  // Back reserves the same space on direct entry, navigation, and return.
+  for(const width of [430,1440]){
+   await admin.setViewportSize({width,height:1000});await admin.goto(base+'/dashboard');
+   const shell=width===430?'.workspace-header':'aside';
+   await expect(admin.locator(shell+' .workspace-search-pill')).toBeVisible();
+   await expect(admin.locator(shell).getByRole('button',{name:'Go back',exact:true})).toHaveCount(0);
+   const positions=()=>admin.locator(shell+' .workspace-nav-stack').evaluate(el=>[...el.querySelectorAll('.workspace-search-pill,.workspace-nav-main')].map(n=>{const r=n.getBoundingClientRect();return [r.x,r.y,r.width];}));
+   const before=await positions();
+   await admin.locator(shell).getByRole('link',{name:'All Tasks',exact:true}).click();
+   await expect(admin).toHaveURL(base+'/dashboard/tasks');
+   await expect(admin.locator(shell).getByRole('button',{name:'Go back',exact:true})).toBeVisible();
+   assert.deepEqual(await positions(),before,'Back appearing must not move navigation');
+   await admin.locator(shell).getByRole('button',{name:'Go back',exact:true}).click();
+   await expect(admin).toHaveURL(base+'/dashboard');
+   await expect(admin.locator(shell).getByRole('button',{name:'Go back',exact:true})).toHaveCount(0);
+   assert.deepEqual(await positions(),before,'Back disappearing must not move navigation');
+  }
+
   await admin.getByRole('button',{name:'New Project'}).click();
   await admin.locator('dialog input[name=name]').fill('Private staging workflow');
   await admin.getByLabel('Search team members',{exact:true}).fill(users[1].email.toUpperCase());

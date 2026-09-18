@@ -5,12 +5,13 @@ import { ImagePlus } from 'lucide-react';
 import Modal from './Modal';
 
 const presets = {
+  Charcoal: 'linear-gradient(135deg,#959ca4,#68717c)',
   Aurora: 'radial-gradient(ellipse at 15% 90%,#ff976980,transparent 55%),radial-gradient(ellipse at 85% 15%,#887afa,transparent 60%),linear-gradient(140deg,#2543a4,#123659 55%,#457b92)',
   Coast: 'radial-gradient(ellipse at 20% 100%,#f0d7af,transparent 60%),radial-gradient(ellipse at 90% 0%,#84e3e6,transparent 60%),linear-gradient(140deg,#30679e,#358594 60%,#8eaea7)',
   Dusk: 'radial-gradient(ellipse at 80% 95%,#e3a37b,transparent 55%),radial-gradient(ellipse at 20% 15%,#ac88d5,transparent 60%),linear-gradient(150deg,#392d68,#6e5a96 55%,#ac7599)',
 };
 type Appearance = { preset: keyof typeof presets; image: string | null; dim: number; opaque: boolean };
-const defaults: Appearance = { preset: 'Aurora', image: null, dim: 22, opaque: false };
+const defaults: Appearance = { preset: 'Charcoal', image: null, dim: 22, opaque: false };
 export default function WorkspaceAppearance({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState<Appearance>(defaults);
@@ -69,7 +70,7 @@ export default function WorkspaceAppearance({ userId }: { userId: string }) {
     <button type="button" className="appearance-trigger rounded-full p-2 text-slate-600 hover:bg-slate-100" aria-label="Customize background" onClick={() => setOpen(true)}><ImagePlus aria-hidden="true" className="h-5 w-5" /></button>
     {open && <Modal title="Personalize your workspace" busy={busy} onClose={() => setOpen(false)}>
       <div data-instant-save className="space-y-5">
-        <p className="text-sm text-gray-600">Choose a backdrop for the glass, or use your own photo.</p>
+        <p className="text-sm text-gray-600">Choose a backdrop for your workspace, or use your own photo.</p>
         <div className="wallpaper-presets">{Object.entries(presets).map(([name, background]) => <button key={name} type="button" disabled={busy} aria-pressed={!value.image && value.preset === name} style={{ background }} onClick={() => update({ ...value, image: null, preset: name as keyof typeof presets })}><span>{name}</span></button>)}</div>
         <label className="block text-sm font-medium">Background image<input className="mt-2 block w-full rounded-lg border p-2 text-sm" aria-label="Background image" type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={e => { void upload(e.target.files?.[0]); e.target.value = ''; }} /></label>
         <p className="text-sm text-gray-600">JPG, PNG or WebP · up to 10 MB. Stored only in this browser for your account; not uploaded to the server or shared with teammates.</p>

@@ -28,7 +28,7 @@ export default function WorkspaceNav({ isAdmin, mobile = false }: { isAdmin: boo
     </Link>)}
   </nav>;
   return <div className={`workspace-nav-stack ${mobile?'workspace-nav-stack-mobile':''}`}>
-    <WorkspaceBack />
+    <div className="workspace-back-slot"><WorkspaceBack /></div>
     <Link href="/dashboard/search" className="workspace-search-pill workspace-nav-pill" aria-label="Search" data-tooltip="Search" title="Search" aria-current={pathname==='/dashboard/search'?'page':undefined}><Search aria-hidden="true" className="h-4 w-4"/></Link>
     <div ref={menu} className={`workspace-nav-pill workspace-nav-main ${mobile?'workspace-mobile-nav':''}`} aria-label={mobile?'Workspace navigation — swipe for more':undefined}>{navigation}</div>
   </div>;
