@@ -7,7 +7,7 @@ import AppFooter from './AppFooter';
 import MorningPrompt from './MorningPrompt';
 import ActionsMenu from './ActionsMenu';
 import WorkspaceNav from './WorkspaceNav';
-import WorkspaceBack, {WorkspaceBackProvider} from './WorkspaceBack';
+import {WorkspaceBackProvider} from './WorkspaceBack';
 import WorkspaceHelp from './WorkspaceHelp';
 import WorkspaceAppearance from './WorkspaceAppearance';
 import WorkspaceTooltips from './WorkspaceTooltips';
@@ -63,7 +63,6 @@ export default async function WorkspaceLayout({
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">
-            <span className="mobile-persistent-back"><WorkspaceBack /></span>
             <WorkspaceHelp userId={user.id} buttonOnly />
             <WorkspaceAppearance userId={user.id} />
             <ThemeToggle />

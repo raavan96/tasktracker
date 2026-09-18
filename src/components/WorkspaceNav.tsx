@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
+import WorkspaceBack from './WorkspaceBack';
 import { usePathname } from 'next/navigation';
 import { ChartNoAxesCombined, FolderKanban, CheckSquare, Users, Archive, Search, BarChart3, CalendarDays, Copy } from 'lucide-react';
 
@@ -10,7 +11,6 @@ export default function WorkspaceNav({ isAdmin, mobile = false }: { isAdmin: boo
   const pathname = usePathname();
   useEffect(()=>{const rail=menu.current;const active=rail?.querySelector<HTMLElement>('[aria-current="page"]');if(rail&&active)rail.scrollLeft=Math.max(0,active.offsetLeft-rail.offsetLeft-rail.clientWidth/2+active.offsetWidth/2);},[pathname]);
   const links = [
-    {href:'/dashboard/search',label:'Search',icon:Search,active:pathname==='/dashboard/search'},
     {href:'/dashboard/insights',label:'Dashboard',icon:ChartNoAxesCombined,active:pathname==='/dashboard/insights'},
     {href:'/dashboard',label:'Projects',icon:FolderKanban,active:pathname==='/dashboard'||pathname.startsWith('/dashboard/projects')},
     {href:'/dashboard/my-tasks',label:'My Tasks',icon:CheckSquare,active:pathname==='/dashboard/my-tasks'},
@@ -27,6 +27,9 @@ export default function WorkspaceNav({ isAdmin, mobile = false }: { isAdmin: boo
       <Icon aria-hidden="true" className="h-4 w-4" /><span className="workspace-nav-label">{label}</span>
     </Link>)}
   </nav>;
-  if (!mobile) return navigation;
-  return <div ref={menu} className="workspace-mobile-nav" aria-label="Workspace navigation — swipe for more">{navigation}</div>;
+  return <div className={`workspace-nav-stack ${mobile?'workspace-nav-stack-mobile':''}`}>
+    <WorkspaceBack />
+    <Link href="/dashboard/search" className="workspace-search-pill workspace-nav-pill" aria-label="Search" data-tooltip="Search" title="Search" aria-current={pathname==='/dashboard/search'?'page':undefined}><Search aria-hidden="true" className="h-4 w-4"/></Link>
+    <div ref={menu} className={`workspace-nav-pill workspace-nav-main ${mobile?'workspace-mobile-nav':''}`} aria-label={mobile?'Workspace navigation — swipe for more':undefined}>{navigation}</div>
+  </div>;
 }

@@ -163,3 +163,20 @@ body{min-height:100dvh;overflow-x:clip}
 :root[data-theme] .task-priority-label:not([data-priority="urgent"]),:root[data-theme] .priority-neutral{color:var(--glass-muted);background:rgba(100,116,139,.08);border-color:rgba(100,116,139,.2)}
 :root .task-card[data-status="done"]{color:var(--glass-muted)}
 :root .workspace-main :is(.summary-card>span:first-child,th){text-transform:uppercase}
+
+/* Separate fixed Back, Search and primary navigation pills. */
+.workspace-nav-stack{display:flex;flex-direction:column;gap:12px;min-height:0}
+:root[data-theme] .workspace-nav-pill{border:1px solid var(--glass-line);border-radius:32px;background:var(--glass-panel);color:var(--glass-muted);box-shadow:inset 0 1px 0 #ffffff22,var(--glass-shadow);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+.workspace-search-pill,.workspace-back-pill{display:flex;align-items:center;justify-content:center;flex-shrink:0}
+:root[data-theme] .workspace-search-pill[aria-current="page"]{color:var(--glass-accent);background:var(--glass-selected)}
+@media(min-width:1280px){
+ :root[data-theme] .dark-workspace-sidebar{padding:0;border:0;background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;overflow:visible}
+ .dark-workspace-sidebar .workspace-search-pill,.dark-workspace-sidebar .workspace-back-pill{width:64px;height:60px}
+ .dark-workspace-sidebar .workspace-nav-main{padding:10px 7px;min-height:0;overflow-y:auto;scrollbar-width:thin}
+ .dark-workspace-sidebar .workspace-nav-stack{max-height:calc(100dvh - 155px)}
+}
+.workspace-nav-stack-mobile{flex-direction:row;align-items:center;gap:8px}
+.workspace-nav-stack-mobile>.workspace-search-pill,.workspace-nav-stack-mobile>.workspace-back-pill{width:44px;height:44px}
+.workspace-nav-stack-mobile>.workspace-nav-main{min-width:0;flex:1;padding:4px}
+:root[data-opaque-glass="true"] .workspace-nav-pill{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--surface)}
+@media(prefers-reduced-transparency:reduce){:root[data-theme] .workspace-nav-pill{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--surface)}}

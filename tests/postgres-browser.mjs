@@ -30,6 +30,7 @@ try{
   await pages[0].waitForURL('**/login');
   await Promise.all(pages.map(async(page,n)=>{await page.goto(base+'/login');await page.locator('input[name=email]').fill(users[n].email);await page.locator('input[name=password]').fill(password);await page.getByRole('button',{name:'Sign In',exact:true}).click();await page.waitForURL('**/dashboard',{timeout:30000});}));
   const admin=pages[0],member=pages[1],outsider=pages[2];
+  await expect(admin.getByRole('button',{name:'Go back',exact:true})).toHaveCount(0);
   await admin.getByRole('button',{name:'New Project'}).click();
   await admin.locator('dialog input[name=name]').fill('Private staging workflow');
   await admin.getByLabel('Search team members',{exact:true}).fill(users[1].email.toUpperCase());
@@ -630,11 +631,17 @@ try{
   await admin.getByRole('button',{name:'Collapse Done column',exact:true}).click();
   await expect(admin.locator('.board-column[data-status="done"]')).toHaveAttribute('data-collapsed','true');
   await admin.getByRole('button',{name:'Expand Done column',exact:true}).click();
-  await admin.goto(base+'/dashboard');
+  await admin.setViewportSize({width:1440,height:1000});
+  await admin.locator('aside').getByRole('link',{name:'Projects',exact:true}).click();
+  await expect(admin).toHaveURL(base+'/dashboard');
+  await expect(admin.locator('aside .workspace-back-pill')).toBeVisible();
+  await admin.screenshot({path:'/tmp/release5-split-navigation-desktop.png',fullPage:false});
   await admin.setViewportSize({width:430,height:932});
   await expect(admin.locator('.workspace-mobile-nav summary')).toHaveCount(0);
   await expect(admin.locator('.workspace-header').getByRole('button',{name:'Go back',exact:true})).toBeVisible();
-  await expect(admin.locator('.workspace-mobile-nav a')).toHaveCount(11);
+  await expect(admin.locator('.workspace-mobile-nav a')).toHaveCount(10);
+  await expect(admin.locator('.workspace-header .workspace-search-pill')).toBeVisible();
+  await expect(admin.locator('.workspace-page-heading').getByRole('button',{name:'Go back'})).toHaveCount(0);
   await admin.locator('.app-footer').scrollIntoViewIfNeeded();
   await admin.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
   const geometry=await admin.evaluate(()=>({gap:document.documentElement.scrollHeight-(document.querySelector('.app-footer').getBoundingClientRect().bottom+window.scrollY),top:document.querySelector('.workspace-header').getBoundingClientRect().top,radius:getComputedStyle(document.querySelector('.workspace-header')).borderTopLeftRadius}));
