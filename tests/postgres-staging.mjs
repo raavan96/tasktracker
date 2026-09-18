@@ -477,4 +477,20 @@ morningActor=outsider;assert.ok((await morning.resolveMorningTask(morningId,0,'t
 morningActor=member;assert.ok((await morning.resolveMorningTask(morningId,99,'today')).error);assert.ok((await morning.resolveMorningTask(morningId,0,'done')).message);
 await as(owner);assert.equal((await rows('SELECT status FROM tasks WHERE id=$1',[morningId]))[0].status,'in_review');
 console.log('Morning actions: assignment visibility, unauthorized/stale requests and review-preserving completion passed.');
+
+const recencyModule={};
+new Function('exports',ts.transpileModule(read('src/lib/project-recency.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(recencyModule);
+const recencyValue=async()=>String((await rows(recencyModule.projectRecencySQL)).find(r=>r.project_id===dailyProject).last_task_edit_at);
+await as(owner);const beforeDetail=await recencyValue();
+await rows("UPDATE tasks SET title='A real task detail edit' WHERE id=$1",[morningId]);
+const afterDetail=await recencyValue();assert.ok(new Date(afterDetail)>new Date(beforeDetail),'Task editing advances project recency');
+await as(admin);
+await rows("SELECT review_task($1,(SELECT review_version FROM tasks WHERE id=$1),'submit','')",[morningId]);
+await rows("SELECT review_task($1,(SELECT review_version FROM tasks WHERE id=$1),'approve','')",[morningId]);
+assert.equal(await recencyValue(),afterDetail,'Completion must not advance project recency');
+await as(owner);await rows("INSERT INTO tasks(project_id,title,created_by) VALUES($1,'New task affects recency',$2)",[dailyProject,owner]);
+assert.ok(new Date(await recencyValue())>new Date(afterDetail),'Task creation advances project recency');
+await as(outsider);assert.ok(!(await rows(recencyModule.projectRecencySQL)).some(r=>r.project_id===dailyProject),'Private project recency remains protected');
+console.log('Project recency: creation/detail edit advance; completion does not; private projects protected.');
+
 await db.close();
