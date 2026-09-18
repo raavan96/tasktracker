@@ -85,3 +85,16 @@
 :root[data-theme] .insights-project-row:hover{background:var(--charcoal-raised)}
 :root[data-theme] .insights-calendar button{border-radius:50%}
 :root[data-theme] .workspace-tooltip{background:var(--charcoal-raised);color:var(--foreground);border-color:var(--field-border);box-shadow:0 2px 6px #0002}
+
+/* Extra-small cards use roughly half the small tile footprint, with readable metadata. */
+:root[data-theme] [data-project-view="grid"][data-grid-size="extra-small"]{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+:root[data-theme] [data-project-view="grid"][data-grid-size="extra-small"] .project-card{padding:12px;border-radius:16px;display:flex;flex-direction:column}
+:root[data-theme] [data-project-view="grid"][data-grid-size="extra-small"] .project-card h2{font-size:14px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:38px}
+:root[data-theme] [data-project-view="grid"][data-grid-size="extra-small"] .project-card>div:first-child>p:first-of-type{display:none}
+:root[data-theme] [data-project-view="grid"][data-grid-size="extra-small"] .project-card>div:first-child>p:last-of-type{margin-top:6px;font-size:11px;letter-spacing:0;line-height:1.4;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+:root[data-theme] [data-project-view="grid"][data-grid-size="extra-small"] .project-card>div:nth-child(2){margin-top:auto;padding-top:10px}
+:root[data-theme] [data-project-view="grid"][data-grid-size="extra-small"] .project-card>div:last-child{margin-top:9px;padding-top:9px;gap:5px;font-size:11px;letter-spacing:0}
+:root[data-theme] [data-project-view="grid"][data-grid-size="extra-small"] .project-card svg{width:12px;height:12px}
+@media(min-width:640px){:root[data-theme] [data-project-view="grid"][data-grid-size="extra-small"]{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:1024px){:root[data-theme] [data-project-view="grid"][data-grid-size="extra-small"]{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(min-width:1280px){:root[data-theme] [data-project-view="grid"][data-grid-size="extra-small"]{grid-template-columns:repeat(6,minmax(0,1fr))}}

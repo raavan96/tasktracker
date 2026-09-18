@@ -361,6 +361,20 @@ try{
   await admin.getByRole('button',{name:'Grid view',exact:true}).click();await admin.getByRole('button',{name:'Grid size',exact:true}).click();await admin.getByRole('menuitemradio',{name:'Small grid',exact:true}).click();await expect(admin.locator('[data-grid-size="small"]')).toBeVisible();await admin.getByRole('button',{name:'Sort projects',exact:true}).click();await admin.getByRole('menuitemradio',{name:'Name A–Z',exact:true}).click();await admin.reload();await expect(admin.getByRole('button',{name:'Grid size',exact:true})).toHaveAttribute('title','Grid size: Small grid');await expect(admin.getByRole('button',{name:'Sort projects',exact:true})).toHaveAttribute('title','Sort projects: Name A–Z');
   await admin.getByRole('button',{name:'Sort projects',exact:true}).click();await admin.keyboard.press('Escape');await expect(admin.getByRole('button',{name:'Sort projects',exact:true})).toBeFocused();await expect(admin.getByRole('menu',{name:'Sort projects'})).toHaveCount(0);
   for(const width of [375,430,1280]){await admin.setViewportSize({width,height:932});await admin.getByRole('button',{name:'List view',exact:true}).click();await admin.getByRole('button',{name:'Grid view',exact:true}).click();await expect.poll(()=>admin.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await admin.evaluate(()=>window.scrollTo(0,0));await admin.screenshot({path:`/tmp/release5-controls-${width}.png`,fullPage:true,animations:'disabled'});}
+  for(const width of [375,430,1440]){
+   await admin.setViewportSize({width,height:1000});
+   await admin.getByRole('button',{name:'Grid size',exact:true}).click();await admin.getByRole('menuitemradio',{name:'Small grid',exact:true}).click();
+   await admin.waitForTimeout(350);
+   const area=()=>admin.locator('.project-card').first().evaluate(el=>{const r=el.getBoundingClientRect();return r.width*r.height;});
+   const smallArea=await area();
+   await admin.getByRole('button',{name:'Grid size',exact:true}).click();await admin.getByRole('menuitemradio',{name:'Extra small grid',exact:true}).click();
+   await expect(admin.locator('[data-grid-size="extra-small"]')).toBeVisible();await admin.waitForTimeout(350);
+   const ratio=(await area())/smallArea;assert.ok(ratio<.7&&ratio>.25,`Extra small footprint at ${width}: ${ratio}`);
+   assert.equal(await admin.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+   await admin.reload();await expect(admin.getByRole('button',{name:'Grid size',exact:true})).toHaveAttribute('title','Grid size: Extra small grid');
+   await admin.screenshot({path:`/tmp/release5-extra-small-${width}.png`,fullPage:true});
+  }
+  await admin.getByRole('button',{name:'Grid size',exact:true}).click();await admin.getByRole('menuitemradio',{name:'Small grid',exact:true}).click();
   const nav=admin.locator('aside').getByRole('navigation',{name:'Workspace',exact:true});await expect(nav.getByRole('link')).toHaveText(['Dashboard','Projects','My Tasks','All Tasks','Calendar','Reports','Templates','Archive','Workload','Team Users']);await expect(admin.locator('aside .workspace-search-pill')).toBeVisible();
   await admin.emulateMedia({reducedMotion:'reduce'});await admin.getByRole('button',{name:'List view',exact:true}).click();await expect(admin.locator('[data-project-view="list"]')).toBeVisible();assert.equal(await admin.locator('[data-project-view]').evaluate(el=>el.getAnimations({subtree:true}).filter(a=>a.playState==='running'&&a.constructor.name==='Animation').length),0);await admin.emulateMedia({reducedMotion:'no-preference'});
   await admin.goto(projectURL);await admin.getByRole('button',{name:'Archived tasks',exact:true}).click();await expect(admin.getByRole('button',{name:'Archived tasks',exact:true})).toHaveAttribute('aria-pressed','true');await admin.getByRole('button',{name:'Active tasks',exact:true}).click();await expect(admin.getByRole('button',{name:'Active tasks',exact:true})).toHaveAttribute('aria-pressed','true');
