@@ -259,7 +259,6 @@ export default function ProjectView({
                   </span><button type="button" aria-label={`${collapsed.includes(col.id)?'Expand':'Collapse'} ${col.title} column`} aria-expanded={!collapsed.includes(col.id)} className="column-toggle rounded-lg p-2" onClick={()=>setCollapsed(prev=>prev.includes(col.id)?prev.filter(x=>x!==col.id):[...prev,col.id])}>{collapsed.includes(col.id)?'＋':'−'}</button>
                 </div>
 
-                {!collapsed.includes(col.id)&&!project.is_archived&&!showArchived&&(isAdmin||members.some(m=>m.id===currentUserId))&&<button type="button" className="column-quick-add mb-3 flex items-center justify-center gap-2 rounded-lg border p-2 text-sm" onClick={()=>{if(taskDraft&&!window.confirm('Discard your saved task draft and start a new task?'))return;setEditingTask(null);setTaskDraft({status:['todo','in_progress','blocked'].includes(col.id)?col.id:'todo'});setIsTaskModalOpen(true);}}><Plus className="h-4 w-4"/>Add task{['done','in_review'].includes(col.id)&&<span className="sr-only"> (starts in To do; submit for review before completion)</span>}</button>}
                 <div hidden={collapsed.includes(col.id)} className="flex-1 overflow-y-auto space-y-3 pr-1">
                   {columnTasks.length === 0 && <p className="rounded-lg border border-dashed border-slate-300 p-4 text-center text-xs text-slate-500">No tasks {col.id === 'done' ? 'completed yet' : 'here yet'}</p>}
                   {columnTasks.map((task: Task) => (

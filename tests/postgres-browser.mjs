@@ -630,9 +630,6 @@ try{
   await admin.getByRole('button',{name:'Collapse Done column',exact:true}).click();
   await expect(admin.locator('.board-column[data-status="done"]')).toHaveAttribute('data-collapsed','true');
   await admin.getByRole('button',{name:'Expand Done column',exact:true}).click();
-  await admin.locator('.board-column[data-status="in_progress"]').getByRole('button',{name:'Add task',exact:true}).click();
-  await expect(admin.locator('dialog select[name="status"]')).toHaveValue('in_progress');
-  await admin.getByRole('button',{name:'Cancel',exact:true}).click();
   await admin.goto(base+'/dashboard');
   await admin.setViewportSize({width:430,height:932});
   await expect(admin.locator('.workspace-mobile-nav summary')).toHaveCount(0);
