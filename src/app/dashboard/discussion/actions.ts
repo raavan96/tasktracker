@@ -14,3 +14,5 @@ export async function saveRemark(task:string,content:string,mentions:string[],id
  finally{console.info(JSON.stringify({event:'remark_save',durationMs:Math.round(performance.now()-started)}));}
 }
 export async function remarkHistory(comment:string){return workspaceRead(async db=>(await db.query<{id:string;content:string;created_at:string}>('SELECT id,content,created_at FROM remark_edits WHERE comment_id=$1 ORDER BY created_at DESC,id DESC LIMIT 100',[comment])).rows);}
+
+export async function linkedRemark(task:string,id:string){return workspaceRead(async db=>(await db.query<Remark>("SELECT c.*,coalesce(p.full_name,p.email) author FROM task_comments c JOIN profiles p ON p.id=c.author_id WHERE c.task_id=$1 AND c.id=$2",[task,id])).rows[0]||null);}

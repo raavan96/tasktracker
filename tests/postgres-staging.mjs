@@ -250,7 +250,7 @@ planActor=member;assert.equal((await planning.planningOptions()).templates.lengt
 planActor=outsider;await assert.rejects(()=>planning.previewPlanning(ps));await assert.rejects(()=>planning.storeTemplate(ps,pv.version,'Forbidden'));
 planActor=owner;const makeInput=preview=>({source:preview.source,version:preview.version,requestId:require('node:crypto').randomUUID(),name:'Planning copy',description:'Fresh work',targetProjectId:pp,members:[member],tasks:preview.blueprint.tasks.map(t=>({key:t.key,title:t.title,description:t.description,priority:t.priority,dueDate:t.offset===null?'':planTypes.shiftDate('2026-09-20',t.offset),assigneeIds:[owner,member],checklist:t.checklist}))});
 const pi=makeInput(pv),copy=await planning.createPlan(pi);assert.deepEqual(await planning.createPlan(pi),copy);await assert.rejects(()=>planning.createPlan({...pi,name:'Changed retry'}));
-await as(owner);const copied=await rows('SELECT * FROM tasks WHERE project_id=$1 ORDER BY due_date',[copy.projectId]);assert.equal(copied.length,2);assert.ok(copied.every(t=>t.status==='todo'&&t.created_by===owner&&t.recurrence==='none'));assert.deepEqual(copied.map(t=>new Date(t.due_date).toISOString().slice(0,10)),['2026-09-20','2026-09-23']);assert.deepEqual(copied[0].assignee_ids,[owner,member]);assert.equal((await rows('SELECT completed FROM task_checklist WHERE task_id=$1',[copied[0].id]))[0].completed,false);assert.equal((await rows('SELECT depends_on FROM task_dependencies WHERE task_id=$1',[copied[1].id]))[0].depends_on,copied[0].id);
+await as(owner);const copied=await rows('SELECT * FROM tasks WHERE project_id=$1 ORDER BY due_date',[copy.projectId]);assert.equal(copied.length,2);assert.ok(copied.every(t=>t.status==='todo'&&t.created_by===owner&&t.recurrence==='none'));assert.deepEqual(copied.map(t=>new Date(t.due_date).toISOString().slice(0,10)),['2026-09-20','2026-09-23']);assert.deepEqual(copied[0].assignee_ids,[owner,member]);assert.equal((await rows('SELECT completed FROM task_checklist WHERE task_id=$1',[copied[0].id])).length,0);assert.equal((await rows('SELECT depends_on FROM task_dependencies WHERE task_id=$1',[copied[1].id]))[0].depends_on,copied[0].id);
 assert.equal((await rows('SELECT is_private FROM projects WHERE id=$1',[copy.projectId]))[0].is_private,true);
 const before=Number((await rows('SELECT count(*) n FROM projects'))[0].n);
 const invalid=makeInput(pv);invalid.tasks[1].assigneeIds=[outsider];await assert.rejects(()=>planning.createPlan(invalid));await as(owner);assert.equal(Number((await rows('SELECT count(*) n FROM projects'))[0].n),before);
@@ -454,4 +454,27 @@ assert.equal((await rows("SELECT count(*) n FROM email_queue WHERE task_id=$1 AN
 await rows('UPDATE projects SET is_archived=true WHERE id=$1',[experienceProject]);
 assert.equal(await emailLogic.prepareEmail(db,memberProjectJob),null);
 console.log('Workspace experience: creator submission/withdrawal, no member self-approval, project creation/member-add emails, duplicate prevention, removed/archived access checks and self-assignment email passed.');
+await as(null);await db.exec(read('postgres/017_daily_workflow.sql'));
+await as(owner);const dailyProject=(await rows("SELECT create_workspace_project('Daily workflow','',ARRAY[$1::uuid],true) id",[member]))[0].id;
+const dailyTask=(await rows("INSERT INTO tasks(project_id,title,created_by,assignee_ids,due_date) VALUES($1,'Overdue assignment',$2,ARRAY[$3::uuid],current_date-1) RETURNING id",[dailyProject,owner,member]))[0].id;
+await rows("INSERT INTO task_checklist(task_id,title) VALUES($1,'Legacy incomplete checklist')",[dailyTask]);
+await as(member);await rows('UPDATE tasks SET due_date=current_date WHERE id=$1',[dailyTask]);
+await assert.rejects(()=>rows("UPDATE tasks SET title='Not permitted' WHERE id=$1",[dailyTask]));
+await rows("SELECT review_task($1,(SELECT review_version FROM tasks WHERE id=$1),'submit','')",[dailyTask]);
+await assert.rejects(()=>rows("SELECT review_task($1,(SELECT review_version FROM tasks WHERE id=$1),'approve','')",[dailyTask]));
+await as(owner);await rows("SELECT review_task($1,(SELECT review_version FROM tasks WHERE id=$1),'approve','')",[dailyTask]);
+assert.equal((await rows('SELECT status FROM tasks WHERE id=$1',[dailyTask]))[0].status,'done');
+assert.equal((await rows('SELECT completed FROM task_checklist WHERE task_id=$1',[dailyTask]))[0].completed,false);
+console.log('Daily workflow: legacy checklist no longer blocks review; member rescheduling, protected ownership and approval permissions passed.');
+const morning={};let morningActor=member;
+new Function('exports','require',ts.transpileModule(read('src/app/dashboard/tasks/morning.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(morning,name=>{
+ if(name==='next/cache')return {revalidatePath:()=>{}};
+ if(name==='@/lib/workspace-data')return {workspaceRead:async work=>{await as(morningActor);return run(()=>work(db,morningActor));}};throw Error(name);
+});
+await as(owner);const morningId=(await rows("INSERT INTO tasks(project_id,title,created_by,assignee_ids,due_date) VALUES($1,'Morning overdue',$2,ARRAY[$3::uuid],current_date-2) RETURNING id",[dailyProject,owner,member]))[0].id;
+assert.ok((await morning.morningTasks()).items.some(t=>t.id===morningId));
+morningActor=outsider;assert.ok((await morning.resolveMorningTask(morningId,0,'today')).error);
+morningActor=member;assert.ok((await morning.resolveMorningTask(morningId,99,'today')).error);assert.ok((await morning.resolveMorningTask(morningId,0,'done')).message);
+await as(owner);assert.equal((await rows('SELECT status FROM tasks WHERE id=$1',[morningId]))[0].status,'in_review');
+console.log('Morning actions: assignment visibility, unauthorized/stale requests and review-preserving completion passed.');
 await db.close();

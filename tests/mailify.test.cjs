@@ -35,3 +35,5 @@ test('Every dark email template escapes content and uses trusted action links',a
  assert.throws(()=>renderEmail('assignment',{}, {origin:'http://evil.test'}),/HTTPS/);
  assert.throws(()=>renderEmail('assignment',{}, {origin:'https://user:pass@evil.test'}),/HTTPS/);
 });
+
+test('Mention email opens the exact remark with discussion selected',async()=>{const {renderEmail}=await import('../scripts/email/templates.mjs');const result=renderEmail('mention',{name:'Member',task:{id:'task-id',projectId:'project-id',remarkId:'remark-id'}});assert.match(result.html,/discussion=true(?:&amp;)?#remark-remark-id/);});

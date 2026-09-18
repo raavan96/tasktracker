@@ -105,12 +105,13 @@ export default function ProjectView({
   const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
   const [reassignTo, setReassignTo] = useState<string>('');
 
+  const [collapsed,setCollapsed]=useState<string[]>([]);
   const statusColumns = [
     { id: 'todo', title: 'To Do', icon: Circle, color: 'text-gray-500 bg-gray-100' },
     { id: 'in_progress', title: 'In Progress', icon: Clock, color: 'text-blue-600 bg-blue-50' },
     { id: 'blocked', title: 'Blocked', icon: AlertCircle, color: 'text-red-600 bg-red-50' },
-    { id: 'in_review', title: 'Ready for review', icon: Clock, color: 'text-purple-700 bg-purple-50' },
-    { id: 'done', title: 'Done', icon: CheckCircle2, color: 'text-green-600 bg-green-50' },
+    { id: 'in_review', title: 'In Review', icon: Clock, color: 'text-amber-700 bg-amber-50' },
+    { id: 'done', title: 'Done', icon: CheckCircle2, color: 'text-slate-500 bg-slate-500/10' },
   ];
 
   async function runAction(action: () => Promise<{ error?: string; success?: unknown }>, message: string) {
@@ -239,14 +240,14 @@ export default function ProjectView({
       {activeTab === 'tasks' && view === 'board' && !needsTasks && <label className="block md:hidden text-sm font-medium">Filter by status<select value={mobileStatus} onChange={e=>setMobileStatus(e.target.value)} className="mt-2 w-full rounded-lg border p-3"><option value="all">All tasks ({tasks.length})</option>{statusColumns.map(col=><option key={col.id} value={col.id}>{col.title} ({tasks.filter(t=>t.status===col.id).length})</option>)}</select></label>}
       {activeTab === 'tasks' && view === 'board' && !needsTasks && !tasks.length && <p className="md:hidden rounded-xl border p-6 text-sm text-gray-500">No tasks yet. Add a task to get started.</p>}
       {activeTab === 'tasks' && view === 'board' && !needsTasks && (
-        <div className="task-board grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="task-board grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6" style={{'--board-columns':statusColumns.map(c=>collapsed.includes(c.id)?'64px':'minmax(230px,1fr)').join(' ')} as React.CSSProperties}>
           {statusColumns.map((col) => {
             const columnTasks = tasks.filter((t: Task) => t.status === col.id);
             const Icon = col.icon;
 
             return (
-              <div key={col.id} data-status={col.id} className={`board-column bg-gray-100/70 p-3 md:p-4 rounded-xl flex-col md:min-h-36 lg:h-[65vh] ${((mobileStatus === 'all' && !columnTasks.length) || (mobileStatus !== 'all' && mobileStatus !== col.id)) ? 'hidden md:flex' : 'flex'}`}>
-                <div className="flex items-center justify-between mb-3 px-1">
+              <div key={col.id} data-status={col.id} data-collapsed={collapsed.includes(col.id)} className={`board-column bg-gray-100/70 p-3 md:p-4 rounded-xl flex-col md:min-h-36 lg:h-[65vh] ${(mobileStatus !== 'all' && mobileStatus !== col.id) ? 'hidden md:flex' : 'flex'}`}>
+                <div className="column-heading flex items-center justify-between mb-3 px-1">
                   <div className="flex items-center space-x-2">
                     <span className={`p-1 rounded-md ${col.color}`}>
                       <Icon className="w-4 h-4" />
@@ -255,10 +256,11 @@ export default function ProjectView({
                   </div>
                   <span className="text-xs text-gray-500 font-semibold bg-surface px-2 py-0.5 rounded-full border border-gray-200">
                     {columnTasks.length}
-                  </span>
+                  </span><button type="button" aria-label={`${collapsed.includes(col.id)?'Expand':'Collapse'} ${col.title} column`} aria-expanded={!collapsed.includes(col.id)} className="column-toggle rounded-lg p-2" onClick={()=>setCollapsed(prev=>prev.includes(col.id)?prev.filter(x=>x!==col.id):[...prev,col.id])}>{collapsed.includes(col.id)?'＋':'−'}</button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                {!collapsed.includes(col.id)&&!project.is_archived&&!showArchived&&(isAdmin||members.some(m=>m.id===currentUserId))&&<button type="button" className="column-quick-add mb-3 flex items-center justify-center gap-2 rounded-lg border p-2 text-sm" onClick={()=>{if(taskDraft&&!window.confirm('Discard your saved task draft and start a new task?'))return;setEditingTask(null);setTaskDraft({status:['todo','in_progress','blocked'].includes(col.id)?col.id:'todo'});setIsTaskModalOpen(true);}}><Plus className="h-4 w-4"/>Add task{['done','in_review'].includes(col.id)&&<span className="sr-only"> (starts in To do; submit for review before completion)</span>}</button>}
+                <div hidden={collapsed.includes(col.id)} className="flex-1 overflow-y-auto space-y-3 pr-1">
                   {columnTasks.length === 0 && <p className="rounded-lg border border-dashed border-slate-300 p-4 text-center text-xs text-slate-500">No tasks {col.id === 'done' ? 'completed yet' : 'here yet'}</p>}
                   {columnTasks.map((task: Task) => (
                     <div
@@ -267,19 +269,20 @@ export default function ProjectView({
                       aria-label={`Open task: ${task.title}`}
                       onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedTaskId(task.id); setDetailTab('details'); setFeedback(null);  } }}
                       onClick={() => { setSelectedTaskId(task.id); setDetailTab('details'); setFeedback(null);  }}
-                      className="task-card bg-surface p-4 rounded-lg border border-gray-200 shadow-sm hover:border-blue-300 transition cursor-pointer space-y-3"
+                      data-status={task.status} className="task-card bg-surface p-4 rounded-lg border border-gray-200 shadow-sm hover:border-blue-300 transition cursor-pointer space-y-3"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <h4 className="text-base font-semibold text-gray-900 leading-snug">{task.title}</h4>
                         <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-bold ${
-                          task.priority === 'urgent' ? 'bg-red-100 text-red-700' :
-                          task.priority === 'high' ? 'bg-orange-100 text-orange-700' :
-                          task.priority === 'medium' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+                          task.priority === 'urgent' ? 'priority-urgent' :
+                          task.priority === 'high' ? 'priority-neutral' :
+                          task.priority === 'medium' ? 'priority-neutral' : 'priority-neutral'
                         }`}>
                           {task.priority}
                         </span>
                       </div>
 
+                      {task.status==='in_review'&&<span className="task-status-label" data-status="in_review">In Review (Waiting on Creator)</span>}
                       {task.due_date && <p className="flex items-center gap-1.5 text-xs text-slate-600"><Calendar className="h-3.5 w-3.5" />{deadlineLabel(task.due_date, task.status, today)}</p>}
                       {task.description && (
                         <p className="text-xs text-gray-500 line-clamp-2">{task.description}</p>

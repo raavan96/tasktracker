@@ -40,7 +40,7 @@ export async function prepareEmail(db,job) {
   }
   if(job.category==='approved'&&t.status!=='done')return null;
   if(job.category==='changes_requested'&&t.status!=='in_progress')return null;
-  data={...data,task:{id:t.id,projectId:t.project_id,title:t.title},projectName:t.project_name,assignees:t.assignee_names,deadline:t.due_date?String(t.due_date).slice(0,10):'No deadline',note:job.category==='assignment'?undefined:job.note};
+  data={...data,task:{id:t.id,projectId:t.project_id,title:t.title,remarkId:job.category==='mention'?job.event_key?.match(/^notice:mention:([0-9a-f-]{36}):/i)?.[1]:undefined},projectName:t.project_name,assignees:t.assignee_names,deadline:t.due_date?String(t.due_date).slice(0,10):'No deadline',note:job.category==='assignment'?undefined:job.note};
  }
  return {recipient:person.email,...renderEmail(job.category,data)};
 }

@@ -14,7 +14,7 @@ export const categories = {
  weekly_report:{label:'Your weekly report',headline:'Your weekly progress',intro:'Your assigned or created tasks, followed by shared progress across projects you currently belong to. Completed figures cover the previous week; pending and overdue figures reflect the latest state.',cta:'Open workspace',accent:'#84dcec'}
 };
 export const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function taskPath(task){return `/dashboard/projects/${encodeURIComponent(task.projectId)}?task=${encodeURIComponent(task.id)}`;}
+function taskPath(task){return `/dashboard/projects/${encodeURIComponent(task.projectId)}?task=${encodeURIComponent(task.id)}${task.remarkId?`&discussion=true#remark-${encodeURIComponent(task.remarkId)}`:''}`;}
 export function renderEmail(kind,data,{origin='https://tasktracker.top-menus.com'}={}){
  const spec=categories[kind];if(!spec)throw new Error('Unknown email category');
  const base=new URL(origin);if(base.protocol!=='https:'||base.username||base.password||base.pathname!=='/'||base.search||base.hash)throw new Error('Use a trusted HTTPS app origin.');

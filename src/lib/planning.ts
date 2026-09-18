@@ -12,7 +12,7 @@ export async function loadBlueprint(db:PoolClient,source:PlanningSource):Promise
  if(source.kind==='template'){
   const row=(await db.query<{source_project_id:string;blueprint:Blueprint}>('SELECT source_project_id,blueprint FROM planning_templates WHERE id=$1',[source.id])).rows[0];
   if(!row)fail('Template unavailable or source project access was removed.');
-  return {source,version:digest(row),sourceProjectId:row.source_project_id,blueprint:row.blueprint};
+  return {source,version:digest(row),sourceProjectId:row.source_project_id,blueprint:{...row.blueprint,tasks:row.blueprint.tasks.map(t=>({...t,checklist:[]}))}};
  }
  const project=(await db.query<{id:string;name:string;description:string|null}>('SELECT id,name,description FROM projects WHERE id='+ (source.kind==='project'?'$1':'(SELECT project_id FROM tasks WHERE id=$1)'),[source.id])).rows[0];
  if(!project)fail('Source unavailable or access was removed.');
@@ -20,11 +20,9 @@ export async function loadBlueprint(db:PoolClient,source:PlanningSource):Promise
  if(tasks.length>100)fail('A project copy supports up to 100 active tasks. Copy smaller projects or individual tasks.');
  if(source.kind==='task'&&!tasks.length)fail('Task unavailable.');
  const keys=tasks.map(t=>t.id);
- const checklist=(await db.query<{task_id:string;title:string}>('SELECT task_id,title FROM task_checklist WHERE task_id=ANY($1::uuid[]) ORDER BY created_at,id LIMIT 501',[keys])).rows;
- if(checklist.length>500)fail('A copy supports up to 500 checklist items.');
  const dependencies=(await db.query<{task_id:string;depends_on:string}>('SELECT task_id,depends_on FROM task_dependencies WHERE task_id=ANY($1::uuid[]) AND depends_on=ANY($1::uuid[]) ORDER BY task_id,depends_on',[keys])).rows;
  const earliest=tasks.map(t=>t.due_date).filter((d):d is string=>!!d).sort()[0];
- const blueprint:Blueprint={kind:source.kind,name:source.kind==='task'?tasks[0].title:project.name,description:source.kind==='task'?tasks[0].description||'':project.description||'',tasks:tasks.map(t=>({key:t.id,title:t.title,description:t.description||'',priority:t.priority,offset:t.due_date&&earliest?Math.round((Date.parse(t.due_date)-Date.parse(earliest))/86400000):null,checklist:checklist.filter(c=>c.task_id===t.id).map(c=>c.title),dependencies:dependencies.filter(d=>d.task_id===t.id).map(d=>d.depends_on)}))};
+ const blueprint:Blueprint={kind:source.kind,name:source.kind==='task'?tasks[0].title:project.name,description:source.kind==='task'?tasks[0].description||'':project.description||'',tasks:tasks.map(t=>({key:t.id,title:t.title,description:t.description||'',priority:t.priority,offset:t.due_date&&earliest?Math.round((Date.parse(t.due_date)-Date.parse(earliest))/86400000):null,checklist:[],dependencies:dependencies.filter(d=>d.task_id===t.id).map(d=>d.depends_on)}))};
  // Include exact source deadlines: shifting all original dates still invalidates an old preview.
  return {source,version:digest({blueprint,dates:tasks.map(t=>t.due_date)}),sourceProjectId:project.id,blueprint};
 }
@@ -63,7 +61,6 @@ export async function createPlan(input:PlanInput){return workspaceRead(async(db,
  }else if(!uuid.test(projectId)||!(await db.query('SELECT id FROM projects WHERE id=$1 AND can_work_project(id) FOR SHARE',[projectId])).rows.length)fail('Choose an active project you can work in.');
  const ids=new Map<string,string>();
  for(const t of input.tasks){const row=(await db.query<{id:string}>("INSERT INTO tasks(project_id,title,description,priority,due_date,assignee_ids,created_by,status,recurrence) VALUES($1,$2,$3,$4,$5,$6::uuid[],$7,'todo','none') RETURNING id",[projectId,preview.blueprint.kind==='task'?name:t.title.trim(),preview.blueprint.kind==='task'?description:t.description.trim(),t.priority,t.dueDate||null,t.assigneeIds,user])).rows[0];ids.set(t.key,row.id);
-  if(t.checklist.length)await db.query('INSERT INTO task_checklist(task_id,title,completed) SELECT $1,item,false FROM unnest($2::text[]) item',[row.id,t.checklist.map(c=>c.trim())]);
  }
  for(const task of preview.blueprint.tasks)for(const dependency of task.dependencies)await db.query('INSERT INTO task_dependencies(task_id,depends_on) VALUES($1,$2)',[ids.get(task.key),ids.get(dependency)]);
  const taskId=preview.blueprint.kind==='task'?ids.values().next().value||null:null;

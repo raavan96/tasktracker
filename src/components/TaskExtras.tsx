@@ -4,7 +4,7 @@ import TaskSchedule from './TaskSchedule';
 import AttachmentPreview from './AttachmentPreview';
 import AttachmentUpload from './AttachmentUpload';
 import { useEffect, useState, useCallback } from 'react';
-import { getTaskExtras, saveChecklist, setDependency, attachmentLink } from '@/app/dashboard/tasks/extras';
+import { getTaskExtras, setDependency, attachmentLink } from '@/app/dashboard/tasks/extras';
 import type { Task, Member } from '@/lib/task-types';
 export default function TaskExtras({ task, members, canEdit, onBusyChange, view = 'details' }: { task:Task; tasks:Task[]; members:Member[]; canEdit:boolean; onBusyChange:(busy:boolean)=>void; view?: 'details' | 'updates' }) {
   const [data,setData]=useState<Awaited<ReturnType<typeof getTaskExtras>> | null>(null);
@@ -15,15 +15,11 @@ export default function TaskExtras({ task, members, canEdit, onBusyChange, view 
   async function run(action:()=>Promise<{error?:string}>) {setBusy(true);onBusyChange(true);setError('');try{const result=await action();if(result.error){setError(result.error);return false;}await load();return true;}catch{setError('Could not save. Please retry.');return false;}finally{setBusy(false);onBusyChange(false);}}
   function value(field:string,text:string|null){if(!text)return 'None';if(field==='assignees')return text.split(',').map(id=>members.find(m=>m.id===id)?.full_name||members.find(m=>m.id===id)?.email||'Former member').join(', ');if(field==='assignee_id')return members.find(m=>m.id===text)?.full_name || members.find(m=>m.id===text)?.email || 'Former member';return text.replaceAll('_',' ');}
   if(!data&&error)return <p role="alert" className="py-4 text-sm text-red-700">{error}</p>;
-  if(!data)return <p role="status" className="py-4 text-sm text-gray-500">Loading checklist and history…</p>;
+  if(!data)return <p role="status" className="py-4 text-sm text-gray-500">Loading task details…</p>;
   if(data.error)return <p role="alert" className="py-4 text-sm text-red-700">{data.error}</p>;
   return <div className="space-y-6 border-t py-5">
     {error&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-    <div hidden={view !== 'details'} className="space-y-6">{task.recurrence&&task.recurrence!=='none'&&<TaskSchedule active={view==='details'} taskId={task.id} members={members} onBusyChange={onBusyChange}/>}<TaskSection name="Checklist" count={data.checklist?.length||0} canAdd={canEdit&&!['done','in_review'].includes(task.status)}><p className="text-sm text-gray-500">{data.checklist?.filter(c=>c.completed).length}/{data.checklist?.length} complete</p>
-      {data.checklist?.map(c=><label key={c.id} className="flex gap-3 items-center py-2 text-sm"><input type="checkbox" checked={c.completed} disabled={busy||!canEdit||['done','in_review'].includes(task.status)} onChange={e=>run(()=>saveChecklist(task.id,task.project_id,'',c.id,e.target.checked))}/><span className={c.completed?'line-through text-gray-500':''}>{c.title}</span></label>)}
-      {canEdit&&!['done','in_review'].includes(task.status)&&<form className="flex gap-2 mt-2" onSubmit={async e=>{e.preventDefault();const form=e.currentTarget;if(await run(()=>saveChecklist(task.id,task.project_id,String(new FormData(form).get('title')||''))))form.reset();}}><input name="title" aria-label="Checklist item" required maxLength={300} placeholder="Add a checklist item" className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm"/><button disabled={busy} className="rounded-lg border px-3 text-sm">Add</button></form>}
-    </TaskSection>
-    <TaskSection name="Dependencies" count={data.dependencies?.length||0} canAdd={canEdit&&!['done','in_review'].includes(task.status)}>{!data.dependencies?.length&&<p className="text-sm text-gray-500">No dependencies.</p>}
+    <div hidden={view !== 'details'} className="space-y-6">{task.recurrence&&task.recurrence!=='none'&&<TaskSchedule active={view==='details'} taskId={task.id} members={members} onBusyChange={onBusyChange}/>}<TaskSection name="Dependencies" count={data.dependencies?.length||0} canAdd={canEdit&&!['done','in_review'].includes(task.status)}>{!data.dependencies?.length&&<p className="text-sm text-gray-500">No dependencies.</p>}
       {data.dependencies?.map(d=><div key={d.depends_on} className="flex justify-between gap-3 py-2 text-sm"><span>{data.taskOptions?.find(t=>t.id===d.depends_on)?.title || 'Task'} · {data.taskOptions?.find(t=>t.id===d.depends_on)?.status.replaceAll('_',' ')}</span>{canEdit&&<button disabled={busy} onClick={()=>run(()=>setDependency(task.id,task.project_id,d.depends_on,true))}>Remove link</button>}</div>)}
       {canEdit&&!['done','in_review'].includes(task.status)&&<form className="flex gap-2 mt-2" onSubmit={async e=>{e.preventDefault();const form=e.currentTarget;const id=String(new FormData(form).get('dependency'));if(await run(()=>setDependency(task.id,task.project_id,id)))form.reset();}}><select name="dependency" aria-label="Dependency task" required className="min-w-0 flex-1 rounded-lg border p-2 text-sm"><option value="">Choose prerequisite</option>{data.taskOptions?.filter(t=>!t.is_archived&&t.id!==task.id&&!data.dependencies?.some(d=>d.depends_on===t.id)).map(t=><option key={t.id} value={t.id}>{t.title}</option>)}</select><button disabled={busy} className="rounded-lg border px-3 text-sm">Add</button></form>}
     </TaskSection>

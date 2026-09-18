@@ -29,15 +29,6 @@ export async function getTaskExtras(taskId: string, projectId: string, historyPa
   if ([checklist,history,dependencies,attachments,reviews,taskOptions].some(r=>r.error)) return {error:'Task details could not load. Check that the workspace migration is installed.'};
   return {taskOptions:taskOptions.data||[],historyMore:(history.data?.length===100||reviews.data?.length===100), reviews:reviews.data||[], checklist:checklist.data || [], history:history.data || [], dependencies:dependencies.data || [], attachments:attachments.data || [] };
 }
-export async function saveChecklist(taskId:string, projectId:string, title:string, itemId?:string, completed?:boolean) {
-  const access=await accessTask(taskId,projectId); if(access.error) return {error:access.error};
-  if (!itemId && (!title.trim() || title.trim().length>300)) return {error:'Enter a checklist item (1–300 characters).'};
-  const result=itemId
-    ? await access.supabase.from('task_checklist').update({completed:!!completed}).eq('id',itemId).eq('task_id',taskId).select('id').single()
-    : await access.supabase.from('task_checklist').insert({task_id:taskId,title:title.trim()}).select('id').single();
-  if(result.error || !result.data)return {error:result.error?.message || 'Checklist item not saved.'};
-  revalidatePath(`/dashboard/projects/${projectId}`); return {success:true};
-}
 export async function setDependency(taskId:string, projectId:string, dependsOn:string, remove=false) {
   const access=await accessTask(taskId,projectId); if(access.error)return {error:access.error};
   const { data: other }=await access.supabase.from('tasks').select('id').eq('id',dependsOn).eq('project_id',projectId).single();
