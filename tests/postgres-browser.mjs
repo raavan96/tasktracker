@@ -712,7 +712,7 @@ try{
   await expect(admin.getByRole('slider',{name:'Window transparency',exact:true})).toBeDisabled();
   assert.equal(await admin.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--effective-window-opacity').trim()),'1');
   await admin.getByRole('button',{name:'Reset background',exact:true}).click();
-  await expect(admin.getByRole('slider',{name:'Window transparency',exact:true})).toHaveValue('0');
+  await expect(admin.getByRole('slider',{name:'Window transparency',exact:true})).toHaveValue('25');
   await admin.getByRole('button',{name:'Close dialog',exact:true}).click();
   await admin.getByText('My account',{exact:true}).click();await admin.getByRole('button',{name:'Sign out',exact:true}).click();await expect(admin).toHaveURL(base+'/');
   assert.equal(external.length,0,'Staging must not contact Supabase');

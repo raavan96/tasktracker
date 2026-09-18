@@ -11,7 +11,7 @@ const presets = {
   Dusk: 'radial-gradient(ellipse at 80% 95%,#e3a37b,transparent 55%),radial-gradient(ellipse at 20% 15%,#ac88d5,transparent 60%),linear-gradient(150deg,#392d68,#6e5a96 55%,#ac7599)',
 };
 type Appearance = { preset: keyof typeof presets; image: string | null; dim: number; transparency: number; opaque: boolean };
-const defaults: Appearance = { preset: 'Charcoal', image: null, dim: 22, transparency: 0, opaque: false };
+const defaults: Appearance = { preset: 'Charcoal', image: null, dim: 22, transparency: 25, opaque: false };
 export default function WorkspaceAppearance({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState<Appearance>(defaults);

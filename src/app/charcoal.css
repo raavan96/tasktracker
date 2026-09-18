@@ -99,8 +99,8 @@
 @media(min-width:1024px){:root[data-theme] [data-project-view="grid"][data-grid-size="extra-small"]{grid-template-columns:repeat(5,minmax(0,1fr))}}
 @media(min-width:1280px){:root[data-theme] [data-project-view="grid"][data-grid-size="extra-small"]{grid-template-columns:repeat(6,minmax(0,1fr))}}
 
-/* Draft adjustable window transparency; default stays solid until owner approval. */
-:root[data-theme]{--window-opacity:1;--effective-window-opacity:var(--window-opacity);--window-rgb:248 249 251;--window-surface-rgb:255 255 255}
+/* Adjustable window transparency; approved balanced default is 25%. */
+:root[data-theme]{--window-opacity:.75;--effective-window-opacity:var(--window-opacity);--window-rgb:248 249 251;--window-surface-rgb:255 255 255}
 :root[data-theme="dark"]{--window-rgb:5 6 6;--window-surface-rgb:20 22 23}
 :root[data-theme] .workspace-main{background:rgb(var(--window-rgb) / var(--effective-window-opacity))}
 :root[data-theme] :is(.workspace-nav-pill,.app-footer){background:rgb(var(--window-surface-rgb) / var(--effective-window-opacity))}
