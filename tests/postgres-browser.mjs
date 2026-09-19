@@ -133,6 +133,22 @@ try{
   await expect(admin.locator('dialog input[name=title]')).toHaveValue('Verify local task workflow');
   await admin.keyboard.press('Escape');
   await admin.goto(projectURL+'?task='+task);
+  // Reproduce the wrapped, left-aligned task action row from a long assignee list.
+  const taskActions=admin.locator('dialog details').filter({has:admin.locator('summary').filter({hasText:'Task actions'})});
+  const originalRowStyle=await taskActions.evaluate(el=>{const parent=el.parentElement;const old=parent.getAttribute('style');parent.style.flexDirection='column';parent.style.alignItems='flex-start';return old;});
+  for(const width of [1440,430,375]){
+   await admin.setViewportSize({width,height:950});
+   if(!await taskActions.getAttribute('open').then(value=>value!==null))await taskActions.locator('summary').click();
+   await expect.poll(()=>taskActions.locator('[data-actions-menu]').evaluate(menu=>{
+    const box=menu.getBoundingClientRect(),dialog=menu.closest('dialog').getBoundingClientRect();
+    return box.left>=dialog.left+1&&box.right<=dialog.right-1&&box.left>=0&&box.right<=innerWidth;
+   })).toBe(true);
+   await expect(taskActions.getByRole('button',{name:'Edit task',exact:true})).toBeVisible();
+  }
+  await admin.keyboard.press('Escape');await expect(taskActions).not.toHaveAttribute('open','');
+  await expect(admin.locator('dialog')).toBeVisible();
+  await taskActions.evaluate((el,old)=>{if(old===null)el.parentElement.removeAttribute('style');else el.parentElement.setAttribute('style',old);},originalRowStyle);
+  await admin.setViewportSize({width:1440,height:1000});
   await expect(admin.getByRole('button',{name:'Edit task',exact:true})).toBeHidden();
   await admin.getByText('Task actions',{exact:true}).click();
   await admin.getByRole('button',{name:'Edit task',exact:true}).click();
