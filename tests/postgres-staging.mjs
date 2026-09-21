@@ -493,4 +493,25 @@ assert.ok(new Date(await recencyValue())>new Date(afterDetail),'Task creation ad
 await as(outsider);assert.ok(!(await rows(recencyModule.projectRecencySQL)).some(r=>r.project_id===dailyProject),'Private project recency remains protected');
 console.log('Project recency: creation/detail edit advance; completion does not; private projects protected.');
 
+await as(null);await db.exec(read('postgres/018_daily_briefing.sql'));
+const {dailyBriefingData,renderDailyBriefing}=await import('../scripts/email/daily.mjs');
+const briefProject=(await rows("INSERT INTO projects(name,created_by,is_private) VALUES('Daily briefing QA',$1,true) RETURNING id",[owner]))[0].id;
+await rows('INSERT INTO project_members(project_id,user_id) VALUES($1,$2),($1,$3) ON CONFLICT DO NOTHING',[briefProject,owner,member]);
+await rows("INSERT INTO tasks(project_id,title,created_by,assignee_ids,due_date) VALUES($1,'Delegated <test>',$2,ARRAY[$3::uuid],(now() AT TIME ZONE 'Asia/Kolkata')::date),($1,'Own shared task',$2,ARRAY[$2::uuid,$3::uuid],(now() AT TIME ZONE 'Asia/Kolkata')::date+1)",[briefProject,owner,member]);
+const briefDate=(await rows("SELECT (now() AT TIME ZONE 'Asia/Kolkata')::date::text AS day"))[0].day;
+const briefing=await dailyBriefingData(db,owner,briefDate);
+assert.ok(briefing.sections[1].items.some(t=>t.title==='Delegated <test>'));
+assert.ok(briefing.sections[0].items.some(t=>t.title==='Own shared task'));
+assert.ok(!briefing.sections[1].items.some(t=>t.title==='Own shared task'));
+const briefMail=renderDailyBriefing({name:'Owner',...briefing});assert.ok(briefMail.html.includes('Delegated &lt;test&gt;'));assert.ok(!briefMail.html.includes('Delegated <test>'));assert.ok(briefMail.html.includes('Assigned to you'));assert.ok(briefMail.text.includes('Delegated by you'));
+const outsiderBrief=await dailyBriefingData(db,outsider,briefDate);assert.ok(!outsiderBrief||outsiderBrief.sections.every(s=>s.items.every(t=>t.project_id!==briefProject)));
+await rows("DELETE FROM email_queue WHERE category='deadline_digest'");
+await rows("UPDATE email_delivery_settings SET enabled=true,daily_digest_start_date=(now() AT TIME ZONE 'Asia/Kolkata')::date+1");
+await rows("SELECT queue_deadline_emails(((now() AT TIME ZONE 'Asia/Kolkata')::date+time '12:00') AT TIME ZONE 'Asia/Kolkata')");assert.equal((await rows("SELECT count(*) n FROM email_queue WHERE category='deadline_digest'"))[0].n,0);
+await rows("UPDATE email_delivery_settings SET daily_digest_start_date=(now() AT TIME ZONE 'Asia/Kolkata')::date");
+await rows("SELECT queue_deadline_emails(((now() AT TIME ZONE 'Asia/Kolkata')::date+time '10:59') AT TIME ZONE 'Asia/Kolkata')");assert.equal((await rows("SELECT count(*) n FROM email_queue WHERE category='deadline_digest'"))[0].n,0);
+await rows("SELECT queue_deadline_emails(((now() AT TIME ZONE 'Asia/Kolkata')::date+time '11:00') AT TIME ZONE 'Asia/Kolkata')");
+const queued=(await rows("SELECT count(*) n FROM email_queue WHERE category='deadline_digest'"))[0].n;assert.ok(queued>0);
+await rows("SELECT queue_deadline_emails(((now() AT TIME ZONE 'Asia/Kolkata')::date+time '12:00') AT TIME ZONE 'Asia/Kolkata')");assert.equal((await rows("SELECT count(*) n FROM email_queue WHERE category='deadline_digest'"))[0].n,queued);
+console.log('Daily briefing: assigned/delegated dedupe, access, escaping, start date, 11 AM cutoff and daily idempotency passed.');
 await db.close();

@@ -1,4 +1,5 @@
 // Worker logic is isolated from the CLI so PostgreSQL tests can exercise it.
+import {dailyBriefingData,renderDailyBriefing} from './daily.mjs';
 import {weeklyReportData} from './weekly.mjs';
 import {renderEmail} from './templates.mjs';
 export async function claimEmail(db) {
@@ -24,10 +25,9 @@ export async function prepareEmail(db,job) {
   const report=await weeklyReportData(db,job.user_id,week);if(!report)return null;
   data={...data,...report};
  } else if(job.category==='deadline_digest'){
-  if(job.event_key!==`deadline:${job.user_id}:${date}`)return null;
-  const items=(await db.query(`SELECT t.id,t.project_id,t.title,t.due_date::text,p.name project_name,count(*) OVER () total FROM tasks t JOIN projects p ON p.id=t.project_id WHERE $1=ANY(t.assignee_ids) AND t.status NOT IN ('done','in_review') AND t.due_date<=$2::date+1 AND can_email_task($1,t.id) ORDER BY t.due_date,t.id LIMIT 21`,[job.user_id,date])).rows;
-  if(!items.length)return null;
-  data={...data,period:date,moreCount:Math.max(0,Number(items[0]?.total||0)-20),items:items.slice(0,20).map(t=>{const days=Math.round((Date.parse(t.due_date)-Date.parse(date))/86400000);return {title:t.title,detail:`${days<0?`${-days} day${days===-1?'':'s'} overdue`:days===0?'Due today':'Due tomorrow'} · ${t.project_name}`,task:{id:t.id,projectId:t.project_id}};})};
+  if(![`deadline:${job.user_id}:${date}`,`deadline-launch:${job.user_id}:${date}`].includes(job.event_key))return null;
+  const report=await dailyBriefingData(db,job.user_id,date);if(!report)return null;
+  return {recipient:person.email,...renderDailyBriefing({...data,...report})};
  } else {
   if(Date.now()-new Date(job.created_at).getTime()>86400000)return null;
   const t=(await db.query(`SELECT t.*,p.name project_name,(SELECT string_agg(coalesce(u.full_name,u.email),', ' ORDER BY u.full_name,u.id) FROM profiles u WHERE u.id=ANY(t.assignee_ids)) assignee_names FROM tasks t JOIN projects p ON p.id=t.project_id WHERE t.id=$1 AND can_email_task($2,t.id)`,[job.task_id,job.user_id])).rows[0];
