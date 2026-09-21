@@ -1,13 +1,16 @@
 import Link from 'next/link';
-import { ArrowRight, FolderKanban, ListChecks, MessageSquare, Users } from 'lucide-react';
+import { ArrowRight, ListChecks, MessageSquare, Users } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeProvider';
+import AppLogoMark from '@/components/AppLogo';
 
 export default function HomePage() {
   return (
     <div className="workspace-home min-h-screen">
       <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-6">
         <Link href="/" className="flex items-center gap-3 font-semibold">
-          <FolderKanban className="h-8 w-8 text-blue-500" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+            <AppLogoMark className="h-5 w-5" />
+          </div>
           <span>TaskTracker<span className="block text-xs font-normal text-gray-500">collegedunia.com</span></span>
         </Link>
         <ThemeToggle />

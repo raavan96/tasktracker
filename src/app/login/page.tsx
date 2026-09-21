@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { ThemeToggle } from '@/components/ThemeProvider';
 import { signIn } from '@/app/auth/actions';
-import { Loader2, Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Loader2, Mail, Lock, ArrowRight } from 'lucide-react';
+import AppLogoMark from '@/components/AppLogo';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -30,7 +31,7 @@ export default function LoginPage() {
       <div className="max-w-md w-full bg-surface p-8 rounded-xl shadow-sm border border-gray-200">
         <div className="text-center mb-8">
           <div className="mx-auto w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mb-3">
-            <ShieldCheck className="w-6 h-6" />
+            <AppLogoMark className="w-6 h-6" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900">
             Sign in to your account

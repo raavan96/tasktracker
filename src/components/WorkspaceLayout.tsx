@@ -12,8 +12,8 @@ import WorkspaceHelp from './WorkspaceHelp';
 import WorkspaceAppearance from './WorkspaceAppearance';
 import WorkspaceTooltips from './WorkspaceTooltips';
 import { ThemeToggle } from './ThemeProvider';
+import AppLogoMark from './AppLogo';
 import { 
-  FolderKanban, 
   LogOut, 
   Bell,
   KeyRound,
@@ -42,7 +42,7 @@ export default async function WorkspaceLayout({
       <div className="workspace-wallpaper" aria-hidden="true" /><WorkspaceTooltips />
       <aside className="dark-workspace-sidebar" aria-label="Sidebar">
         <Link href="/dashboard" className="workspace-brand flex items-center gap-3 font-semibold">
-          <span className="workspace-mark"><FolderKanban className="h-5 w-5" /></span>
+          <span className="workspace-mark"><AppLogoMark className="h-5 w-5" /></span>
           <span>TaskTracker<span className="workspace-brand-caption">collegedunia.com</span></span>
         </Link>
         <p className="workspace-nav-caption">WORKSPACE</p>
@@ -54,7 +54,7 @@ export default async function WorkspaceLayout({
           <div className="flex items-center space-x-8">
             <Link href="/dashboard" className="workspace-header-brand flex items-center space-x-2 font-bold text-gray-900 text-base sm:text-lg">
               <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center">
-                <FolderKanban className="w-5 h-5" />
+                <AppLogoMark className="w-5 h-5" />
               </div>
               <span>TaskTracker<span className="workspace-brand-caption">collegedunia.com</span></span>
             </Link>
