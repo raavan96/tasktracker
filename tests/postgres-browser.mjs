@@ -745,6 +745,17 @@ try{
   await admin.getByRole('button',{name:'Reset background',exact:true}).click();
   await expect(admin.getByRole('slider',{name:'Window transparency',exact:true})).toHaveValue('25');
   await admin.getByRole('button',{name:'Close dialog',exact:true}).click();
+  await admin.goto(base+'/dashboard/history');
+  await expect(admin.getByRole('heading',{name:'History',exact:true})).toBeVisible();
+  const historyRows=admin.locator('section[aria-label="Recent workspace history"] article');
+  assert.equal(await historyRows.count(),20);
+  await historyRows.first().locator('summary').click();await expect(historyRows.first().locator('dl')).toBeVisible();
+  await admin.getByLabel('Search recent history').fill('no-such-audit-event-xyz');await expect(historyRows).toHaveCount(0);
+  await admin.getByRole('button',{name:'Reset',exact:true}).click();await expect(historyRows).toHaveCount(20);
+  for(const width of [430,1440]){
+   await admin.setViewportSize({width,height:1000});
+   for(const theme of ['light','dark']){await themeControls(theme);await admin.waitForTimeout(100);assert.ok(await admin.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await admin.screenshot({path:`/tmp/release5-history-${theme}-${width}.png`,fullPage:true});}
+  }
   await admin.getByText('My account',{exact:true}).click();await admin.getByRole('button',{name:'Sign out',exact:true}).click();await expect(admin).toHaveURL(base+'/');
   assert.equal(external.length,0,'Staging must not contact Supabase');
   console.log('Eight browser logins, private project, task assignment, local upload/download, outsider denial, review and admin approval passed against PostgreSQL 16.');
