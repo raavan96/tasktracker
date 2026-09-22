@@ -33,13 +33,6 @@ export async function planningOptions(){return workspaceRead(async(db,user)=>({u
  templates:(await db.query<{id:string;name:string;created_at:string;kind:string;task_count:number}>("SELECT id,name,created_at,blueprint->>'kind' kind,jsonb_array_length(blueprint->'tasks') task_count FROM planning_templates ORDER BY created_at DESC,id LIMIT 200")).rows
 }));}
 export async function previewPlanning(source:PlanningSource){return workspaceRead(db=>loadBlueprint(db,source));}
-export async function storeTemplate(source:PlanningSource,version:string,name:string){return workspaceRead(async(db,user)=>{
- const preview=await loadBlueprint(db,source);if(preview.version!==version)fail('The source changed. Reload the preview before saving.');
- name=String(name).trim();if(!name||name.length>200)fail('Template name must be 1–200 characters.');
- await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[user+':templates']);
- if(Number((await db.query('SELECT count(*) n FROM planning_templates WHERE created_by=$1',[user])).rows[0].n)>=200)fail('You have reached 200 templates. Remove an unused template first.');
- return (await db.query<{id:string}>('INSERT INTO planning_templates(created_by,source_project_id,name,blueprint) VALUES($1,$2,$3,$4::jsonb) RETURNING id',[user,preview.sourceProjectId,name,JSON.stringify(preview.blueprint)])).rows[0];
-});}
 export async function removeTemplate(id:string){return workspaceRead(async(db)=>{if(!uuid.test(id))fail('Invalid template.');await db.query('DELETE FROM planning_templates WHERE id=$1',[id]);});}
 export async function createPlan(input:PlanInput){return workspaceRead(async(db,user)=>{
  if(!input||!uuid.test(input.requestId)||!Array.isArray(input.tasks)||input.tasks.length>100||JSON.stringify(input).length>524288)fail('Invalid copy request.');

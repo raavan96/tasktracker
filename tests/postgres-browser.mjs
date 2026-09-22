@@ -408,9 +408,11 @@ try{
   await admin.setViewportSize({width:1280,height:900});
   await admin.goto(projectURL+'?task='+sharedId);await admin.getByText('Task actions',{exact:true}).click();await admin.getByRole('link',{name:'Duplicate task',exact:true}).click();
   await expect(admin.getByRole('heading',{name:'Duplicate task',exact:true})).toBeVisible();
-  await admin.getByText('Save this source as a reusable template',{exact:true}).click();
-  await admin.getByLabel('Template name',{exact:true}).fill('R5 personal template');await admin.getByRole('button',{name:'Save template',exact:true}).click();await expect(admin.getByText('Saved to your templates.',{exact:true})).toBeVisible();
-  const templateId=(await db.query("SELECT id FROM planning_templates WHERE name='R5 personal template'")).rows[0].id;
+  await expect(admin.getByText('Save this source as a reusable template',{exact:true})).toHaveCount(0);
+  await expect(admin.getByRole('button',{name:'Save template',exact:true})).toHaveCount(0);
+  // Historical template fixture verifies existing templates remain usable.
+  const oldTemplate={kind:'task',name:'Shared review task',description:'',tasks:[{key:sharedId,title:'Shared review task',description:'',priority:'medium',offset:null,checklist:[],dependencies:[]}]};
+  const templateId=(await db.query('INSERT INTO planning_templates(created_by,source_project_id,name,blueprint) VALUES($1,$2,$3,$4::jsonb) RETURNING id',[users[0].id,r4project,'R5 personal template',JSON.stringify(oldTemplate)])).rows[0].id;
   await admin.getByLabel('New task title',{exact:true}).fill('R5 shared copy');await admin.getByLabel('Copy deadline 1',{exact:true}).fill('2026-09-20');
   await admin.getByRole('checkbox',{name:'Staging 1',exact:true}).check();await admin.getByRole('checkbox',{name:'Staging 3',exact:true}).check();await admin.getByRole('button',{name:'Create task copy',exact:true}).click();await admin.waitForURL('**/dashboard/projects/*');
   await expect.poll(async()=>(await db.query("SELECT count(*) n FROM tasks WHERE title='R5 shared copy'")).rows[0].n).toBe('1');
@@ -427,7 +429,7 @@ try{
   for(const width of [375,430]){await admin.setViewportSize({width,height:932});await admin.goto(base+'/dashboard/planning?kind=template&id='+templateId);await expect.poll(()=>admin.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await admin.screenshot({path:`/tmp/release5-planning-dark-${width}.png`,fullPage:true});}
   await admin.setViewportSize({width:1280,height:900});
   await admin.getByRole('button',{name:'Switch to light mode',exact:true}).click();await admin.screenshot({path:'/tmp/release5-planning-light-desktop.png',fullPage:true});
-  console.log('Release 5 browser: menu copies, personal template save/use/outsider denial, shared assignments, reset approval/status, private project defaults, attachment exclusion, calendar filters/single shared task, task navigation and 375/430px layouts passed.');
+  console.log('Release 5 browser: menu copies, template creation removed; existing template use/outsider denial, shared assignments, reset approval/status, private project defaults, attachment exclusion, calendar filters/single shared task, task navigation and 375/430px layouts passed.');
 
   await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_id,due_date) SELECT $1,'Scale specimen '||lpad(n::text,4,'0'),$2,$3,current_date+(n%30) FROM generate_series(1,1000)n",[r4project,users[0].id,users[3].id]);
   await admin.goto(base+'/dashboard/tasks?q=Scale&sort=title');await expect(admin.getByText('1000 matching tasks',{exact:false})).toBeVisible();await expect(admin.locator('tbody tr')).toHaveCount(25);
