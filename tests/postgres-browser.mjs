@@ -226,6 +226,8 @@ try{
   await expect(admin.getByText('Workflow audit note',{exact:true})).toBeVisible();
   await admin.goto(base+'/dashboard/workload');
   await expect(admin.getByRole('heading',{name:'Team workload'})).toBeVisible();
+  await admin.locator('[data-member="'+users[1].id+'"]').click();
+  await expect(admin.getByRole('region',{name:'Selected member workload'}).getByRole('heading',{name:'Staging 1',exact:true})).toBeVisible();
   await admin.getByRole('link',{name:'Staging 1: pending tasks',exact:true}).click();
   await expect(admin.getByLabel('Filter by assignee')).toHaveValue(users[1].id);
   await expect(admin.getByLabel('Task summary filter')).toHaveValue('pending');
@@ -391,7 +393,7 @@ try{
    await admin.screenshot({path:`/tmp/release5-extra-small-${width}.png`,fullPage:true});
   }
   await admin.getByRole('button',{name:'Grid size',exact:true}).click();await admin.getByRole('menuitemradio',{name:'Small grid',exact:true}).click();
-  const nav=admin.locator('aside').getByRole('navigation',{name:'Workspace',exact:true});await expect(nav.getByRole('link')).toHaveText(['Dashboard','Projects','My Tasks','All Tasks','Calendar','Reports','History','Templates','Archive','Workload','Team Users']);await expect(admin.locator('aside .workspace-search-pill')).toBeVisible();
+  const nav=admin.locator('aside').getByRole('navigation',{name:'Workspace',exact:true});await expect(nav.getByRole('link')).toHaveText(['Dashboard','Projects','My Tasks','All Tasks','Calendar','Reports','History','Archive','Workload','Team Users']);await expect(admin.locator('aside .workspace-search-pill')).toBeVisible();
   await admin.emulateMedia({reducedMotion:'reduce'});await admin.getByRole('button',{name:'List view',exact:true}).click();await expect(admin.locator('[data-project-view="list"]')).toBeVisible();assert.equal(await admin.locator('[data-project-view]').evaluate(el=>el.getAnimations({subtree:true}).filter(a=>a.playState==='running'&&a.constructor.name==='Animation').length),0);await admin.emulateMedia({reducedMotion:'no-preference'});
   await admin.goto(projectURL);await admin.getByRole('button',{name:'Archived tasks',exact:true}).click();await expect(admin.getByRole('button',{name:'Archived tasks',exact:true})).toHaveAttribute('aria-pressed','true');await admin.getByRole('button',{name:'Active tasks',exact:true}).click();await expect(admin.getByRole('button',{name:'Active tasks',exact:true})).toHaveAttribute('aria-pressed','true');
 
@@ -643,6 +645,20 @@ try{
     if(route.includes('discussion=true')){await expect(admin.getByLabel('Write a task update',{exact:true})).toBeVisible();await expect(admin.getByText('Loading remarks…',{exact:true})).toBeHidden();}
     await expect(async()=>{assert.deepEqual(await themeControls('light'),await themeControls('dark'),`Theme controls differ: ${width} ${route}`);}).toPass({timeout:10000});
     await auditLight(route,width);
+    if(route==='/dashboard/workload'){
+     await expect(admin.locator('.workspace-main')).toBeVisible();
+     assert.ok(await admin.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Workload must fit viewport');
+     const work=(await db.query("SELECT t.status,t.due_date::text,t.assignee_ids FROM tasks t JOIN projects p ON p.id=t.project_id WHERE NOT t.is_archived AND NOT p.is_archived")).rows;
+     const day=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+     for(const user of users){
+      const own=work.filter(t=>t.assignee_ids.includes(user.id));const pending=own.filter(t=>t.status!=='done').length;const overdue=own.filter(t=>!['done','in_review'].includes(t.status)&&t.due_date&&t.due_date<day).length;
+      await expect(admin.locator('[data-member="'+user.id+'"]')).toHaveAttribute('aria-label',new RegExp(': '+pending+' pending, '+overdue+' overdue$'));
+     }
+     await admin.locator('[data-member="unassigned"]').click();
+     await expect(admin.getByRole('region',{name:'Selected member workload'}).getByRole('heading',{name:'Unassigned',exact:true})).toBeVisible();
+     await admin.locator('[data-member="'+users[1].id+'"]').click();
+     await expect(admin.getByRole('link',{name:'Staging 1: pending tasks',exact:true})).toHaveAttribute('href','/dashboard/tasks?assignee='+users[1].id+'&summary=pending');
+    }
     if(width===1440&&['/dashboard/tasks','/dashboard/my-tasks'].includes(route)){
      const isMine=route.includes('my-tasks');
      const expected=(await db.query(`SELECT t.status,t.due_date::text FROM tasks t JOIN projects p ON p.id=t.project_id WHERE NOT t.is_archived AND NOT p.is_archived AND (NOT $1::boolean OR $2::uuid=ANY(t.assignee_ids))`,[isMine,users[0].id])).rows;
@@ -705,7 +721,7 @@ try{
   await admin.setViewportSize({width:430,height:932});
   await expect(admin.locator('.workspace-mobile-nav summary')).toHaveCount(0);
   await expect(admin.locator('.workspace-header').getByRole('button',{name:'Go back',exact:true})).toBeVisible();
-  await expect(admin.locator('.workspace-mobile-nav a')).toHaveCount(11);
+  await expect(admin.locator('.workspace-mobile-nav a')).toHaveCount(10);
   await expect(admin.locator('.workspace-header .workspace-search-pill')).toBeVisible();
   await expect(admin.locator('.workspace-page-heading').getByRole('button',{name:'Go back'})).toHaveCount(0);
   await admin.locator('.app-footer').scrollIntoViewIfNeeded();

@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import WorkspaceBack from './WorkspaceBack';
 import { usePathname } from 'next/navigation';
-import { ChartNoAxesCombined, FolderKanban, CheckSquare, Users, Archive, Search, BarChart3, CalendarDays, Copy, History } from 'lucide-react';
+import { ChartNoAxesCombined, FolderKanban, CheckSquare, Users, Archive, Search, BarChart3, CalendarDays, History } from 'lucide-react';
 
 export default function WorkspaceNav({ isAdmin, mobile = false }: { isAdmin: boolean; mobile?: boolean }) {
   const menu = useRef<HTMLDivElement>(null);
@@ -18,7 +18,6 @@ export default function WorkspaceNav({ isAdmin, mobile = false }: { isAdmin: boo
     {href:'/dashboard/calendar',label:'Calendar',icon:CalendarDays,active:pathname==='/dashboard/calendar'},
     {href:'/dashboard/reports',label:'Reports',icon:BarChart3,active:pathname==='/dashboard/reports'},
     {href:'/dashboard/history',label:'History',icon:History,active:pathname==='/dashboard/history'},
-    {href:'/dashboard/templates',label:'Templates',icon:Copy,active:pathname==='/dashboard/templates'||pathname==='/dashboard/planning'},
     {href:'/dashboard/archive',label:'Archive',icon:Archive,active:pathname==='/dashboard/archive'},
     ...(isAdmin?[{href:'/dashboard/workload',label:'Workload',icon:Users,active:pathname==='/dashboard/workload'},{href:'/admin/users',label:'Team Users',icon:Users,active:pathname.startsWith('/admin')}]:[]),
   ];
