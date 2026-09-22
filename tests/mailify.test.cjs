@@ -28,7 +28,7 @@ test('Every dark email template escapes content and uses trusted action links',a
  for(const kind of Object.keys(categories)){
   const result=renderEmail(kind,{name:'<script>alert(1)</script>',task:{id:'a/b',projectId:'x?y',title:'Long task <img src=x onerror=alert(1)>'},note:'<b>Do not execute</b>\nSecond line',items:[{title:'<script>x</script>',detail:'Safe & sound'}]});
   assert.ok(result.html.includes('background:#080f1b'));assert.ok(result.html.includes('color:#08232b'));
-  assert.ok(!result.html.includes('<script>'));assert.ok(!result.html.includes('<img '));assert.ok(result.html.includes('&lt;script&gt;'));
+  assert.ok(!result.html.includes('<script>'));assert.equal((result.html.match(/<img /g)||[]).length,1);assert.ok(result.html.includes('https://tasktracker.top-menus.com/branding/tasktracker-mark-v1.png'));assert.ok(!result.html.includes('<img src=x'));assert.ok(result.html.includes('&lt;script&gt;'));
   assert.ok(result.html.includes('https://tasktracker.top-menus.com/dashboard/projects/x%3Fy?task=a%2Fb'));
   assert.ok(result.text.includes('Email preferences:'));assert.ok(!/[\r\n]/.test(result.subject));
  }

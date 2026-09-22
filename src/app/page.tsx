@@ -8,8 +8,8 @@ export default function HomePage() {
     <div className="workspace-home min-h-screen">
       <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-6">
         <Link href="/" className="flex items-center gap-3 font-semibold">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
-            <AppLogoMark className="h-5 w-5" />
+          <div className="tasktracker-brand-tile flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+            <AppLogoMark className="h-7 w-7" />
           </div>
           <span>TaskTracker<span className="block text-xs font-normal text-gray-500">collegedunia.com</span></span>
         </Link>

@@ -30,8 +30,8 @@ export default function LoginPage() {
       <div className="absolute right-4 top-4"><ThemeToggle /></div>
       <div className="max-w-md w-full bg-surface p-8 rounded-xl shadow-sm border border-gray-200">
         <div className="text-center mb-8">
-          <div className="mx-auto w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mb-3">
-            <AppLogoMark className="w-6 h-6" />
+          <div className="tasktracker-brand-tile mx-auto w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mb-3">
+            <AppLogoMark className="w-9 h-9" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900">
             Sign in to your account
