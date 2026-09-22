@@ -703,7 +703,7 @@ try{
   await admin.setViewportSize({width:430,height:932});
   await expect(admin.locator('.workspace-mobile-nav summary')).toHaveCount(0);
   await expect(admin.locator('.workspace-header').getByRole('button',{name:'Go back',exact:true})).toBeVisible();
-  await expect(admin.locator('.workspace-mobile-nav a')).toHaveCount(10);
+  await expect(admin.locator('.workspace-mobile-nav a')).toHaveCount(11);
   await expect(admin.locator('.workspace-header .workspace-search-pill')).toBeVisible();
   await expect(admin.locator('.workspace-page-heading').getByRole('button',{name:'Go back'})).toHaveCount(0);
   await admin.locator('.app-footer').scrollIntoViewIfNeeded();
