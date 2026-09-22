@@ -391,7 +391,7 @@ try{
    await admin.screenshot({path:`/tmp/release5-extra-small-${width}.png`,fullPage:true});
   }
   await admin.getByRole('button',{name:'Grid size',exact:true}).click();await admin.getByRole('menuitemradio',{name:'Small grid',exact:true}).click();
-  const nav=admin.locator('aside').getByRole('navigation',{name:'Workspace',exact:true});await expect(nav.getByRole('link')).toHaveText(['Dashboard','Projects','My Tasks','All Tasks','Calendar','Reports','Templates','Archive','Workload','Team Users']);await expect(admin.locator('aside .workspace-search-pill')).toBeVisible();
+  const nav=admin.locator('aside').getByRole('navigation',{name:'Workspace',exact:true});await expect(nav.getByRole('link')).toHaveText(['Dashboard','Projects','My Tasks','All Tasks','Calendar','Reports','History','Templates','Archive','Workload','Team Users']);await expect(admin.locator('aside .workspace-search-pill')).toBeVisible();
   await admin.emulateMedia({reducedMotion:'reduce'});await admin.getByRole('button',{name:'List view',exact:true}).click();await expect(admin.locator('[data-project-view="list"]')).toBeVisible();assert.equal(await admin.locator('[data-project-view]').evaluate(el=>el.getAnimations({subtree:true}).filter(a=>a.playState==='running'&&a.constructor.name==='Animation').length),0);await admin.emulateMedia({reducedMotion:'no-preference'});
   await admin.goto(projectURL);await admin.getByRole('button',{name:'Archived tasks',exact:true}).click();await expect(admin.getByRole('button',{name:'Archived tasks',exact:true})).toHaveAttribute('aria-pressed','true');await admin.getByRole('button',{name:'Active tasks',exact:true}).click();await expect(admin.getByRole('button',{name:'Active tasks',exact:true})).toHaveAttribute('aria-pressed','true');
 
