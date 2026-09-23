@@ -1,3 +1,4 @@
+import ChatPopup from './ChatPopup';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -111,7 +112,7 @@ export default async function WorkspaceLayout({
         <WorkspaceHelp userId={user.id} /><MorningPrompt userId={user.id} />
         {children}
       </main>
-      <AppFooter workspace />
+      <AppFooter workspace /><ChatPopup userId={user.id} />
     </div></WorkspaceBackProvider>
   );
 }

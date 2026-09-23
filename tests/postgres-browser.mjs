@@ -774,6 +774,27 @@ try{
    await admin.setViewportSize({width,height:1000});
    for(const theme of ['light','dark']){await themeControls(theme);await admin.waitForTimeout(100);assert.ok(await admin.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await admin.screenshot({path:`/tmp/release5-history-${theme}-${width}.png`,fullPage:true});}
   }
+  // Chat uses synthetic accounts only; no production messages or emails.
+  await admin.getByRole('button',{name:/^Chat(?:,|$)/}).click();
+  const popup=admin.getByRole('dialog',{name:'Chat',exact:true});
+  await popup.getByRole('button',{name:'New message',exact:true}).click();
+  await popup.getByLabel('Chat recipient').selectOption(users[3].id);
+  await popup.getByRole('button',{name:'Open conversation',exact:true}).click();
+  await expect(popup.getByLabel('Message',{exact:true})).toBeVisible();
+  await popup.getByLabel('Message',{exact:true}).fill('@Sta');
+  await expect(popup.getByRole('button',{name:'Staging 3',exact:true})).toBeVisible();
+  await popup.getByLabel('Message',{exact:true}).press('Enter');
+  await expect(popup.getByLabel('Message',{exact:true})).toHaveValue('@Staging 3 ');
+  await popup.getByLabel('Message',{exact:true}).fill('@Staging 3 synthetic chat');
+  await popup.getByLabel('Message',{exact:true}).press('Control+Enter');
+  await expect(popup.locator('article').getByText('@Staging 3 synthetic chat',{exact:true})).toBeVisible();
+  await expect(popup.getByLabel('Message',{exact:true})).toHaveValue('');
+  await popup.getByLabel('Message',{exact:true}).fill('Preserved draft');
+  await popup.getByRole('button',{name:'Minimize chat'}).click();
+  await admin.getByRole('button',{name:/^Chat(?:,|$)/}).click();
+  await expect(popup.getByLabel('Message',{exact:true})).toHaveValue('Preserved draft');
+  for(const width of [430,1440]){await admin.setViewportSize({width,height:850});for(const theme of ['light','dark']){await admin.evaluate(t=>{document.documentElement.dataset.theme=t;},theme);await admin.screenshot({path:`/tmp/release5-chat-${theme}-${width}.png`});const rect=await popup.boundingBox();assert.ok(rect.x>=0&&rect.x+rect.width<=width+1);}}
+  await popup.getByRole('button',{name:'Minimize chat'}).click();
   await admin.getByText('My account',{exact:true}).click();await admin.getByRole('button',{name:'Sign out',exact:true}).click();await expect(admin).toHaveURL(base+'/');
   assert.equal(external.length,0,'Staging must not contact Supabase');
   console.log('Eight browser logins, private project, task assignment, local upload/download, outsider denial, review and admin approval passed against PostgreSQL 16.');
