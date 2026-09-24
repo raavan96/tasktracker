@@ -5,7 +5,7 @@ const json=(value:unknown,status=200)=>Response.json(value,{status,headers:{'Cac
 export async function GET(request:Request){
  const user=await currentUser();if(!user)return json({error:'Please sign in again.'},401);
  const task=new URL(request.url).searchParams.get('task');if(!task||!uuid.test(task))return json({error:'Invalid task.'},400);
- return transaction(user.id,async db=>json({receipts:(await db.query('SELECT a.id,a.user_id,a.accepted_at,coalesce(p.full_name,p.email) name FROM task_acknowledgements a JOIN profiles p ON p.id=a.user_id WHERE a.task_id=$1 ORDER BY p.full_name,a.user_id',[task])).rows}));
+ return transaction(user.id,async db=>json({receipts:(await db.query('SELECT a.id,a.user_id,a.accepted_at,a.acceptance_source,coalesce(p.full_name,p.email) name FROM task_acknowledgements a JOIN profiles p ON p.id=a.user_id WHERE a.task_id=$1 ORDER BY p.full_name,a.user_id',[task])).rows}));
 }
 export async function POST(request:Request){
  const user=await currentUser();if(!user)return json({error:'Please sign in again.'},401);

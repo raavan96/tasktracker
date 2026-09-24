@@ -803,7 +803,11 @@ try{
   await ackPage.goto(base+'/acknowledge/'+ackId);await expect(ackPage).toHaveURL(/login\?next=/);
   await ackPage.locator('input[name=email]').fill(users[0].email);await ackPage.locator('input[name=password]').fill(password);await ackPage.getByRole('button',{name:'Sign In',exact:true}).click();await expect(ackPage).toHaveURL(base+'/acknowledge/'+ackId);
   assert.equal((await db.query('SELECT accepted_at FROM task_acknowledgements WHERE id=$1',[ackId])).rows[0].accepted_at,null,'Opening an email link must not accept a task');
+  await ackPage.goto(base+'/dashboard/projects/'+ackProject+'?task='+ackTask);
+  await expect(ackPage.getByRole('button',{name:'Accept task',exact:true})).toBeVisible();
+  assert.ok(await ackPage.evaluate(()=>!!(document.querySelector('[aria-label="Task acknowledgement"]').compareDocumentPosition(document.querySelector('[aria-label="Task panel sections"]'))&Node.DOCUMENT_POSITION_FOLLOWING)));
   await ackPage.getByRole('button',{name:'Accept task',exact:true}).click();await expect(ackPage.getByText('1 of 1 accepted',{exact:true})).toBeVisible();
+  assert.ok(await ackPage.evaluate(()=>!!(document.querySelector('[aria-label="Task panel sections"]').compareDocumentPosition(document.querySelector('[aria-label="Task acknowledgement"]'))&Node.DOCUMENT_POSITION_FOLLOWING)));
   await ackPage.reload();await expect(ackPage.getByRole('button',{name:'Accept task',exact:true})).toHaveCount(0);
   assert.equal((await db.query('SELECT status FROM tasks WHERE id=$1',[ackTask])).rows[0].status,'todo');
   await ackPage.setViewportSize({width:430,height:900});await ackPage.screenshot({path:'/tmp/release5-acknowledgement-mobile.png',fullPage:true});await ackContext.close();
