@@ -251,8 +251,8 @@ try{
   const delegated=(await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_id) VALUES($1,'Member delegation QA',$2,$3) RETURNING id",[projectURL.split('/').pop(),users[1].id,users[0].id])).rows[0].id;
   await member.goto(projectURL+'?task='+delegated);
   await member.getByRole('button',{name:'Ready for review',exact:true}).click();
-  await admin.goto(projectURL+'?task='+delegated);
   await expect.poll(async()=>(await db.query('SELECT status FROM tasks WHERE id=$1',[delegated])).rows[0].status).toBe('in_review');
+  await admin.goto(projectURL+'?task='+delegated);
   await expect(admin.getByRole('button',{name:'Approve & complete',exact:true})).toBeVisible();
   await member.goto(projectURL+'?task='+delegated);
   await expect(member.getByRole('button',{name:'Request changes',exact:true})).toBeDisabled();
