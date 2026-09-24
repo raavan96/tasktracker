@@ -9,7 +9,7 @@ CREATE POLICY acknowledgement_read ON task_acknowledgements FOR SELECT TO authen
 GRANT SELECT ON task_acknowledgements TO authenticated,service_role;
 ALTER TABLE email_queue DROP CONSTRAINT email_queue_category_check;
 ALTER TABLE email_queue ADD CONSTRAINT email_queue_category_check CHECK(category IN ('assignment','project_assignment','task_accepted','mention','review_requested','approved','changes_requested','review_updated','deadline_digest','weekly_report'));
-ALTER TABLE email_queue ADD COLUMN acknowledgement_id uuid REFERENCES task_acknowledgements(id) ON DELETE CASCADE;
+ALTER TABLE email_queue ADD COLUMN acknowledgement_id uuid REFERENCES task_acknowledgements(id) ON DELETE SET NULL;
 CREATE FUNCTION sync_task_acknowledgements() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN
  DELETE FROM task_acknowledgements WHERE task_id=new.id AND NOT(user_id=ANY(new.assignee_ids));
  INSERT INTO task_acknowledgements(task_id,user_id) SELECT new.id,u FROM unnest(new.assignee_ids) u ON CONFLICT(task_id,user_id) DO NOTHING;

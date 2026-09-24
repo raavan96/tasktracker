@@ -577,7 +577,7 @@ const acceptanceMail=await emailLogic.prepareEmail(db,receiptJobs[0]);assert.ok(
 await as(owner);await rows('UPDATE tasks SET assignee_ids=ARRAY[$2::uuid] WHERE id=$1',[ackTask,owner]);await rows('UPDATE tasks SET assignee_ids=ARRAY[$2::uuid,$3::uuid] WHERE id=$1',[ackTask,owner,member]);
 const newer=(await rows('SELECT * FROM task_acknowledgements WHERE task_id=$1 AND user_id=$2',[ackTask,member]))[0];assert.notEqual(newer.id,receipt);assert.equal(newer.accepted_at,null);
 await as(member);await assert.rejects(()=>rows('SELECT accept_task_assignment($1)',[receipt]));
-await as(null);await rows('UPDATE projects SET is_archived=true WHERE id=$1',[ackProject]);
+await as(null);const retainedJob=(await rows('SELECT * FROM email_queue WHERE id=$1',[receiptJobs[0].id]))[0];assert.ok(retainedJob);assert.equal(retainedJob.acknowledgement_id,null);assert.equal(await emailLogic.prepareEmail(db,retainedJob),null);await rows('UPDATE projects SET is_archived=true WHERE id=$1',[ackProject]);
 await as(member);await assert.rejects(()=>rows('SELECT accept_task_assignment($1)',[newer.id]));
 console.log('Acknowledgements: per-assignee access, email CTA, unchanged status, one email/history record on retry, reassignment invalidation and archive denial passed.');
 await db.close();
