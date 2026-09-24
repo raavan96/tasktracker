@@ -10,7 +10,7 @@ export async function claimEmail(db) {
 export async function prepareEmail(db,job) {
  const person=(await db.query(`SELECT u.email,p.full_name,p.role,e.* FROM email_preferences e JOIN profiles p ON p.id=e.user_id JOIN auth.users u ON u.id=p.id WHERE e.user_id=$1 AND e.enabled AND p.is_active AND NOT u.disabled AND EXISTS(SELECT 1 FROM email_delivery_settings WHERE id AND enabled)`,[job.user_id])).rows[0];
  if(!person)return null;
- const group=['assignment','project_assignment'].includes(job.category)?'assignments':job.category==='mention'?'mentions':job.category==='deadline_digest'?'deadline_digest':job.category==='weekly_report'?'weekly_report':'reviews';
+ const group=['assignment','project_assignment','task_accepted'].includes(job.category)?'assignments':job.category==='mention'?'mentions':job.category==='deadline_digest'?'deadline_digest':job.category==='weekly_report'?'weekly_report':'reviews';
  if(!person[group])return null;
  const date=(await db.query("SELECT (now() AT TIME ZONE 'Asia/Kolkata')::date::text today")).rows[0].today;
  let data={name:person.full_name||'there'};
@@ -40,6 +40,19 @@ export async function prepareEmail(db,job) {
   }
   if(job.category==='approved'&&t.status!=='done')return null;
   if(job.category==='changes_requested'&&t.status!=='in_progress')return null;
+  if(job.category==='assignment'&&(await db.query("SELECT to_regclass('public.task_acknowledgements') present")).rows[0].present){
+   const receipt=(await db.query('SELECT id,accepted_at FROM task_acknowledgements WHERE task_id=$1 AND user_id=$2',[t.id,job.user_id])).rows[0];
+   if(!receipt||receipt.accepted_at||t.status==='done')return null;
+   data.acknowledgementId=receipt.id;
+   data.actor=(await db.query('SELECT coalesce(full_name,email) name FROM profiles WHERE id=$1',[t.created_by])).rows[0]?.name;
+  }
+  if(job.category==='task_accepted'){
+   if(t.created_by!==job.user_id)return null;
+   const receipt=(await db.query('SELECT a.*,coalesce(p.full_name,p.email) name FROM task_acknowledgements a JOIN profiles p ON p.id=a.user_id WHERE a.id=$1 AND a.task_id=$2 AND a.accepted_at IS NOT NULL',[job.acknowledgement_id,t.id])).rows[0];
+   if(!receipt||!t.assignee_ids.includes(receipt.user_id))return null;
+   const counts=(await db.query('SELECT count(*) total,count(accepted_at) accepted FROM task_acknowledgements WHERE task_id=$1',[t.id])).rows[0];
+   data.actor=receipt.name;data.acceptedAt=new Date(receipt.accepted_at).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'});data.acknowledgements=`${counts.accepted} of ${counts.total} accepted`;
+  }
   data={...data,task:{id:t.id,projectId:t.project_id,title:t.title,remarkId:job.category==='mention'?job.event_key?.match(/^notice:mention:([0-9a-f-]{36}):/i)?.[1]:undefined},projectName:t.project_name,assignees:t.assignee_names,deadline:t.due_date?String(t.due_date).slice(0,10):'No deadline',note:job.category==='assignment'?undefined:job.note};
  }
  return {recipient:person.email,...renderEmail(job.category,data)};

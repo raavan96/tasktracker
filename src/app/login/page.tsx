@@ -18,6 +18,7 @@ export default function LoginPage() {
     setErrorMessage(null);
 
     const formData = new FormData(e.currentTarget);
+    formData.set('next',new URLSearchParams(window.location.search).get('next')||'');
 
     const res = await signIn(formData);
     if (res?.error) setErrorMessage(res.error);

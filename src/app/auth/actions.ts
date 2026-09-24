@@ -20,7 +20,8 @@ export async function signIn(formData: FormData) {
     return { error: error.message };
   }
 
-  redirect('/dashboard');
+  const next=String(formData.get('next')||'');
+  redirect(/^\/acknowledge\/[0-9a-f-]{36}$/i.test(next)?next:'/dashboard');
 }
 
 export async function signOut() {

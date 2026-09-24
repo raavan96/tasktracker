@@ -16,6 +16,7 @@ import Modal from '@/components/Modal';
 import ActionsMenu from '@/components/ActionsMenu';
 import SegmentedControl from '@/components/SegmentedControl';
 import {useUrlState} from '@/lib/use-url-state';
+import TaskAcknowledgement from '@/components/TaskAcknowledgement';
 import TaskReview from '@/components/TaskReview';
 import TaskForm from '@/components/TaskForm';
 import type { Task, Member } from '@/lib/task-types';
@@ -459,6 +460,7 @@ export default function ProjectView({
             {<ActionsMenu label="Task actions"><Link className="block rounded-lg px-3 py-2 text-sm hover:bg-gray-100" href={`/dashboard/planning?kind=task&id=${selectedTask.id}`}><Copy aria-hidden="true" className="h-4 w-4" />Duplicate task</Link>{!taskReadOnly && (isAdmin || selectedTask.created_by === currentUserId)&&<><button type="button" disabled={isSubmitting} onClick={() => { if(taskDraft&&!window.confirm('Discard your saved task draft and edit this task?'))return; setTaskDraft(null); setEditingTask(selectedTask); setSelectedTaskId(null); setFeedback(null); setIsTaskModalOpen(true); }} className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"><Pencil aria-hidden="true" className="h-4 w-4" />Edit task</button>{selectedTask.status==='done'&&<ArchiveAction kind="task" id={selectedTask.id} recurring={selectedTask.recurrence!=='none'}/> }<div className="my-2 border-t" /><button type="button" disabled={isSubmitting} onClick={() => { setDeleteTarget({ kind: 'task', id: selectedTask.id, name: selectedTask.title }); setSelectedTaskId(null); setFeedback(null); }} className="flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"><Trash2 aria-hidden="true" className="h-4 w-4" />Delete task</button></>}</ActionsMenu>}
           </div>
           {taskReadOnly&&<div className="mb-3 rounded-lg border p-3 text-sm">Archived · read-only. {project.is_archived?'Restore the project first.':(isAdmin||selectedTask.created_by===currentUserId)&&<ArchiveAction kind="task" id={selectedTask.id} archived/>}</div>}
+          <TaskAcknowledgement key={selectedTask.id} taskId={selectedTask.id} userId={currentUserId} readOnly={taskReadOnly || selectedTask.status==='done'}/>
           <div aria-label="Task panel sections" className="flex gap-2 border-b py-3 mb-3">{(['details','updates'] as const).map(tab=><button key={tab} type="button" aria-pressed={detailTab===tab} onClick={()=>setDetailTab(tab)} className={`rounded-lg px-4 py-2 text-sm font-medium ${detailTab===tab?'bg-blue-600 text-white':'bg-gray-100 text-gray-700'}`}>{tab==='details'?'Details':`Updates (${remarkCount(selectedTask)})`}</button>)}</div>
           <div hidden={detailTab !== 'details'}>
           {selectedTask.due_date && <p className="mb-3 text-sm text-slate-600">Due {new Date(selectedTask.due_date.slice(0, 10) + 'T00:00:00').toLocaleDateString()}</p>}

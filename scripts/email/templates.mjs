@@ -1,7 +1,8 @@
 // Dependency-free, table-based email templates. All user-supplied text is escaped.
 export const categories = {
+ task_accepted:{label:'Task accepted',headline:'Your task has been accepted',intro:'An assignee confirmed receipt of your task. This does not change its status or approval requirements.',cta:'Open task',accent:'#84dcec'},
  project_assignment:{label:'Project assignment',headline:'You have joined a project',intro:'You have been added to a project. Open it to see the team, tasks and project details.',cta:'Open project',accent:'#84dcec'},
- assignment:{label:'Task assignment',headline:'A new task is yours',intro:'You have been assigned a task. Review the details and coordinate with the other assignees.',cta:'Open task',accent:'#84dcec'},
+ assignment:{label:'Task assignment',headline:'A new task is yours',intro:'You have been assigned a task. Please confirm receipt using the button below. Sign in with your assigned account, then confirm acceptance in TaskTracker. Acceptance does not change the task status.',cta:'Accept task',accent:'#84dcec'},
  mention:{label:'Mention',headline:'You were mentioned',intro:'A teammate mentioned you in a task update.',cta:'Read the update',accent:'#84dcec'},
  review_requested:{label:'Ready for review',headline:'Your review is requested',intro:'This task has been submitted for review. Open it to approve the work or request changes.',cta:'Review task',accent:'#c4b5fd'},
  approved:{label:'Task approved',headline:'Your work is approved',intro:'This task has been approved and marked complete.',cta:'View completed task',accent:'#79d6a7'},
@@ -19,13 +20,15 @@ export function renderEmail(kind,data,{origin='https://tasktracker.top-menus.com
  const spec=categories[kind];if(!spec)throw new Error('Unknown email category');
  const base=new URL(origin);if(base.protocol!=='https:'||base.username||base.password||base.pathname!=='/'||base.search||base.hash)throw new Error('Use a trusted HTTPS app origin.');
  const url=path=>new URL(path,base).href;
- const path=data.task?taskPath(data.task):['project_completed','project_assignment'].includes(kind)?`/dashboard/projects/${encodeURIComponent(data.projectId)}`:kind==='weekly_report'?'/dashboard':kind==='deadline_digest'?'/dashboard/my-tasks':'/dashboard';
+ const path=kind==='assignment'&&data.acknowledgementId?'/acknowledge/'+encodeURIComponent(data.acknowledgementId):data.task?taskPath(data.task):['project_completed','project_assignment'].includes(kind)?`/dashboard/projects/${encodeURIComponent(data.projectId)}`:kind==='weekly_report'?'/dashboard':kind==='deadline_digest'?'/dashboard/my-tasks':'/dashboard';
  const details=[];
  if(data.projectName)details.push(['Project',data.projectName]);
  if(data.assignees)details.push(['Assigned to',data.assignees]);
  if(data.previousDeadline)details.push(['Previous deadline',data.previousDeadline]);
  if(data.deadline)details.push(['Deadline (India time)',data.deadline]);
- if(data.actor)details.push(['Updated by',data.actor]);
+ if(data.actor)details.push([kind==='task_accepted'?'Accepted by':kind==='assignment'?'Created by':'Updated by',data.actor]);
+ if(data.acceptedAt)details.push(['Accepted at (IST)',data.acceptedAt]);
+ if(data.acknowledgements)details.push(['Acknowledgements',data.acknowledgements]);
  const subject=`${spec.label}: ${data.task?.title||data.projectName||data.period||'TaskTracker'}`.replace(/[\r\n]+/g,' ').slice(0,180);
  const title=data.task?.title||data.projectName||data.period||'';
  const rows=details.map(([k,v])=>`<tr><td style="padding:6px 12px 6px 0;color:#acbbcf;font-size:13px;vertical-align:top;width:125px">${escapeHtml(k)}</td><td style="padding:6px 0;font-size:14px;color:#e0e9f5;word-break:break-word">${escapeHtml(v)}</td></tr>`).join('');

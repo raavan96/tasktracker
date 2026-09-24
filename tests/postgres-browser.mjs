@@ -796,6 +796,18 @@ try{
   await expect(popup.getByLabel('Message',{exact:true})).toHaveValue('Preserved draft');
   for(const width of [430,1440]){await admin.setViewportSize({width,height:850});for(const theme of ['light','dark']){await admin.evaluate(t=>{document.documentElement.dataset.theme=t;},theme);await admin.screenshot({path:`/tmp/release5-chat-${theme}-${width}.png`});const rect=await popup.boundingBox();assert.ok(rect.x>=0&&rect.x+rect.width<=width+1);}}
   await popup.getByRole('button',{name:'Minimize chat'}).click();
+  const ackProject=(await db.query("INSERT INTO projects(name,created_by) VALUES('Receipt browser QA',$1) RETURNING id",[users[0].id])).rows[0].id;
+  await db.query('INSERT INTO project_members(project_id,user_id) VALUES($1,$2)',[ackProject,users[0].id]);
+  const ackTask=(await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_ids) VALUES($1,'Confirm assigned task',$2,ARRAY[$2::uuid]) RETURNING id",[ackProject,users[0].id])).rows[0].id;
+  const ackId=(await db.query('SELECT id FROM task_acknowledgements WHERE task_id=$1',[ackTask])).rows[0].id;
+  const ackContext=await browser.newContext();contexts.push(ackContext);const ackPage=await ackContext.newPage();
+  await ackPage.goto(base+'/acknowledge/'+ackId);await expect(ackPage).toHaveURL(/login\?next=/);
+  await ackPage.locator('input[name=email]').fill(users[0].email);await ackPage.locator('input[name=password]').fill(password);await ackPage.getByRole('button',{name:'Sign In',exact:true}).click();await expect(ackPage).toHaveURL(base+'/acknowledge/'+ackId);
+  assert.equal((await db.query('SELECT accepted_at FROM task_acknowledgements WHERE id=$1',[ackId])).rows[0].accepted_at,null,'Opening an email link must not accept a task');
+  await ackPage.getByRole('button',{name:'Accept task',exact:true}).click();await expect(ackPage.getByText('1 of 1 accepted',{exact:true})).toBeVisible();
+  await ackPage.reload();await expect(ackPage.getByRole('button',{name:'Accept task',exact:true})).toHaveCount(0);
+  assert.equal((await db.query('SELECT status FROM tasks WHERE id=$1',[ackTask])).rows[0].status,'todo');
+  await ackPage.setViewportSize({width:430,height:900});await ackPage.screenshot({path:'/tmp/release5-acknowledgement-mobile.png',fullPage:true});await ackContext.close();
   await admin.getByText('My account',{exact:true}).click();await admin.getByRole('button',{name:'Sign out',exact:true}).click();await expect(admin).toHaveURL(base+'/');
   assert.equal(external.length,0,'Staging must not contact Supabase');
   console.log('Eight browser logins, private project, task assignment, local upload/download, outsider denial, review and admin approval passed against PostgreSQL 16.');
