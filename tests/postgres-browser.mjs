@@ -797,7 +797,6 @@ try{
   for(const width of [430,1440]){await admin.setViewportSize({width,height:850});for(const theme of ['light','dark']){await admin.evaluate(t=>{document.documentElement.dataset.theme=t;},theme);await admin.screenshot({path:`/tmp/release5-chat-${theme}-${width}.png`});const rect=await popup.boundingBox();assert.ok(rect.x>=0&&rect.x+rect.width<=width+1);}}
   await popup.getByRole('button',{name:'Minimize chat'}).click();
   const ackProject=(await db.query("INSERT INTO projects(name,created_by) VALUES('Receipt browser QA',$1) RETURNING id",[users[0].id])).rows[0].id;
-  await db.query('INSERT INTO project_members(project_id,user_id) VALUES($1,$2)',[ackProject,users[0].id]);
   const ackTask=(await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_ids) VALUES($1,'Confirm assigned task',$2,ARRAY[$2::uuid]) RETURNING id",[ackProject,users[0].id])).rows[0].id;
   const ackId=(await db.query('SELECT id FROM task_acknowledgements WHERE task_id=$1',[ackTask])).rows[0].id;
   const ackContext=await browser.newContext();contexts.push(ackContext);const ackPage=await ackContext.newPage();
