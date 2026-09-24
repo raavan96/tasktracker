@@ -730,7 +730,8 @@ try{
   assert.ok(geometry.gap<=32,'No excessive space after footer');assert.ok(Math.abs(geometry.top-10)<2,'Wallpaper gap remains above the sticky header');assert.equal(geometry.radius,'22px');
   await admin.screenshot({path:'/tmp/release5-rounded-header-scrolled-430.png',fullPage:false});
   await admin.getByRole('button',{name:'Support via UPI',exact:true}).click();
-  await expect(admin.getByRole('dialog')).toContainText('naidu.aishwarya9-1@okhdfcbank');
+  await expect(admin.getByRole('dialog').getByRole('img',{name:'Scan to support TaskTracker via UPI — Aishwarya Naidu'})).toBeVisible();
+  await expect(admin.getByRole('link',{name:'Open full-size payment QR code'})).toHaveAttribute('href','/support-upi-qr.png');
   await expect(admin.getByRole('link',{name:'Open UPI app'})).toHaveAttribute('href',/upi:\/\/pay\?pa=naidu\.aishwarya9-1%40okhdfcbank/);
   await admin.getByRole('button',{name:'Close dialog',exact:true}).click();
   await admin.setViewportSize({width:1440,height:1000});
