@@ -16,5 +16,8 @@
 .composer{border:0;padding:12px 14px;margin:0;border-top:1px solid var(--chat-border);border-radius:0;background:var(--chat-bg)}.composeRow{display:flex;align-items:flex-end;gap:6px;background:var(--chat-raised);border:1px solid var(--chat-border);border-radius:14px;padding:7px}.composeRow:focus-within{border-color:var(--chat-muted);box-shadow:0 0 0 1px var(--chat-muted)}.composer textarea{min-width:0;flex:1;height:54px;max-height:120px;resize:none;color:var(--chat-text);font-size:16px}.composer textarea::placeholder{color:var(--chat-muted)}.composeRow button{background:#286dcc;color:#fff;border:0;width:36px;flex-shrink:0}.composeRow button:disabled{background:var(--chat-own);color:var(--chat-muted);opacity:1}.sendRow{margin-top:7px}.reply{margin-bottom:8px;border-radius:7px}.reply small{color:var(--chat-muted)}.root .newMessages{align-self:center;border-radius:20px;margin:0 0 8px;background:var(--chat-own)}.error{background:var(--chat-bg);color:var(--chat-text);border-color:var(--chat-border)}.root .launch{background:var(--chat-bg);color:var(--chat-text);border-color:var(--chat-border)}
 @media(max-width:580px){.popup{left:8px;right:8px;width:auto;border-radius:18px}.root:has(.popup) .launch{display:none}.root button{min-height:44px}.messages{padding:14px}.composer{padding-bottom:max(12px,env(safe-area-inset-bottom))}}
 .listTime{font-size:10px;color:var(--chat-muted);white-space:nowrap;font-variant-numeric:tabular-nums}
-/* App-wide dark form rules must not paint a second field inside the composer. */
-.root .composer textarea{background:transparent!important;color:var(--chat-text)!important}
+/* Keep shared app field styles from painting an inner box in chat controls. */
+.root .composer textarea,.root .search input{background:transparent!important;color:var(--chat-text)!important}
+.root .search input::placeholder{color:var(--chat-muted);opacity:1}
+.root .search input:focus,.root .search input:focus-visible{outline:none!important;box-shadow:none!important;border:0!important}
+.root .search:focus-within{border-color:var(--chat-muted);box-shadow:0 0 0 1px var(--chat-muted)}
