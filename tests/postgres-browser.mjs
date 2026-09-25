@@ -779,8 +779,8 @@ try{
   await admin.getByRole('button',{name:/^Chat(?:,|$)/}).click();
   const popup=admin.getByRole('dialog',{name:'Chat',exact:true});
   await popup.getByRole('button',{name:'New message',exact:true}).click();
-  await popup.getByLabel('Chat recipient').selectOption(users[3].id);
-  await popup.getByRole('button',{name:'Open conversation',exact:true}).click();
+  await popup.getByLabel('Search people or projects').fill('Staging 3');
+  await popup.getByRole('button',{name:'Staging 3',exact:true}).click();
   await expect(popup.getByLabel('Message',{exact:true})).toBeVisible();
   await popup.getByLabel('Message',{exact:true}).fill('@Sta');
   await expect(popup.getByRole('button',{name:'Staging 3',exact:true})).toBeVisible();
@@ -794,6 +794,20 @@ try{
   await popup.getByRole('button',{name:'Minimize chat'}).click();
   await admin.getByRole('button',{name:/^Chat(?:,|$)/}).click();
   await expect(popup.getByLabel('Message',{exact:true})).toHaveValue('Preserved draft');
+  await admin.reload();
+  await admin.getByRole('button',{name:/^Chat(?:,|$)/}).click();
+  await popup.getByRole('button',{name:/Staging 3/}).click();
+  await expect(popup.getByLabel('Message',{exact:true})).toHaveValue('Preserved draft');
+  await popup.getByLabel('Message',{exact:true}).focus();
+  assert.equal(await popup.getByLabel('Message',{exact:true}).evaluate(el=>getComputedStyle(el).outlineStyle),'none','Composer has no blue inner focus outline');
+  await admin.route('**/api/chat',async route=>{const req=route.request();if(req.method()==='POST'&&req.postDataJSON()?.action==='send')return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Synthetic send failure'})});await route.continue()});
+  await popup.getByRole('button',{name:'Send message',exact:true}).click();
+  await expect(popup.getByRole('button',{name:'Retry',exact:true})).toBeVisible();
+  await expect(popup.getByLabel('Message',{exact:true})).toHaveValue('Preserved draft');
+  await admin.unroute('**/api/chat');
+  await popup.getByRole('button',{name:'Retry',exact:true}).click();
+  await expect(popup.locator('article').getByText('Preserved draft',{exact:true})).toBeVisible();
+  await expect(popup.getByLabel('Message',{exact:true})).toHaveValue('');
   for(const width of [430,1440]){await admin.setViewportSize({width,height:850});for(const theme of ['light','dark']){await admin.evaluate(t=>{document.documentElement.dataset.theme=t;},theme);await admin.screenshot({path:`/tmp/release5-chat-${theme}-${width}.png`});const rect=await popup.boundingBox();assert.ok(rect.x>=0&&rect.x+rect.width<=width+1);}}
   await popup.getByRole('button',{name:'Minimize chat'}).click();
   const ackProject=(await db.query("INSERT INTO projects(name,created_by) VALUES('Receipt browser QA',$1) RETURNING id",[users[0].id])).rows[0].id;
