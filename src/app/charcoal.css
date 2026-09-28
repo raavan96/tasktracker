@@ -160,3 +160,17 @@
 .task-table-view[data-selecting="false"] :is(.task-select-cell,.task-bulk-controls){display:none}
 .task-filter-chip span{overflow-wrap:anywhere}
 .task-primary-toolbar input{width:0}
+
+/* Keep active destinations readable on touch, with explicit overflow controls. */
+.workspace-nav-group{min-height:0;min-width:0}
+.workspace-nav-group-mobile{display:flex;align-items:center;flex:1;gap:2px;overflow:hidden}
+.workspace-nav-group-mobile .workspace-nav-main{min-width:0;flex:1;padding:4px}
+:root[data-theme] .workspace-nav-overflow{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:24px;height:44px;padding:0;border:0;background:transparent;color:var(--foreground)}
+.workspace-nav-overflow:disabled{visibility:hidden}
+:root[data-theme] .workspace-mobile-nav nav a[aria-current="page"]{width:auto;padding:0 10px;gap:6px}
+.workspace-mobile-nav [aria-current="page"] .workspace-nav-label{position:static;width:auto;height:auto;clip-path:none;overflow:visible;font-size:12px;white-space:nowrap}
+@media(min-width:1280px){
+ .dark-workspace-sidebar .workspace-nav-group{overflow:auto;scrollbar-width:thin}
+ :root[data-theme] .dark-workspace-sidebar nav a{height:56px;flex-direction:column;gap:4px;padding:5px 0}
+ .dark-workspace-sidebar [aria-current="page"] .workspace-nav-label{position:static;width:auto;height:auto;clip-path:none;overflow:visible;font-size:9px;line-height:11px;letter-spacing:-.02em;text-align:center}
+}

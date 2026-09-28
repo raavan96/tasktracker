@@ -1,15 +1,27 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import WorkspaceBack from './WorkspaceBack';
 import { usePathname } from 'next/navigation';
-import { ChartNoAxesCombined, FolderKanban, CheckSquare, Users, Archive, Search, BarChart3, CalendarDays, History } from 'lucide-react';
+import { ChartNoAxesCombined, FolderKanban, CheckSquare, Users, Archive, Search, BarChart3, CalendarDays, History, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function WorkspaceNav({ isAdmin, mobile = false }: { isAdmin: boolean; mobile?: boolean }) {
   const menu = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
-  useEffect(()=>{const rail=menu.current;const active=rail?.querySelector<HTMLElement>('[aria-current="page"]');if(rail&&active)rail.scrollLeft=Math.max(0,active.offsetLeft-rail.offsetLeft-rail.clientWidth/2+active.offsetWidth/2);},[pathname]);
+  const [overflow, setOverflow] = useState({before:false,after:false});
+  useEffect(() => {
+    const rail=menu.current;if(!rail||!mobile)return;
+    const update=()=>setOverflow({before:rail.scrollLeft>2,after:rail.scrollLeft+rail.clientWidth<rail.scrollWidth-2});
+    const observer=new ResizeObserver(update);observer.observe(rail);if(rail.firstElementChild)observer.observe(rail.firstElementChild);
+    rail.addEventListener("scroll",update,{passive:true});update();
+    return ()=>{observer.disconnect();rail.removeEventListener("scroll",update);};
+  },[mobile,pathname]);
+  function scrollNavigation(direction:number){const rail=menu.current;if(rail)rail.scrollBy({left:direction*Math.max(100,rail.clientWidth*.7),behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});}
+  useEffect(()=>{
+    const center=()=>{const rail=menu.current;const active=rail?.querySelector<HTMLElement>('[aria-current="page"]');if(rail&&active)rail.scrollLeft=Math.max(0,rail.scrollLeft+active.getBoundingClientRect().left-rail.getBoundingClientRect().left-rail.clientWidth/2+active.offsetWidth/2);};
+    center();window.addEventListener('resize',center);return ()=>window.removeEventListener('resize',center);
+  },[pathname]);
   const links = [
     {href:'/dashboard/insights',label:'Dashboard',icon:ChartNoAxesCombined,active:pathname==='/dashboard/insights'},
     {href:'/dashboard',label:'Projects',icon:FolderKanban,active:pathname==='/dashboard'||pathname.startsWith('/dashboard/projects')},
@@ -30,6 +42,10 @@ export default function WorkspaceNav({ isAdmin, mobile = false }: { isAdmin: boo
   return <div className={`workspace-nav-stack ${mobile?'workspace-nav-stack-mobile':''}`}>
     <div className="workspace-back-slot"><WorkspaceBack /></div>
     <Link href="/dashboard/search" className="workspace-search-pill workspace-nav-pill" aria-label="Search" data-tooltip="Search" title="Search" aria-current={pathname==='/dashboard/search'?'page':undefined}><Search aria-hidden="true" className="h-4 w-4"/></Link>
+    <div className={`workspace-nav-group ${mobile?"workspace-nav-group-mobile":""}`}>
+    {mobile&&<button type="button" className="workspace-nav-overflow" disabled={!overflow.before} aria-label="Show previous sections" title="Show previous sections" onClick={()=>scrollNavigation(-1)}><ChevronLeft aria-hidden="true" size={16}/></button>}
     <div ref={menu} className={`workspace-nav-pill workspace-nav-main ${mobile?'workspace-mobile-nav':''}`} aria-label={mobile?'Workspace navigation — swipe for more':undefined}>{navigation}</div>
+    {mobile&&<button type="button" className="workspace-nav-overflow" disabled={!overflow.after} aria-label="Show more sections" title="Show more sections" onClick={()=>scrollNavigation(1)}><ChevronRight aria-hidden="true" size={16}/></button>}
+    </div>
   </div>;
 }
