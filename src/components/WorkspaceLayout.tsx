@@ -62,7 +62,7 @@ export default async function WorkspaceLayout({
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">
-            <WorkspaceHelp userId={user.id} buttonOnly />
+            <WorkspaceHelp userId={user.id} isAdmin={isAdmin} buttonOnly />
 
             {/* Notification Indicator */}
             <Link
@@ -105,7 +105,7 @@ export default async function WorkspaceLayout({
       <ArchiveNotice />
       {/* Main Content Area */}
       <main className="workspace-main flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <WorkspaceHelp userId={user.id} /><MorningPrompt userId={user.id} />
+        <WorkspaceHelp userId={user.id} isAdmin={isAdmin} /><MorningPrompt userId={user.id} />
         {children}
       </main>
       <AppFooter workspace /><ChatPopup userId={user.id} />

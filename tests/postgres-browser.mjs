@@ -452,15 +452,16 @@ try{
   await expect(admin.getByRole('heading',{name:'Duplicate task',exact:true})).toBeVisible();
   await expect(admin.getByText('Save this source as a reusable template',{exact:true})).toHaveCount(0);
   await expect(admin.getByRole('button',{name:'Save template',exact:true})).toHaveCount(0);
-  // Historical template fixture verifies existing templates remain usable.
+  // Historical records remain intact, but retired template routes lead to Projects.
   const oldTemplate={kind:'task',name:'Shared review task',description:'',tasks:[{key:sharedId,title:'Shared review task',description:'',priority:'medium',offset:null,checklist:[],dependencies:[]}]};
   const templateId=(await db.query('INSERT INTO planning_templates(created_by,source_project_id,name,blueprint) VALUES($1,$2,$3,$4::jsonb) RETURNING id',[users[0].id,r4project,'R5 personal template',JSON.stringify(oldTemplate)])).rows[0].id;
   await admin.getByLabel('New task title',{exact:true}).fill('R5 shared copy');await admin.getByLabel('Copy deadline 1',{exact:true}).fill('2026-09-20');
   await admin.getByRole('checkbox',{name:'Staging 1',exact:true}).check();await admin.getByRole('checkbox',{name:'Staging 3',exact:true}).check();await admin.getByRole('button',{name:'Create task copy',exact:true}).click();await admin.waitForURL('**/dashboard/projects/*');
   await expect.poll(async()=>(await db.query("SELECT count(*) n FROM tasks WHERE title='R5 shared copy'")).rows[0].n).toBe('1');
   const r5copy=(await db.query("SELECT * FROM tasks WHERE title='R5 shared copy'")).rows[0];assert.equal(r5copy.status,'todo');assert.deepEqual(r5copy.assignee_ids,[users[1].id,users[3].id]);assert.equal(r5copy.created_by,users[0].id);
-  await admin.goto(base+'/dashboard/templates');await admin.getByLabel('Search templates',{exact:true}).fill('R5 personal');await expect(admin.getByRole('heading',{name:'R5 personal template',exact:true})).toBeVisible();await admin.getByRole('link',{name:'Use template',exact:true}).click();await expect(admin.getByRole('heading',{name:'Use template',exact:true})).toBeVisible();await expect(admin.getByRole('checkbox',{checked:true})).toHaveCount(0);
-  await outsider.goto(base+'/dashboard/planning?kind=template&id='+templateId);await expect(outsider.getByText('Template unavailable or source project access was removed.',{exact:true})).toBeVisible();
+  await admin.goto(base+'/dashboard/templates');await expect(admin).toHaveURL(base+'/dashboard');
+  await outsider.goto(base+'/dashboard/planning?kind=template&id='+templateId);await expect(outsider).toHaveURL(base+'/dashboard');
+  assert.equal(Number((await db.query('SELECT count(*) n FROM planning_templates WHERE id=$1',[templateId])).rows[0].n),1);
   await admin.goto(base+'/dashboard/planning?kind=project&id='+r4project);await admin.getByLabel('New project name',{exact:true}).fill('R5 project copy');await admin.getByRole('button',{name:'Create project copy',exact:true}).click();await admin.waitForURL('**/dashboard/projects/*');await expect.poll(async()=>(await db.query("SELECT id FROM projects WHERE name='R5 project copy'")).rows[0]?.id).toBeTruthy();
   const r5project=(await db.query("SELECT id,is_private FROM projects WHERE name='R5 project copy'")).rows[0];assert.equal(r5project.is_private,true);assert.equal(Number((await db.query('SELECT count(*) n FROM project_members WHERE project_id=$1',[r5project.id])).rows[0].n),1);assert.equal(Number((await db.query("SELECT count(*) n FROM tasks WHERE project_id=$1 AND (status<>'todo' OR cardinality(assignee_ids)>0 OR recurrence<>'none')",[r5project.id])).rows[0].n),0);
   assert.equal(Number((await db.query('SELECT count(*) n FROM task_attachments a JOIN tasks t ON t.id=a.task_id WHERE t.project_id=$1',[r5project.id])).rows[0].n),0);
@@ -469,10 +470,10 @@ try{
   await admin.getByText('Settings',{exact:true}).click();
   await admin.getByRole('button',{name:'Switch to dark mode',exact:true}).click();await admin.screenshot({path:'/tmp/release5-calendar-dark-430.png',fullPage:true});
   await admin.getByRole('link').filter({hasText:'R5 shared copy'}).click();await expect(admin.getByRole('dialog').getByRole('heading',{name:'R5 shared copy',exact:true})).toBeVisible();
-  for(const width of [375,430]){await admin.setViewportSize({width,height:932});await admin.goto(base+'/dashboard/planning?kind=template&id='+templateId);await expect.poll(()=>admin.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await admin.screenshot({path:`/tmp/release5-planning-dark-${width}.png`,fullPage:true});}
+  for(const width of [375,430]){await admin.setViewportSize({width,height:932});await admin.goto(base+'/dashboard/planning?kind=task&id='+sharedId);await expect.poll(()=>admin.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await admin.screenshot({path:`/tmp/release5-planning-dark-${width}.png`,fullPage:true});}
   await admin.setViewportSize({width:1280,height:900});
   await admin.getByRole('button',{name:'Switch to light mode',exact:true}).click();await admin.screenshot({path:'/tmp/release5-planning-light-desktop.png',fullPage:true});
-  console.log('Release 5 browser: menu copies, template creation removed; existing template use/outsider denial, shared assignments, reset approval/status, private project defaults, attachment exclusion, calendar filters/single shared task, task navigation and 375/430px layouts passed.');
+  console.log('Release 5 browser: menu copies, template creation removed; retired template route redirects and preserved records, shared assignments, reset approval/status, private project defaults, attachment exclusion, calendar filters/single shared task, task navigation and 375/430px layouts passed.');
 
   await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_id,due_date) SELECT $1,'Scale specimen '||lpad(n::text,4,'0'),$2,$3,current_date+(n%30) FROM generate_series(1,1000)n",[r4project,users[0].id,users[3].id]);
   await admin.goto(base+'/dashboard/tasks?q=Scale&sort=title');await expect(admin.getByText('1000 matching tasks',{exact:false})).toBeVisible();await expect(admin.locator('tbody tr')).toHaveCount(25);
@@ -669,7 +670,7 @@ try{
   await admin.getByRole('button',{name:'Filter projects',exact:true}).click();
   await admin.getByRole('button',{name:'Help and tutorial',exact:true}).click();
   await expect(admin.getByRole('dialog',{name:'TaskTracker help',exact:true})).toBeVisible();
-  for(let step=0;step<4;step++)await admin.getByRole('button',{name:'Next',exact:true}).click();
+  for(let step=0;step<6;step++)await admin.getByRole('button',{name:'Next',exact:true}).click();
   await admin.getByRole('button',{name:'Finish tutorial',exact:true}).click();
   await expect(admin.getByRole('button',{name:'Start tutorial',exact:true})).toHaveCount(0);
   console.log('Dashboard scroll preservation, project filters and first-time tutorial passed.');

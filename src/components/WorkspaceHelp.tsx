@@ -3,15 +3,10 @@ import {useState,useSyncExternalStore} from 'react';
 import Link from 'next/link';
 import {CircleHelp,X} from 'lucide-react';
 import Modal from './Modal';
+import {workspaceHelpSteps} from '@/lib/workspace-help';
 const subscribe=(notify:()=>void)=>{window.addEventListener('tasktracker-tour',notify);return()=>window.removeEventListener('tasktracker-tour',notify);};
-const steps=[
- {title:'Welcome to TaskTracker',body:'Start in Projects to find your team’s work. Dashboard shows project progress, task status, workload and upcoming deadlines. Use the icons in the sidebar, or Menu on your phone.',href:'/dashboard/insights',link:'Open Dashboard'},
- {title:'Create and delegate work',body:'Open a project and choose New Task. Add a clear title, deadline and priority, then select one or more assignees. Project members share access; private projects stay limited to their team. Task actions and Project actions contain editing and archive options.',href:'/dashboard',link:'Open Projects'},
- {title:'Share updates and mentions',body:'Open a task and use Updates to add remarks or files. Type @ and a teammate’s name, then press Enter to select the highlighted person. The creator, assignees and permitted teammates can follow progress.',href:'/dashboard/my-tasks',link:'Open My Tasks'},
- {title:'Submit and approve work',body:'The creator, an assignee or an admin can choose Ready for review after completing the checklist. An admin or an eligible creator outside the assignee group can approve. Admins may approve their own work. Requested changes return the task to In Progress.',href:'/dashboard/tasks',link:'Open All Tasks'},
- {title:'Stay on top of deadlines',body:'Use Calendar to plan deadlines and Notifications to see assignments, mentions and review updates. Assignment emails and weekly reports are managed by the workspace. For account access or a problem with a task, contact your workspace admin.',href:'/dashboard/notifications',link:'Open Notifications'}
-];
-export default function WorkspaceHelp({userId,buttonOnly=false}:{userId:string;buttonOnly?:boolean}){
+export default function WorkspaceHelp({userId,isAdmin=false,buttonOnly=false}:{userId:string;isAdmin?:boolean;buttonOnly?:boolean}){
+ const steps=workspaceHelpSteps(isAdmin);
  const key='tasktracker-tour-v1:'+userId;
  const seen=useSyncExternalStore(subscribe,()=>{try{return localStorage.getItem(key)==='seen';}catch{return false;}},()=>true);
  const [open,setOpen]=useState(false),[step,setStep]=useState(0);

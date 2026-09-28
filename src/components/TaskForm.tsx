@@ -39,7 +39,7 @@ export default function TaskForm({ task, draft, members, busy, onSubmit, onCance
       </div>
       {task?<><input type="hidden" name="recurrence" value={task.recurrence||'none'}/><p className="text-xs text-gray-500">This edits the current task. Use Recurring schedule → Edit future occurrences to change future assignments.</p></>:<>      <label className="block text-sm font-medium">Repeat
         <select name="recurrence" defaultValue={draft?.recurrence ?? 'none'} className={field}><option value="none">Does not repeat</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select>
-        <span className="block mt-1 text-xs text-gray-500">Creates the next task on its due date; checklist items are copied unchecked.</span>
+        <span className="block mt-1 text-xs text-gray-500">Creates future tasks on the repeat schedule. Use Recurring schedule → Edit future occurrences to change future assignments.</span>
       </label>
 </>}
     </fieldset>

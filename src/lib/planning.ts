@@ -8,7 +8,7 @@ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const digest=(v:unknown)=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
 function fail(message:string):never{throw new Error(message);}
 export async function loadBlueprint(db:PoolClient,source:PlanningSource):Promise<PlanningPreview>{
- if(!source||!uuid.test(source.id)||!['project','task','template'].includes(source.kind))fail('Choose a project, task or template.');
+ if(!source||!uuid.test(source.id)||!['project','task','template'].includes(source.kind))fail('Choose a project or task.');
  if(source.kind==='template'){
   const row=(await db.query<{source_project_id:string;blueprint:Blueprint}>('SELECT source_project_id,blueprint FROM planning_templates WHERE id=$1',[source.id])).rows[0];
   if(!row)fail('Template unavailable or source project access was removed.');
@@ -42,10 +42,10 @@ export async function createPlan(input:PlanInput){return workspaceRead(async(db,
  if(prior){if(prior.payload_hash!==hash)fail('This copy was already created. Reload before starting another copy.');return {projectId:prior.project_id,taskId:prior.task_id};}
  const preview=await loadBlueprint(db,input.source);if(preview.version!==input.version)fail('The source changed. Reload the preview and check your choices.');
  if(input.tasks.length!==preview.blueprint.tasks.length||new Set(input.tasks.map(t=>t.key)).size!==input.tasks.length||input.tasks.some(t=>!preview.blueprint.tasks.some(s=>s.key===t.key)))fail('The task list changed. Reload the preview.');
- const text=(value:unknown,max:number,required=false)=>{if(typeof value!=='string'||value.length>max||(required&&!value.trim()))fail('Check the names, descriptions and checklist items.');return value.trim();};
+ const text=(value:unknown,max:number,required=false)=>{if(typeof value!=='string'||value.length>max||(required&&!value.trim()))fail('Check the names and descriptions.');return value.trim();};
  const name=text(input.name,200,true),description=text(input.description,10000);
  if(!Array.isArray(input.members)||input.members.length>30||input.members.some(id=>!uuid.test(id)))fail('Choose up to 30 active members.');
- if(input.tasks.reduce((sum,t)=>sum+(Array.isArray(t.checklist)?t.checklist.length:501),0)>500)fail('A copy supports up to 500 checklist items.');
+ if(input.tasks.reduce((sum,t)=>sum+(Array.isArray(t.checklist)?t.checklist.length:501),0)>500)fail('This copy contains too much legacy data. Reload the preview.');
  for(const t of input.tasks){text(t.title,200,true);text(t.description,10000);if(!['low','medium','high','urgent'].includes(t.priority)||typeof t.dueDate!=='string'||(t.dueDate&&!validDate(t.dueDate)))fail('Check each priority and deadline.');if(!Array.isArray(t.assigneeIds)||t.assigneeIds.length>30||t.assigneeIds.some(id=>!uuid.test(id))||new Set(t.assigneeIds).size!==t.assigneeIds.length)fail('Check the assignees.');t.checklist.forEach(c=>text(c,300,true));}
  let projectId=input.targetProjectId;
  if(preview.blueprint.kind==='project'){
