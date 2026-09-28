@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -18,10 +19,10 @@ test('navigation long press labels without intercepting ordinary taps or swipes'
   }
   let tip;
   const document={body:{append(){}},activeElement:null,createElement(){tip=new Element();return tip;},addEventListener(name,fn){listeners.set(name,fn);},removeEventListener(name){listeners.delete(name);}};
-  const module={exports:{}};
+  const testModule={exports:{}};
   const code=ts.transpileModule(fs.readFileSync('src/components/WorkspaceTooltips.tsx','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
-  vm.runInNewContext(code,{module,exports:module.exports,require(){return {useEffect(fn){cleanup=fn();}};},document,window:{addEventListener(){},removeEventListener(){}},Element,Node:Element,innerHeight:800,innerWidth:400,setTimeout(fn){timers.set(++timerId,fn);return timerId;},clearTimeout(id){timers.delete(id);}});
-  module.exports.default();
+  vm.runInNewContext(code,{module:testModule,exports:testModule.exports,require(){return {useEffect(fn){cleanup=fn();}};},document,window:{addEventListener(){},removeEventListener(){}},Element,Node:Element,innerHeight:800,innerWidth:400,setTimeout(fn){timers.set(++timerId,fn);return timerId;},clearTimeout(id){timers.delete(id);}});
+  testModule.exports.default();
   const link=new Element();link.dataset.tooltip='My Tasks';
   const down=()=>listeners.get('pointerdown')({pointerType:'touch',target:link,clientX:20,clientY:20});
   const click=()=>{let prevented=false;listeners.get('click')({target:link,preventDefault(){prevented=true;},stopPropagation(){}});return prevented;};
