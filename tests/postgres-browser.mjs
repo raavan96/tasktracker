@@ -753,6 +753,13 @@ try{
   await expect(admin.locator('.workspace-header').getByRole('button',{name:'Go back',exact:true})).toBeVisible();
   await expect(admin.locator('.workspace-mobile-nav a')).toHaveCount(10);
   await expect(admin.locator('.workspace-header .workspace-search-pill')).toBeVisible();
+  await expect(admin.getByText('Settings',{exact:true})).toBeVisible();
+  assert.ok(await admin.locator('.workspace-header-mask').evaluate(el=>el.getBoundingClientRect().height)<145,'Compact mobile header leaves more space for work');
+  await admin.getByText('Settings',{exact:true}).click();
+  await admin.getByRole('button',{name:'Customize background',exact:true}).click();
+  await expect(admin.getByRole('dialog',{name:'Personalize your workspace'})).toBeVisible();
+  await admin.getByRole('button',{name:'Close dialog',exact:true}).click();
+
   await expect(admin.locator('.workspace-page-heading').getByRole('button',{name:'Go back'})).toHaveCount(0);
   await admin.locator('.app-footer').scrollIntoViewIfNeeded();
   await admin.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));

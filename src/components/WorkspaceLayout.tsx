@@ -6,13 +6,11 @@ import { signOut } from '@/app/auth/actions';
 import ArchiveNotice from './ArchiveNotice';
 import AppFooter from './AppFooter';
 import MorningPrompt from './MorningPrompt';
-import ActionsMenu from './ActionsMenu';
+import WorkspaceAccountControls from './WorkspaceAccountControls';
 import WorkspaceNav from './WorkspaceNav';
 import {WorkspaceBackProvider} from './WorkspaceBack';
 import WorkspaceHelp from './WorkspaceHelp';
-import WorkspaceAppearance from './WorkspaceAppearance';
 import WorkspaceTooltips from './WorkspaceTooltips';
-import { ThemeToggle } from './ThemeProvider';
 import AppLogoMark from './AppLogo';
 import { 
   LogOut, 
@@ -65,8 +63,6 @@ export default async function WorkspaceLayout({
 
           <div className="flex items-center gap-1 sm:gap-3">
             <WorkspaceHelp userId={user.id} buttonOnly />
-            <WorkspaceAppearance userId={user.id} />
-            <ThemeToggle />
 
             {/* Notification Indicator */}
             <Link
@@ -80,7 +76,7 @@ export default async function WorkspaceLayout({
               )}
             </Link>
 
-            <ActionsMenu label="My account">            <Link href="/reset-password" title="Change password" aria-label="Change password" className="flex min-h-11 items-center gap-2 rounded-lg p-2 text-sm hover:bg-gray-100"><KeyRound className="w-4 h-4" />Change password</Link>
+            <WorkspaceAccountControls userId={user.id}>            <Link href="/reset-password" title="Change password" aria-label="Change password" className="flex min-h-11 items-center gap-2 rounded-lg p-2 text-sm hover:bg-gray-100"><KeyRound className="w-4 h-4" />Change password</Link>
             <div className="space-y-3 p-2">
               <div className="text-left">
                 <div className="text-sm font-medium text-gray-900">{profile?.full_name || profile?.email}</div>
@@ -100,7 +96,7 @@ export default async function WorkspaceLayout({
                 </button>
               </form>
             </div>
-            </ActionsMenu>
+            </WorkspaceAccountControls>
           </div>
         </div>
         <div className="xl:hidden px-4 pb-3"><WorkspaceNav isAdmin={isAdmin} mobile /></div>

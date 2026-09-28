@@ -118,3 +118,14 @@
 /* Approved folded-blue T uses the same navy app-icon tile in both themes. */
 :root[data-theme] .workspace-header-brand>div,:root[data-theme] .workspace-mark,:root[data-theme] .tasktracker-brand-tile{background:#060d2c;color:white;border:1px solid #243456;box-shadow:none;border-radius:12px}
 :root[data-theme] .workspace-header-brand>div svg,:root[data-theme] .workspace-mark svg{width:28px;height:28px}
+
+/* Compact mobile frame; keep the existing wallpaper mask and reserved back slot. */
+@media(max-width:767px){
+ :root[data-theme] .workspace-header-inner{min-height:60px;flex-wrap:nowrap;padding:8px 12px;gap:4px}
+ :root[data-theme] .workspace-header-brand{font-size:14px;gap:5px;white-space:nowrap}
+ :root[data-theme] .workspace-header-brand .workspace-brand-caption{font-size:8px;letter-spacing:.5px}
+ :root[data-theme] .workspace-header-inner>div:last-child{gap:0;flex-shrink:0}
+ :root[data-theme] .workspace-header-inner summary{padding:10px 6px;font-size:12px;min-height:44px}
+ .mobile-appearance-options>div{display:flex;align-items:center;gap:8px;font-size:13px}
+ :root{--workspace-top-gap:max(10px,env(safe-area-inset-top))}
+}
