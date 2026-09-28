@@ -156,3 +156,7 @@
  .task-table-view[data-mobile-view="rows"] .task-status-label{max-width:100%;white-space:normal}
  .task-table-view .task-select-cell input{width:20px;height:20px;vertical-align:middle}
 }
+
+.task-table-view[data-selecting="false"] :is(.task-select-cell,.task-bulk-controls){display:none}
+.task-filter-chip span{overflow-wrap:anywhere}
+.task-primary-toolbar input{width:0}

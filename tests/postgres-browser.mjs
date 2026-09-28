@@ -115,7 +115,9 @@ try{
     await admin.keyboard.press('Escape');
     await admin.getByRole('button',{name:'Table & export',exact:true}).click();
     await expect(admin.getByRole('region',{name:'Table view',exact:true})).toBeVisible();
-    if(width===430)for(const select of await admin.locator('.task-table-view select:visible').all())assert.ok((await select.boundingBox()).width>=140,'Mobile filters must keep their selected values readable');
+    await admin.getByRole('button',{name:/^Filters(?: \([0-9]+\))?$/}).click();
+    if(width===430)for(const select of await admin.getByRole('region',{name:'Task filters',exact:true}).locator('select:visible').all())assert.ok((await select.boundingBox()).width>=140,'Mobile filters must keep their selected values readable');
+    await admin.getByRole('button',{name:'Close filters',exact:true}).click();
     if(width===430){
       await expect(admin.getByRole('button',{name:'Compact rows',exact:true})).toHaveAttribute('aria-pressed','true');
       await expect(admin.getByLabel('Select eligible tasks on this page')).toBeHidden();
@@ -128,7 +130,7 @@ try{
       await expect(admin.getByLabel('Select eligible tasks on this page')).toBeHidden();
       await admin.getByRole('button',{name:'Table',exact:true}).click();
     }
-    if(!await admin.getByLabel('Show Created by column').isVisible())await admin.getByText('More filters & columns',{exact:true}).click();await admin.getByLabel('Show Created by column').check();
+    if(!await admin.getByLabel('Show Created by column').isVisible())await admin.getByRole('button',{name:'Columns',exact:true}).click();await admin.getByLabel('Show Created by column').check();
     await expect(admin.getByRole('columnheader',{name:'Created by',exact:true})).toBeVisible();
     await expect(admin.getByRole('cell',{name:'Staging 0',exact:true})).toBeVisible();
     if(width===430)await admin.getByRole('button',{name:'Compact rows',exact:true}).click();
@@ -248,6 +250,7 @@ try{
   await admin.getByRole('link',{name:'Staging 1: pending tasks',exact:true}).click();
   await expect(admin.getByLabel('Filter by assignee')).toHaveValue(users[1].id);
   await expect(admin.getByLabel('Task summary filter')).toHaveValue('pending');
+  await admin.getByRole('button',{name:/^Filters(?: \([0-9]+\))?$/}).click();
   await admin.getByRole('button',{name:'Reset filters',exact:true}).click();
   await admin.getByLabel('Sort tasks').selectOption('title');
   await admin.reload();
@@ -520,11 +523,12 @@ try{
 
   // Release C/D: private saved filters, guarded bulk edits and account preferences.
   await admin.goto(base+'/dashboard/tasks?project='+perfProject);
+  await admin.getByRole('button',{name:/^Filters(?: \([0-9]+\))?$/}).click();
   await admin.getByText('Saved views',{exact:true}).click();
   await admin.getByLabel('Saved view name').fill('My delivery view');await admin.getByRole('button',{name:'Save current view',exact:true}).click();
   await expect(admin.getByRole('link',{name:'My delivery view',exact:true})).toBeVisible();
-  await admin.reload();await admin.getByText('Saved views (1)',{exact:true}).click();await expect(admin.getByRole('link',{name:'My delivery view',exact:true})).toBeVisible();
-  await member.goto(base+'/dashboard/tasks');await member.getByText('Saved views',{exact:true}).click();await expect(member.getByRole('link',{name:'My delivery view',exact:true})).toHaveCount(0);
+  await admin.reload();await admin.getByRole('button',{name:/^Filters(?: \([0-9]+\))?$/}).click();await admin.getByText('Saved views (1)',{exact:true}).click();await expect(admin.getByRole('link',{name:'My delivery view',exact:true})).toBeVisible();
+  await member.goto(base+'/dashboard/tasks');await member.getByRole('button',{name:/^Filters(?: \([0-9]+\))?$/}).click();await member.getByText('Saved views',{exact:true}).click();await expect(member.getByRole('link',{name:'My delivery view',exact:true})).toHaveCount(0);
   if(!await admin.getByLabel('Select task Save benchmark',{exact:true}).isVisible())await admin.getByRole('button',{name:'Select tasks',exact:true}).click();
   await admin.getByLabel('Select task Save benchmark',{exact:true}).check();await admin.getByRole('button',{name:'Bulk actions (1)',exact:true}).click();
   await admin.getByLabel('New deadline',{exact:true}).fill('2026-12-01');await admin.getByRole('button',{name:'Preview changes',exact:true}).click();
