@@ -525,6 +525,7 @@ try{
   await expect(admin.getByRole('link',{name:'My delivery view',exact:true})).toBeVisible();
   await admin.reload();await admin.getByText('Saved views (1)',{exact:true}).click();await expect(admin.getByRole('link',{name:'My delivery view',exact:true})).toBeVisible();
   await member.goto(base+'/dashboard/tasks');await member.getByText('Saved views',{exact:true}).click();await expect(member.getByRole('link',{name:'My delivery view',exact:true})).toHaveCount(0);
+  if(!await admin.getByLabel('Select task Save benchmark',{exact:true}).isVisible())await admin.getByRole('button',{name:'Select tasks',exact:true}).click();
   await admin.getByLabel('Select task Save benchmark',{exact:true}).check();await admin.getByRole('button',{name:'Bulk actions (1)',exact:true}).click();
   await admin.getByLabel('New deadline',{exact:true}).fill('2026-12-01');await admin.getByRole('button',{name:'Preview changes',exact:true}).click();
   await expect(admin.getByText('New deadline: 2026-12-01',{exact:true})).toBeVisible();await admin.getByRole('button',{name:'Confirm 1 changes',exact:true}).click();await expect(admin.getByText('Batch results',{exact:true})).toBeVisible();await expect(admin.getByText('Updated',{exact:true})).toBeVisible();await admin.getByRole('button',{name:'Done',exact:true}).click();
