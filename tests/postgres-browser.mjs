@@ -116,9 +116,22 @@ try{
     await admin.getByRole('button',{name:'Table & export',exact:true}).click();
     await expect(admin.getByRole('region',{name:'Table view',exact:true})).toBeVisible();
     if(width===430)for(const select of await admin.locator('.task-table-view select:visible').all())assert.ok((await select.boundingBox()).width>=140,'Mobile filters must keep their selected values readable');
+    if(width===430){
+      await expect(admin.getByRole('button',{name:'Compact rows',exact:true})).toHaveAttribute('aria-pressed','true');
+      await expect(admin.getByLabel('Select eligible tasks on this page')).toBeHidden();
+      const rowBounds=await admin.locator('.task-table-view tbody :is(.task-status-cell,.task-deadline-cell)').evaluateAll(cells=>cells.map(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&el.scrollWidth<=el.clientWidth+1;}));
+      assert.ok(rowBounds.length&&rowBounds.every(Boolean),'Mobile status and deadline fit without horizontal scrolling');
+      await admin.getByRole('button',{name:'Select tasks',exact:true}).click();
+      await admin.getByLabel('Select eligible tasks on this page').check();
+      await expect(admin.getByRole('button',{name:/Bulk actions \([1-9]/})).toBeEnabled();
+      await admin.getByRole('button',{name:'Done selecting',exact:true}).click();
+      await expect(admin.getByLabel('Select eligible tasks on this page')).toBeHidden();
+      await admin.getByRole('button',{name:'Table',exact:true}).click();
+    }
     if(!await admin.getByLabel('Show Created by column').isVisible())await admin.getByText('More filters & columns',{exact:true}).click();await admin.getByLabel('Show Created by column').check();
     await expect(admin.getByRole('columnheader',{name:'Created by',exact:true})).toBeVisible();
     await expect(admin.getByRole('cell',{name:'Staging 0',exact:true})).toBeVisible();
+    if(width===430)await admin.getByRole('button',{name:'Compact rows',exact:true}).click();
     await expect(admin.getByRole('region',{name:'Board view',exact:true})).toHaveCount(0);
     await admin.getByRole('button',{name:'Board',exact:true}).click();
     await expect(admin.getByRole('region',{name:'Board view',exact:true})).toBeVisible();

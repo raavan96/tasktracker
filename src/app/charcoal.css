@@ -129,3 +129,30 @@
  .mobile-appearance-options>div{display:flex;align-items:center;gap:8px;font-size:13px}
  :root{--workspace-top-gap:max(10px,env(safe-area-inset-top))}
 }
+
+/* A single task table adapts into grouped phone rows; its controls/data stay shared. */
+.mobile-task-controls,.mobile-task-field-label,.mobile-task-select-label{display:none}
+@media(max-width:767px){
+ .mobile-task-controls{display:flex}
+ .task-table-view[data-selecting="false"] :is(.task-select-cell,.task-bulk-controls){display:none}
+ :root[data-theme] .task-table-view[data-mobile-view="rows"] .task-table-container{overflow:visible;background:transparent;border:0}
+ .task-table-view[data-mobile-view="rows"] table,
+ .task-table-view[data-mobile-view="rows"] tbody{display:block;width:100%}
+ .task-table-view[data-mobile-view="rows"] thead{display:none}
+ .task-table-view[data-mobile-view="rows"][data-selecting="true"] thead{display:block;margin-bottom:12px;border-radius:12px}
+ .task-table-view[data-mobile-view="rows"] thead tr{display:block}
+ .task-table-view[data-mobile-view="rows"] thead th:not(.task-select-cell){display:none}
+ .task-table-view[data-mobile-view="rows"] .mobile-task-select-label{display:inline;margin-left:10px;font-size:12px;text-transform:none;letter-spacing:normal}
+ .task-table-view[data-mobile-view="rows"] tbody tr{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 12px;padding:16px;margin-bottom:12px;border:1px solid var(--field-border);border-radius:18px;background:var(--surface)}
+ .task-table-view[data-mobile-view="rows"] tbody td{padding:0;min-width:0;white-space:normal;overflow-wrap:anywhere}
+ .task-table-view[data-mobile-view="rows"] :is(.task-title-cell,.task-assignee-cell,.task-creator-cell,.task-select-cell){grid-column:1/-1}
+ .task-table-view[data-mobile-view="rows"] .task-title-cell :is(a,button){display:block;width:100%;overflow-wrap:anywhere;line-height:1.45}
+ .task-table-view[data-mobile-view="rows"] .task-assignee-cell{font-size:12px;color:var(--glass-muted);line-height:1.65}
+ .task-table-view[data-mobile-view="rows"] .task-creator-cell{font-size:12px;color:var(--glass-muted)}
+ .task-table-view[data-mobile-view="rows"] .mobile-task-field-label{display:inline}
+ .task-table-view[data-mobile-view="rows"] .task-status-cell{grid-column:1;grid-row:auto}
+ .task-table-view[data-mobile-view="rows"] .task-deadline-cell{grid-column:2;grid-row:auto;text-align:right;font-size:12px;font-weight:600;align-self:center}
+ .task-table-view[data-mobile-view="rows"] .task-priority-cell{grid-column:1/-1;order:1}
+ .task-table-view[data-mobile-view="rows"] .task-status-label{max-width:100%;white-space:normal}
+ .task-table-view .task-select-cell input{width:20px;height:20px;vertical-align:middle}
+}
