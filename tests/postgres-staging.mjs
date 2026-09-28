@@ -595,4 +595,13 @@ const future=(await rows("INSERT INTO tasks(project_id,title,created_by,assignee
 await db.exec(read('scripts/postgres/accept-existing-assignments.sql'));
 assert.equal((await rows('SELECT accepted_at FROM task_acknowledgements WHERE task_id=$1',[future]))[0].accepted_at,null);
 console.log('Administrative backfill: no email, explicit source, retry-safe audit and new tasks remain pending passed.');
+await as(null);await db.exec(read('postgres/023_history_transactions.sql'));
+assert.equal(Number((await rows('SELECT count(*) n FROM workspace_history WHERE transaction_id IS NOT NULL'))[0].n),0);
+await db.exec('BEGIN');
+await rows("UPDATE tasks SET description='History linkage test' WHERE id=$1",[future]);
+await rows("UPDATE tasks SET description='History linkage test updated' WHERE id=$1",[future]);
+await db.exec('COMMIT');
+const linkedHistory=await rows('SELECT transaction_id FROM workspace_history WHERE task_id=$1 AND transaction_id IS NOT NULL',[future]);
+assert.equal(linkedHistory.length,2);assert.ok(linkedHistory[0].transaction_id);assert.equal(linkedHistory[0].transaction_id,linkedHistory[1].transaction_id);
+console.log('History linkage: historical rows unlinked; new records share explicit transaction ID passed.');
 await db.close();

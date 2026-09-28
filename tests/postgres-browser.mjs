@@ -836,10 +836,11 @@ try{
   await admin.goto(base+'/dashboard/history');
   await expect(admin.getByRole('heading',{name:'History',exact:true})).toBeVisible();
   const historyRows=admin.locator('section[aria-label="Recent workspace history"] article');
-  assert.equal(await historyRows.count(),20);
-  await historyRows.first().locator('summary').click();await expect(historyRows.first().locator('dl')).toBeVisible();
-  await admin.getByLabel('Search recent history').fill('no-such-audit-event-xyz');await expect(historyRows).toHaveCount(0);
-  await admin.getByRole('button',{name:'Reset',exact:true}).click();await expect(historyRows).toHaveCount(20);
+  const activityCount=await historyRows.count();assert.ok(activityCount>0&&activityCount<=20);
+  await expect(admin.getByText(/Latest 20 audit records/)).toBeVisible();
+  await historyRows.first().locator('summary').first().click();await expect(historyRows.first().locator('dl').first()).toBeVisible();
+  await admin.getByLabel('Search the latest 20 history entries').fill('no-such-audit-event-xyz');await expect(historyRows).toHaveCount(0);
+  await admin.getByRole('button',{name:'Reset',exact:true}).click();await expect(historyRows).toHaveCount(activityCount);
   for(const width of [430,1440]){
    await admin.setViewportSize({width,height:1000});
    for(const theme of ['light','dark']){await themeControls(theme);await admin.waitForTimeout(100);assert.ok(await admin.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await admin.screenshot({path:`/tmp/release5-history-${theme}-${width}.png`,fullPage:true});}
