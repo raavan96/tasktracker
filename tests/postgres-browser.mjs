@@ -101,6 +101,7 @@ try{
     await admin.evaluate(()=>document.fonts.ready);
     await admin.evaluate(()=>Promise.all(document.getAnimations().filter(a=>a.effect?.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{}))));
     if(width===430)await expect(admin.getByText('Settings',{exact:true})).toBeVisible();
+    await admin.evaluate(()=>window.scrollTo(0,0));
     const beforeTheme=await geometry();
     if(width===430)await admin.getByText('Settings',{exact:true}).click();
     await admin.getByRole('button',{name:/Switch to (light|dark) mode/}).click();
@@ -770,6 +771,13 @@ try{
   const geometry=await admin.evaluate(()=>({gap:document.documentElement.scrollHeight-(document.querySelector('.app-footer').getBoundingClientRect().bottom+window.scrollY),top:document.querySelector('.workspace-header').getBoundingClientRect().top,radius:getComputedStyle(document.querySelector('.workspace-header')).borderTopLeftRadius}));
   assert.ok(geometry.gap<=32,'No excessive space after footer');assert.ok(Math.abs(geometry.top-10)<2,'Wallpaper gap remains above the sticky header');assert.equal(geometry.radius,'22px');
   await admin.screenshot({path:'/tmp/release5-rounded-header-scrolled-430.png',fullPage:false});
+  const scrollBeforeSettings=await admin.evaluate(()=>window.scrollY);
+  const settingsBox=await admin.getByText('Settings',{exact:true}).boundingBox();
+  await admin.mouse.click(settingsBox.x+settingsBox.width/2,settingsBox.y+settingsBox.height/2);
+  await expect(admin.getByRole('button',{name:'Customize background',exact:true})).toBeVisible();
+  assert.equal(await admin.evaluate(()=>window.scrollY),scrollBeforeSettings,'Tapping Settings preserves the reading position');
+  await admin.keyboard.press('Escape');
+
   await admin.getByRole('button',{name:'Support via UPI',exact:true}).click();
   await expect(admin.getByRole('dialog').getByRole('img',{name:'Scan to support TaskTracker via UPI — Aishwarya Naidu'})).toBeVisible();
   await expect(admin.getByRole('link',{name:'Open full-size payment QR code'})).toHaveAttribute('href','/support-upi-qr.png');
