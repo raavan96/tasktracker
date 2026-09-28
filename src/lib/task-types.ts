@@ -5,7 +5,7 @@ export type Task = {
   comment_count?:number; review_version?: number; updated_at?: string; is_archived?: boolean; completed_at?: string | null; archived_at?: string | null; restored_at?: string | null;
   id: string; project_id: string; title: string; description: string | null;
   assignee_ids?:string[]; assignees?:Member[]; assignee_id: string | null; created_by: string; status: TaskStatus; priority: TaskPriority;
-  creator?: Pick<Member, 'full_name' | 'email'> | null;
+  creator?: Pick<Member, 'full_name' | 'email' | 'role' | 'is_active'> | null;
   recurrence?: 'none' | 'daily' | 'weekly' | 'monthly';
   due_date: string | null; assignee: Member | null;
   task_comments: { id: string; content: string; created_at: string; author: Member | null }[];

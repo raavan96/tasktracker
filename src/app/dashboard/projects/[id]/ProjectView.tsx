@@ -464,29 +464,7 @@ export default function ProjectView({
           <div aria-label="Task panel sections" className="flex gap-2 border-b py-3 mb-3">{(['details','updates'] as const).map(tab=><button key={tab} type="button" aria-pressed={detailTab===tab} onClick={()=>setDetailTab(tab)} className={`rounded-lg px-4 py-2 text-sm font-medium ${detailTab===tab?'bg-blue-600 text-white':'bg-gray-100 text-gray-700'}`}>{tab==='details'?'Details':`Updates (${remarkCount(selectedTask)})`}</button>)}</div>
           <div hidden={detailTab !== 'details'}>
           {selectedTask.due_date && <p className="mb-3 text-sm text-slate-600">Due {new Date(selectedTask.due_date.slice(0, 10) + 'T00:00:00').toLocaleDateString()}</p>}
-            {/* Quick Status Bar */}
-            <div className="py-3 flex flex-wrap items-center gap-2 border-b border-slate-200 text-xs">
-              <span className="font-semibold text-gray-700">Status:</span>
-              {(['todo', 'in_progress', 'blocked'] as const).map((st) => (
-                <button
-                  key={st}
-                  aria-pressed={selectedTask.status === st}
-                  disabled={taskReadOnly || isSubmitting || (['done','in_review'].includes(selectedTask.status)) || (!isAdmin && selectedTask.created_by !== currentUserId && !assignedIds(selectedTask).includes(currentUserId))}
-                  onClick={async () => {
-                    await runAction(() => updateTaskStatus(selectedTask.id, project.id, st, Number(selectedTask.review_version)), 'Status updated.');
-                  }}
-                  className={`px-2.5 py-1 rounded-full capitalize font-medium transition ${
-                    selectedTask.status === st
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {st.replace('_', ' ')}
-                </button>
-              ))}
-            </div>
-
-            <TaskReview key={selectedTask.id} task={selectedTask} userId={currentUserId} isAdmin={isAdmin} reviewEnabled={reviewEnabled} onBusyChange={setIsSubmitting} readOnly={taskReadOnly || (!isAdmin&&!members.some(m=>m.id===currentUserId))}/>
+            <TaskReview key={selectedTask.id} task={selectedTask} userId={currentUserId} isAdmin={isAdmin} reviewEnabled={reviewEnabled} onBusyChange={setIsSubmitting} externalBusy={isSubmitting} onStatusChange={async status => { await runAction(() => updateTaskStatus(selectedTask.id, project.id, status, Number(selectedTask.review_version)), 'Status updated.'); }} readOnly={taskReadOnly || (!isAdmin&&!members.some(m=>m.id===currentUserId))}/>
             {selectedTask.description && (
               <div className="py-3 text-sm text-gray-700 border-b">
                 {selectedTask.description}
