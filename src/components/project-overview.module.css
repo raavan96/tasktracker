@@ -1,0 +1,12 @@
+.overview :global(.summary-card) {
+  min-height: 0;
+  padding: 12px 14px;
+}
+.overview :global(.summary-card) p:nth-child(2) {
+  margin-top: 4px;
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+.overview :global(.summary-card) p:last-child {
+  margin-top: 4px;
+}
