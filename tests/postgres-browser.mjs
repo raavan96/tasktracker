@@ -100,10 +100,13 @@ try{
     const geometry=()=>admin.evaluate(()=>[...document.querySelectorAll('.workspace-main,.workspace-main h1,.dark-workspace-sidebar,.workspace-header-inner,.board-column,.task-card')].map(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return [el.className,Math.round(r.x),Math.round(r.y),Math.round(r.width),Math.round(r.height),s.fontSize,s.padding,s.display];}));
     await admin.evaluate(()=>document.fonts.ready);
     await admin.evaluate(()=>Promise.all(document.getAnimations().filter(a=>a.effect?.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{}))));
+    if(width===430)await expect(admin.getByText('Settings',{exact:true})).toBeVisible();
     const beforeTheme=await geometry();
+    if(width===430)await admin.getByText('Settings',{exact:true}).click();
     await admin.getByRole('button',{name:/Switch to (light|dark) mode/}).click();
     await admin.evaluate(()=>Promise.all(document.getAnimations().filter(a=>a.effect?.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{}))));
     assert.deepEqual(await geometry(),beforeTheme,'Theme changes must preserve layout and typography');
+    if(width===430)await admin.getByText('Settings',{exact:true}).click();
     await admin.getByRole('button',{name:/Switch to (light|dark) mode/}).click();
 
     await admin.getByText('Project actions',{exact:true}).click();
