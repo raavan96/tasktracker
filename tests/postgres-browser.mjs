@@ -324,6 +324,7 @@ try{
   await admin.goto(projectURL+'?task='+r4task+'&discussion=true');
   await admin.getByLabel('Write a task update').fill('Please check @Staging 3');
   await expect(admin.getByRole('option',{name:'Mention Staging 3',exact:true})).toBeVisible();await admin.getByLabel('Write a task update',{exact:true}).press('Enter');await expect(admin.getByRole('listbox',{name:'Mention suggestions'})).toBeHidden();
+  await expect(admin.getByRole('button',{name:'Post update',exact:true})).toBeEnabled();
   await admin.getByLabel('Write a task update',{exact:true}).press('Control+Enter');
   await expect(admin.getByRole('button',{name:'Edit remark',exact:true})).toBeVisible();
   await admin.getByRole('button',{name:'Edit remark',exact:true}).click();
