@@ -34,14 +34,32 @@ export async function taskPage(filters:TaskFilters,exportAll=false){return works
 });}
 export async function searchWorkspace(query:string,archived:boolean,page=1){return workspaceRead(async db=>{
  const q=query.trim().slice(0,200);if(!q)return {items:[],total:0,page:1};
+ const escapedLike=q.replace(/[%_\\]/g,'\\$&').toLowerCase();
  const from=` FROM (
  SELECT 'Project' kind,p.id,p.id project_id,p.name title,p.description body,p.name project_name,p.is_archived archived,'/dashboard/projects/'||p.id url,to_tsvector('simple',coalesce(p.name,'')||' '||coalesce(p.description,'')) document FROM projects p
  UNION ALL SELECT 'Task',t.id,t.project_id,t.title,t.description,p.name,(t.is_archived OR p.is_archived),'/dashboard/projects/'||p.id||'?task='||t.id,to_tsvector('simple',coalesce(t.title,'')||' '||coalesce(t.description,'')) FROM tasks t JOIN projects p ON p.id=t.project_id
  UNION ALL SELECT 'Project note',n.id,n.project_id,n.title,n.content,p.name,p.is_archived,'/dashboard/projects/'||p.id||'?tab=notes#note-'||n.id,to_tsvector('simple',n.title||' '||n.content) FROM project_notes n JOIN projects p ON p.id=n.project_id
  UNION ALL SELECT 'Task remark',c.id,t.project_id,t.title,c.content,p.name,(p.is_archived OR t.is_archived),'/dashboard/projects/'||p.id||'?task='||t.id||'&discussion=true',to_tsvector('simple',c.content) FROM task_comments c JOIN tasks t ON t.id=c.task_id JOIN projects p ON p.id=t.project_id
- ) results WHERE document @@ websearch_to_tsquery('simple',$1) AND ($2::boolean OR NOT archived)`;
+ ) results WHERE (document @@ websearch_to_tsquery('simple',$1) OR position(lower($1) in lower(title)) > 0) AND ($2::boolean OR NOT archived)`;
  const total=Number((await db.query<{n:string}>('SELECT count(*) n'+from,[q,archived])).rows[0].n);page=Math.min(Math.max(1,Math.trunc(Number(page)||1)),Math.max(1,Math.ceil(total/25)));
- const items=(await db.query<{kind:string;id:string;title:string;body:string;project_name:string;archived:boolean;url:string}>("SELECT kind,id,title,left(body,220) body,project_name,archived,url"+from+' ORDER BY kind,lower(title),id LIMIT 25 OFFSET $3',[q,archived,(page-1)*25])).rows;
+ const items=(await db.query<{kind:string;id:string;title:string;body:string;project_name:string;archived:boolean;url:string}>(
+  "SELECT kind,id,title,ts_headline('simple',coalesce(body,''),websearch_to_tsquery('simple',$1),'StartSel=[[HL]], StopSel=[[/HL]], MaxWords=35, MinWords=15, MaxFragments=2, FragmentDelimiter= … ') body,project_name,archived,url"+from+
+  ` ORDER BY
+    CASE
+      WHEN lower(title) = lower($1) THEN 1
+      WHEN lower(title) LIKE $3 || '%' THEN 2
+      WHEN lower(title) LIKE '% ' || $3 || '%' THEN 3
+      WHEN to_tsvector('simple', title) @@ websearch_to_tsquery('simple', $1) THEN 4
+      WHEN position(lower($1) in lower(title)) > 0 THEN 5
+      ELSE 6
+    END ASC,
+    coalesce(ts_rank(document, websearch_to_tsquery('simple', $1)), 0) DESC,
+    CASE kind WHEN 'Project' THEN 1 WHEN 'Task' THEN 2 WHEN 'Project note' THEN 3 WHEN 'Task remark' THEN 4 END ASC,
+    lower(title) ASC,
+    id ASC
+  LIMIT 25 OFFSET $4`,
+  [q,archived,escapedLike,(page-1)*25]
+ )).rows;
  return {items,total,page};
 });}
 export type ReportFilters={from:string;to:string;project?:string;assignee?:string;scope?:string;page?:number};
