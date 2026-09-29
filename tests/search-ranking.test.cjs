@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -86,15 +87,15 @@ test('UX-11: Search ranking prioritizes direct title matches over body matches',
   // t1: Exact title match
   const tExact = (await db.query("INSERT INTO tasks(project_id, title, description, created_by) VALUES($1, 'Usability', 'Top priority item', $2) RETURNING id", [coreProj, owner])).rows[0].id;
   // t2: Prefix title match
-  const tPrefix = (await db.query("INSERT INTO tasks(project_id, title, description, created_by) VALUES($1, 'Usability testing protocols', 'Run protocol check', $2) RETURNING id", [coreProj, owner])).rows[0].id;
+  await db.query("INSERT INTO tasks(project_id, title, description, created_by) VALUES($1, 'Usability testing protocols', 'Run protocol check', $2)", [coreProj, owner]);
   // t3: Direct task-title match (word in title)
-  const tDirect = (await db.query("INSERT INTO tasks(project_id, title, description, created_by) VALUES($1, 'Review usability findings', 'Check feedback notes', $2) RETURNING id", [coreProj, owner])).rows[0].id;
+  await db.query("INSERT INTO tasks(project_id, title, description, created_by) VALUES($1, 'Review usability findings', 'Check feedback notes', $2)", [coreProj, owner]);
   // t4: Body-only match task
-  const tBody = (await db.query("INSERT INTO tasks(project_id, title, description, created_by) VALUES($1, 'Design System Audit', 'Deep dive into usability across buttons', $2) RETURNING id", [coreProj, owner])).rows[0].id;
+  await db.query("INSERT INTO tasks(project_id, title, description, created_by) VALUES($1, 'Design System Audit', 'Deep dive into usability across buttons', $2)", [coreProj, owner]);
 
   // Note: note with usability in title vs body
-  const noteTitle = (await db.query("INSERT INTO project_notes(project_id, author_id, title, content) VALUES($1, $2, 'Usability Checklist', 'Points to check') RETURNING id", [coreProj, owner])).rows[0].id;
-  const noteBody = (await db.query("INSERT INTO project_notes(project_id, author_id, title, content) VALUES($1, $2, 'Sprint Retrospective', 'Notes on usability feedback') RETURNING id", [coreProj, owner])).rows[0].id;
+  await db.query("INSERT INTO project_notes(project_id, author_id, title, content) VALUES($1, $2, 'Usability Checklist', 'Points to check')", [coreProj, owner]);
+  await db.query("INSERT INTO project_notes(project_id, author_id, title, content) VALUES($1, $2, 'Sprint Retrospective', 'Notes on usability feedback')", [coreProj, owner]);
 
   // Remark: comment on a neutral task discussing usability
   const tNeutral = (await db.query("INSERT INTO tasks(project_id, title, description, created_by) VALUES($1, 'Fix button contrast', 'Contrast fix', $2) RETURNING id", [coreProj, owner])).rows[0].id;
