@@ -22,22 +22,6 @@ export type {
 };
 export { getNotificationResolution };
 
-function getBadgeClasses(variant: ResolutionContext['variant']) {
-  switch (variant) {
-    case 'action':
-      return 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800';
-    case 'success':
-      return 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800';
-    case 'warn':
-      return 'bg-rose-100 text-rose-900 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800';
-    case 'info':
-      return 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800';
-    case 'muted':
-    default:
-      return 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
-  }
-}
-
 export default function NotificationsClient({
   notifications,
   filter,
@@ -109,15 +93,15 @@ export default function NotificationsClient({
                 className={`inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium transition ${
                   isActive
                     ? 'bg-blue-600 text-white shadow-sm'
-                    : 'border bg-surface text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800'
+                    : 'border bg-surface text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 {cat.label}
                 <span
                   className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs font-semibold ${
                     isActive
-                      ? 'bg-blue-700 text-white'
-                      : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400'
+                      ? 'notification-tab-active-count'
+                      : 'bg-gray-100 text-gray-600'
                   }`}
                 >
                   {count}
@@ -157,21 +141,20 @@ export default function NotificationsClient({
           return (
             <article
               key={n.id}
-              className={`p-4 space-y-3 transition-colors ${n.is_read ? '' : 'bg-blue-50/40 dark:bg-blue-950/20'}`}
+              className={`p-4 space-y-3 transition-colors ${n.is_read ? '' : 'bg-blue-50/40'}`}
             >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="space-y-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="font-semibold text-gray-900 dark:text-gray-100">{n.title}</h2>
+                    <h2 className="font-semibold text-gray-900">{n.title}</h2>
                     <span
-                      className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${getBadgeClasses(
-                        resolution.variant
-                      )}`}
+                      className="resolution-badge"
+                      data-variant={resolution.variant}
                     >
                       {resolution.badge}
                     </span>
                     {!n.is_read && (
-                      <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">
+                      <span className="text-xs font-semibold text-blue-600">
                         Unread
                       </span>
                     )}
@@ -181,13 +164,13 @@ export default function NotificationsClient({
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
                     {n.task?.project_name && (
                       <span>
-                        Project: <strong className="font-medium text-gray-800 dark:text-gray-200">{n.task.project_name}</strong>
+                        Project: <strong className="font-medium text-gray-800">{n.task.project_name}</strong>
                       </span>
                     )}
                     {n.task?.project_name && n.actor_name && <span aria-hidden="true">·</span>}
                     {n.actor_name && (
                       <span>
-                        By <strong className="font-medium text-gray-800 dark:text-gray-200">{n.actor_name}</strong>
+                        By <strong className="font-medium text-gray-800">{n.actor_name}</strong>
                       </span>
                     )}
                     {(n.task?.project_name || n.actor_name) && <span aria-hidden="true">·</span>}
@@ -199,11 +182,11 @@ export default function NotificationsClient({
               </div>
 
               {/* Message Content */}
-              <p className="text-sm text-gray-700 dark:text-gray-300">{n.message}</p>
+              <p className="text-sm text-gray-700">{n.message}</p>
 
               {/* Resolution Explanation if Stale Action */}
               {resolution.explanation && (
-                <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600">
                   {resolution.explanation}
                 </div>
               )}
@@ -218,14 +201,14 @@ export default function NotificationsClient({
                         new CustomEvent('tasktracker:open-chat', { detail: { id: n.chat_id } })
                       )
                     }
-                    className="inline-flex min-h-11 items-center text-blue-600 dark:text-blue-400 underline"
+                    className="inline-flex min-h-11 items-center text-blue-600 underline"
                   >
                     Open chat
                   </button>
                 )}
                 {n.task?.project_id && (
                   <Link
-                    className="inline-flex min-h-11 items-center text-blue-600 dark:text-blue-400 underline"
+                    className="inline-flex min-h-11 items-center text-blue-600 underline"
                     href={`/dashboard/projects/${n.task.project_id}?task=${n.task.id}${
                       n.dedupe_key?.match(/^mention:([0-9a-f-]{36}):/i)
                         ? '&discussion=true#remark-' + n.dedupe_key.split(':')[1]
@@ -239,7 +222,7 @@ export default function NotificationsClient({
                   type="button"
                   disabled={busy}
                   onClick={() => update(n.id, !n.is_read)}
-                  className="inline-flex min-h-11 items-center text-blue-600 dark:text-blue-400 underline disabled:opacity-50"
+                  className="inline-flex min-h-11 items-center text-blue-600 underline disabled:opacity-50"
                 >
                   {n.is_read ? 'Mark as unread' : 'Mark as read'}
                 </button>
