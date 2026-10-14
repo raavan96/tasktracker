@@ -12,6 +12,8 @@ import {WorkspaceBackProvider} from './WorkspaceBack';
 import WorkspaceHelp from './WorkspaceHelp';
 import WorkspaceTooltips from './WorkspaceTooltips';
 import AppLogoMark from './AppLogo';
+import CommandPaletteTrigger from './CommandPaletteTrigger';
+import GlobalCommandPalette from './GlobalCommandPalette';
 import { 
   LogOut, 
   Bell,
@@ -62,6 +64,7 @@ export default async function WorkspaceLayout({
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">
+            <CommandPaletteTrigger />
             <WorkspaceHelp userId={user.id} isAdmin={isAdmin} buttonOnly />
 
             {/* Notification Indicator */}
@@ -108,7 +111,7 @@ export default async function WorkspaceLayout({
         <WorkspaceHelp userId={user.id} isAdmin={isAdmin} /><MorningPrompt userId={user.id} />
         {children}
       </main>
-      <AppFooter workspace /><ChatPopup userId={user.id} />
+      <AppFooter workspace /><ChatPopup userId={user.id} /><GlobalCommandPalette isAdmin={isAdmin} />
     </div></WorkspaceBackProvider>
   );
 }

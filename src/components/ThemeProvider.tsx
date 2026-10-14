@@ -17,6 +17,10 @@ export default function ThemeProvider({ initialTheme, children }: { initialTheme
   return <ThemeContext.Provider value={{ theme, toggle }}>{children}</ThemeContext.Provider>;
 }
 
+export function useTheme() {
+  return useContext(ThemeContext);
+}
+
 export function ThemeToggle() {
   const context = useContext(ThemeContext);
   if (!context) return null;
