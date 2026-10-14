@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {MessagesSquare,Minus,ArrowLeft,Send,Reply,X,Search,Folder,ArrowDown} from 'lucide-react';
+import {computePollingInterval,trimMessageHistory,shouldFetchThreadMetadata} from '@/lib/chat-guardrails';
 import styles from './chat.module.css';
 type Person={id:string;name:string};type Conversation=Person&{project_id:string|null;preview:string|null;unread:number;created_at:string|null};type Message={id:string;author_id:string;author:string;body:string;created_at:string;reply_body:string|null;reply_author:string|null};type Draft={body:string;mentions:Person[];reply:Message|null;nonce:string};
 async function api(path='',data?:unknown,signal?:AbortSignal){const response=await fetch('/api/chat'+path,{method:data?'POST':'GET',headers:data?{'Content-Type':'application/json'}:undefined,body:data?JSON.stringify(data):undefined,cache:'no-store',signal});const result=await response.json();if(!response.ok)throw new Error(result.error||'Chat request failed.');return result;}
@@ -9,19 +10,140 @@ const initials=(name:string)=>name.split(' ').filter(Boolean).slice(0,2).map(n=>
 const fresh=():Draft=>({body:'',mentions:[],reply:null,nonce:crypto.randomUUID()});
 export default function ChatPopup({userId}:{userId:string}){
  const [mounted,setMounted]=useState(false),[open,setOpen]=useState(false),[id,setId]=useState(''),[conversations,setConversations]=useState<Conversation[]>([]),[people,setPeople]=useState<Person[]>([]),[projects,setProjects]=useState<Person[]>([]),[messages,setMessages]=useState<Message[]>([]),[members,setMembers]=useState<Person[]>([]),[readOnly,setReadOnly]=useState(false),[error,setError]=useState(''),[busy,setBusy]=useState(false),[loading,setLoading]=useState(false),[more,setMore]=useState(false),[newKind,setNewKind]=useState(''),[search,setSearch]=useState(''),[newMessages,setNewMessages]=useState(false),[sendState,setSendState]=useState(''),[draft,setDraft]=useState<Draft|null>(null),[caret,setCaret]=useState(0),[mentionIndex,setMentionIndex]=useState(0),[dismissMentions,setDismissMentions]=useState(false),[viewport,setViewport]=useState({height:650,bottom:80});
- const drafts=useRef<Record<string,Draft>>({}),input=useRef<HTMLTextAreaElement>(null),scroller=useRef<HTMLDivElement>(null),launcher=useRef<HTMLButtonElement>(null),panel=useRef<HTMLElement>(null),active=useRef(''),lastRead=useRef<Record<string,string>>({}),nearBottom=useRef(true);
+ const drafts=useRef<Record<string,Draft>>({}),input=useRef<HTMLTextAreaElement>(null),scroller=useRef<HTMLDivElement>(null),launcher=useRef<HTMLButtonElement>(null),panel=useRef<HTMLElement>(null),active=useRef(''),lastRead=useRef<Record<string,string>>({}),nearBottom=useRef(true),lastActive=useRef(Date.now());
  useEffect(()=>{active.current=id;},[id]);
- useEffect(()=>{const resize=()=>{setMounted(true);const v=window.visualViewport;const mobile=window.innerWidth<=580;const bottom=Math.max(mobile?8:80,window.innerHeight-(v?.height||innerHeight)-(v?.offsetTop||0)+12);setViewport({height:Math.max(180,Math.min(mobile?10000:540,(v?.height||innerHeight)-(mobile?24:110))),bottom});};try{drafts.current=JSON.parse(sessionStorage.getItem('tasktracker-chat-drafts:'+userId)||'{}')}catch{}const frame=requestAnimationFrame(resize);window.visualViewport?.addEventListener('resize',resize);window.addEventListener('resize',resize);return()=>{cancelAnimationFrame(frame);window.visualViewport?.removeEventListener('resize',resize);window.removeEventListener('resize',resize)};},[userId]);
+ useEffect(()=>{
+  let rAF:number|null=null;
+  const resize=()=>{
+   setMounted(true);const v=window.visualViewport;const mobile=window.innerWidth<=580;const bottom=Math.max(mobile?8:80,window.innerHeight-(v?.height||innerHeight)-(v?.offsetTop||0)+12);setViewport({height:Math.max(180,Math.min(mobile?10000:540,(v?.height||innerHeight)-(mobile?24:110))),bottom});
+  };
+  const throttledResize=()=>{if(rAF!==null)return;rAF=requestAnimationFrame(()=>{rAF=null;resize();});};
+  try{drafts.current=JSON.parse(sessionStorage.getItem('tasktracker-chat-drafts:'+userId)||'{}')}catch{}
+  const frame=requestAnimationFrame(resize);
+  window.visualViewport?.addEventListener('resize',throttledResize);
+  window.addEventListener('resize',throttledResize);
+  return()=>{cancelAnimationFrame(frame);if(rAF!==null)cancelAnimationFrame(rAF);window.visualViewport?.removeEventListener('resize',throttledResize);window.removeEventListener('resize',throttledResize);};
+ },[userId]);
+ useEffect(()=>{
+  const touch=()=>{lastActive.current=Date.now();};
+  const events=['mousemove','keydown','touchstart','scroll','focus'] as const;
+  events.forEach(e=>window.addEventListener(e,touch,{passive:true}));
+  return()=>{events.forEach(e=>window.removeEventListener(e,touch));};
+ },[]);
  useEffect(()=>{if(draft&&id){drafts.current[id]=draft;try{sessionStorage.setItem('tasktracker-chat-drafts:'+userId,JSON.stringify(drafts.current))}catch{}}},[draft,id,userId]);
- useEffect(()=>{let cancelled=false,timer:ReturnType<typeof setTimeout>;const controller=new AbortController();async function refresh(){try{if(document.visibilityState==='visible'){const r=await api('',undefined,controller.signal);if(!cancelled){setConversations(r.conversations);setPeople(r.people);setProjects(r.projects);}}}catch(e){if(!cancelled&&open)setError((e as Error).message);}finally{if(!cancelled)timer=setTimeout(refresh,open?5000:30000);}}void refresh();return()=>{cancelled=true;controller.abort();clearTimeout(timer)};},[open,id]);
- useEffect(()=>{if(!open||!id)return;let cancelled=false,timer:ReturnType<typeof setTimeout>;const controller=new AbortController();let cursor='';async function refresh(){try{if(document.visibilityState==='visible'){const r=await api('?id='+id+(cursor?'&after='+cursor:''),undefined,controller.signal);if(cancelled)return;if(cursor&&r.messages.length&&!nearBottom.current)setNewMessages(true);setMembers(r.members);setReadOnly(r.readOnly);setMessages(old=>[...new Map([...old,...r.messages].map((m:Message)=>[m.id,m])).values()].sort((a,b)=>BigInt(a.id)<BigInt(b.id)?-1:1));if(!cursor)setMore(r.messages.length===50);cursor=r.messages.at(-1)?.id||cursor;setError('');setLoading(false);if(nearBottom.current){requestAnimationFrame(()=>{if(!cancelled&&scroller.current)scroller.current.scrollTop=scroller.current.scrollHeight});const last=cursor;if(last&&lastRead.current[id]!==last){await api('',{action:'read',id,upto:last},controller.signal);if(!cancelled){lastRead.current[id]=last;setConversations(old=>old.map(c=>c.id===id?{...c,unread:0}:c));}}}}}catch(e){if(!cancelled){setLoading(false);setError((e as Error).message);if((e as Error).message==='Conversation unavailable.'){setMessages([]);setMembers([]);setReadOnly(true);}}}finally{if(!cancelled)timer=setTimeout(refresh,4000);}}void refresh();return()=>{cancelled=true;controller.abort();clearTimeout(timer)};},[open,id]);
+ useEffect(()=>{
+  let cancelled=false,timer:ReturnType<typeof setTimeout>|null=null;
+  let controller=new AbortController();
+  async function refresh(){
+   if(cancelled)return;
+   const isVisible=typeof document==='undefined'||document.visibilityState==='visible';
+   const isIdle=Date.now()-lastActive.current>45000;
+   const interval=computePollingInterval({isOpen:open,hasActiveThread:!!id,isVisible,isIdle});
+   if(isVisible){
+    try{
+     const r=await api('',undefined,controller.signal);
+     if(!cancelled){setConversations(r.conversations);setPeople(r.people);setProjects(r.projects);}
+    }catch(e){
+     if(!cancelled&&(e as Error).name!=='AbortError'&&open)setError((e as Error).message);
+    }
+   }
+   if(!cancelled&&interval!==null){timer=setTimeout(refresh,interval);}
+  }
+  void refresh();
+  const onVisibilityChange=()=>{
+   if(document.visibilityState==='visible'){
+    if(timer)clearTimeout(timer);
+    controller.abort();
+    controller=new AbortController();
+    void refresh();
+   }
+  };
+  document.addEventListener('visibilitychange',onVisibilityChange);
+  return()=>{
+   cancelled=true;
+   controller.abort();
+   if(timer)clearTimeout(timer);
+   document.removeEventListener('visibilitychange',onVisibilityChange);
+  };
+ },[open,id]);
+ useEffect(()=>{
+  if(!open||!id)return;
+  let cancelled=false,timer:ReturnType<typeof setTimeout>|null=null;
+  let controller=new AbortController();
+  let cursor='';
+  let pollIteration=0;
+  async function refresh(){
+   if(cancelled)return;
+   const isVisible=typeof document==='undefined'||document.visibilityState==='visible';
+   const isIdle=Date.now()-lastActive.current>45000;
+   const interval=computePollingInterval({isOpen:open,hasActiveThread:true,isVisible,isIdle});
+   if(isVisible){
+    try{
+     const needMeta=shouldFetchThreadMetadata(!cursor,false,pollIteration);
+     const url='?id='+id+(cursor?'&after='+cursor:'')+(needMeta?'&meta=1':'');
+     const r=await api(url,undefined,controller.signal);
+     if(cancelled)return;
+     pollIteration++;
+     if(cursor&&r.messages?.length&&!nearBottom.current)setNewMessages(true);
+     if(r.members)setMembers(r.members);
+     if(typeof r.readOnly==='boolean')setReadOnly(r.readOnly);
+     if(r.messages?.length){
+      setMessages(old=>{
+       const merged=[...new Map([...old,...r.messages].map((m:Message)=>[m.id,m])).values()].sort((a,b)=>BigInt(a.id)<BigInt(b.id)?-1:1);
+       return trimMessageHistory(merged,150);
+      });
+     }
+     if(!cursor)setMore(r.messages?.length===50);
+     cursor=r.messages?.at(-1)?.id||cursor;
+     setError('');
+     setLoading(false);
+     if(nearBottom.current){
+      requestAnimationFrame(()=>{if(!cancelled&&scroller.current)scroller.current.scrollTop=scroller.current.scrollHeight;});
+      const last=cursor;
+      if(last&&lastRead.current[id]!==last){
+       await api('',{action:'read',id,upto:last},controller.signal);
+       if(!cancelled){
+        lastRead.current[id]=last;
+        setConversations(old=>old.map(c=>c.id===id?{...c,unread:0}:c));
+       }
+      }
+     }
+    }catch(e){
+     if(!cancelled&&(e as Error).name!=='AbortError'){
+      setLoading(false);
+      setError((e as Error).message);
+      if((e as Error).message==='Conversation unavailable.'){setMessages([]);setMembers([]);setReadOnly(true);}
+     }
+    }
+   }
+   if(!cancelled&&interval!==null){timer=setTimeout(refresh,interval);}
+  }
+  void refresh();
+  const onVisibilityChange=()=>{
+   if(document.visibilityState==='visible'){
+    if(timer)clearTimeout(timer);
+    controller.abort();
+    controller=new AbortController();
+    void refresh();
+   }
+  };
+  document.addEventListener('visibilitychange',onVisibilityChange);
+  return()=>{
+   cancelled=true;
+   controller.abort();
+   if(timer)clearTimeout(timer);
+   document.removeEventListener('visibilitychange',onVisibilityChange);
+  };
+ },[open,id]);
  function select(next:string){if(id&&draft)drafts.current[id]=draft;active.current=next;setLoading(true);setId(next);setDraft(drafts.current[next]||fresh());setMessages([]);setMembers([]);setMore(false);setReadOnly(false);setError('');setNewMessages(false);setSendState('');setSearch('');setCaret(0);setDismissMentions(false);nearBottom.current=true;setOpen(true);setNewKind('');}
- useEffect(()=>{const handler=(event:Event)=>{const value=(event as CustomEvent).detail?.id;if(typeof value==='string')select(value);};window.addEventListener('tasktracker:open-chat',handler);return()=>window.removeEventListener('tasktracker:open-chat',handler);});
+ const selectRef=useRef(select);
+ selectRef.current=select;
+ useEffect(()=>{const handler=(event:Event)=>{const value=(event as CustomEvent).detail?.id;if(typeof value==='string')selectRef.current(value);};window.addEventListener('tasktracker:open-chat',handler);return()=>window.removeEventListener('tasktracker:open-chat',handler);},[]);
  useEffect(()=>{if(open)panel.current?.focus();},[open]);
  const match=draft&&!dismissMentions?draft.body.slice(0,caret).match(/(?:^|\s)@([^@\n]*)$/):null;const suggestions=match?members.filter(p=>p.id!==userId&&p.name.toLowerCase().startsWith(match[1].toLowerCase())).slice(0,5):[];
- function mention(p:Person){if(!draft)return;const start=draft.body.lastIndexOf('@',caret-1);if(start<0)return;const body=draft.body.slice(0,start)+'@'+p.name+' '+draft.body.slice(caret);const pos=start+p.name.length+2;setDraft({...draft,body,mentions:[...draft.mentions.filter(x=>x.id!==p.id),p],nonce:crypto.randomUUID()});setCaret(pos);setDismissMentions(true);requestAnimationFrame(()=>{input.current?.focus();input.current?.setSelectionRange(pos,pos)});}
- async function send(){if(!draft||!draft.body.trim()||busy||readOnly)return;const cid=id,sending=draft;let delivered=false;setBusy(true);setSendState('Sending…');setError('');try{await api('',{action:'send',id:cid,body:sending.body,reply:sending.reply?.id||null,mentions:sending.mentions.filter(p=>sending.body.includes('@'+p.name)).map(p=>p.id),nonce:sending.nonce});delivered=true;setSendState('Sent');drafts.current[cid]=fresh();try{sessionStorage.setItem('tasktracker-chat-drafts:'+userId,JSON.stringify(drafts.current))}catch{}if(active.current===cid){setDraft(drafts.current[cid]);const r=await api('?id='+cid);if(active.current===cid){setMessages(old=>[...new Map([...old,...r.messages].map((m:Message)=>[m.id,m])).values()].sort((a,b)=>BigInt(a.id)<BigInt(b.id)?-1:1));nearBottom.current=true;requestAnimationFrame(()=>{if(scroller.current)scroller.current.scrollTop=scroller.current.scrollHeight});}}}catch(e){setSendState(delivered?'Sent':'Failed');setError((e as Error).message);}finally{setBusy(false);}}
- async function older(){if(!messages.length||busy)return;const cid=id;setBusy(true);try{const r=await api('?id='+cid+'&before='+messages[0].id);if(active.current===cid){const previous=scroller.current?.scrollHeight||0;setMessages(old=>[...new Map([...r.messages,...old].map((m:Message)=>[m.id,m])).values()]);setMore(r.messages.length===50);requestAnimationFrame(()=>{if(scroller.current)scroller.current.scrollTop+=scroller.current.scrollHeight-previous;});}}catch(e){if(active.current===cid)setError((e as Error).message);}finally{setBusy(false);}}
+ function mention(p:Person){if(!draft)return;const start=draft.body.lastIndexOf('@',caret-1);if(start<0)return;const body=draft.body.slice(0,start)+'@'+p.name+' '+draft.body.slice(caret);const pos=start+p.name.length+2;setDraft({...draft,body,mentions:[...draft.mentions.filter(x=>x.id!==p.id),p],nonce:crypto.randomUUID()});setCaret(pos);setDismissMentions(true);requestAnimationFrame(()=>{input.current?.focus();input.current?.setSelectionRange(pos,pos);});}
+ async function send(){if(!draft||!draft.body.trim()||busy||readOnly)return;const cid=id,sending=draft;let delivered=false;setBusy(true);setSendState('Sending…');setError('');try{await api('',{action:'send',id:cid,body:sending.body,reply:sending.reply?.id||null,mentions:sending.mentions.filter(p=>sending.body.includes('@'+p.name)).map(p=>p.id),nonce:sending.nonce});delivered=true;setSendState('Sent');drafts.current[cid]=fresh();try{sessionStorage.setItem('tasktracker-chat-drafts:'+userId,JSON.stringify(drafts.current));}catch{}if(active.current===cid){setDraft(drafts.current[cid]);const r=await api('?id='+cid);if(active.current===cid){setMessages(old=>{const merged=[...new Map([...old,...r.messages].map((m:Message)=>[m.id,m])).values()].sort((a,b)=>BigInt(a.id)<BigInt(b.id)?-1:1);return trimMessageHistory(merged,150);});nearBottom.current=true;requestAnimationFrame(()=>{if(scroller.current)scroller.current.scrollTop=scroller.current.scrollHeight;});}}}catch(e){setSendState(delivered?'Sent':'Failed');setError((e as Error).message);}finally{setBusy(false);}}
+ async function older(){if(!messages.length||busy)return;const cid=id;setBusy(true);try{const r=await api('?id='+cid+'&before='+messages[0].id);if(active.current===cid){const previous=scroller.current?.scrollHeight||0;setMessages(old=>{const merged=[...new Map([...r.messages,...old].map((m:Message)=>[m.id,m])).values()];return trimMessageHistory(merged,300);});setMore(r.messages.length===50);requestAnimationFrame(()=>{if(scroller.current)scroller.current.scrollTop+=scroller.current.scrollHeight-previous;});}}catch(e){if(active.current===cid)setError((e as Error).message);}finally{setBusy(false);}}
  const unread=conversations.reduce((n,c)=>n+c.unread,0),current=conversations.find(c=>c.id===id);
  const close=()=>{setOpen(false);launcher.current?.focus()};
  if(!mounted)return null;

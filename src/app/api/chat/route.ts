@@ -4,13 +4,14 @@ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const json=(data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 export async function GET(request:Request){
  const user=await currentUser();if(!user)return json({error:'Please sign in again.'},401);
- const params=new URL(request.url).searchParams,id=params.get('id'),before=params.get('before'),after=params.get('after');if(id&&!uuid.test(id)||before&&!/^\d{1,18}$/.test(before)||after&&!/^\d{1,18}$/.test(after))return json({error:'Invalid conversation.'},400);
+ const params=new URL(request.url).searchParams,id=params.get('id'),before=params.get('before'),after=params.get('after'),meta=params.get('meta');if(id&&!uuid.test(id)||before&&!/^\d{1,18}$/.test(before)||after&&!/^\d{1,18}$/.test(after))return json({error:'Invalid conversation.'},400);
  try{return await transaction(user.id,async db=>{
  await db.query('SELECT assert_active()');
  if(id){
  const c=(await db.query('SELECT id,project_id,user_a,user_b FROM chat_conversations WHERE id=$1',[id])).rows[0];if(!c)return json({error:'Conversation unavailable.'},403);
  const messages=(await db.query(`SELECT m.id::text,m.author_id,m.body,m.reply_id::text,m.created_at,coalesce(p.full_name,p.email) author,r.body reply_body,coalesce(rp.full_name,rp.email) reply_author FROM chat_messages m JOIN profiles p ON p.id=m.author_id LEFT JOIN chat_messages r ON r.id=m.reply_id LEFT JOIN profiles rp ON rp.id=r.author_id WHERE m.conversation_id=$1 AND ($2::bigint IS NULL OR m.id<$2) AND ($3::bigint IS NULL OR m.id>$3) ORDER BY ${after?'m.id ASC':'m.id DESC'} LIMIT 50`,[id,before,after])).rows;
  if(!after)messages.reverse();
+ if(after&&messages.length===0&&meta!=='1')return json({messages:[]});
  const members=(await db.query('SELECT id,coalesce(full_name,email) name FROM profiles WHERE is_active AND chat_allowed($1,id) ORDER BY full_name,id',[id])).rows;
  const archived=c.project_id?(await db.query('SELECT is_archived FROM projects WHERE id=$1',[c.project_id])).rows[0]?.is_archived:members.length<2;
  return json({messages,members,readOnly:!!archived});
