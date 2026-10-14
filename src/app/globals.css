@@ -201,6 +201,15 @@ body {
 :root[data-theme="dark"] .dependency-pill[data-status="blocking"] { color: #fef08a; background: #33291e; border-color: #543b18; }
 :root[data-theme="dark"] .dependency-callout[data-type="blocked"] { color: #fef08a; background: #33291e; border-color: #543b18; }
 :root[data-theme="dark"] .dependency-callout[data-type="unblocked"] { color: #8bdcbb; background: #152b27; border-color: #2b4b42; }
+:root .action-center-pill { display: inline-flex; align-items: center; border-radius: 9999px; font-size: 0.75rem; line-height: 1rem; border: 1px solid var(--field-border); }
+:root[data-theme="dark"] .action-center-pill { border-color: #364151; background: #1b2330; color: #c1cddd; }
+:root[data-theme="dark"] .action-center-pill[data-variant="action"] { color: #fef08a; background: #33291e; border-color: #543b18; }
+:root[data-theme="dark"] .action-center-pill[data-variant="success"] { color: #8bdcbb; background: #152b27; border-color: #2b4b42; }
+:root[data-theme="dark"] .action-center-pill[data-variant="blue"] { color: #80dcea; background: #112e39; border-color: #285362; }
+:root[data-theme="dark"] .action-center-pill[data-variant="purple"] { color: #d8b4fe; background: #28213b; border-color: #4b3869; }
+:root[data-theme="dark"] .action-center-pill[data-variant="neutral"] { color: #c1cddd; background: #1b2330; border-color: #364151; }
+:root[data-theme="dark"] .action-center-empty-success { border: 1px dashed #2b4b42; background: #152b2766; color: #8bdcbb; }
+:root[data-theme="dark"] .action-center-icon-wrap { background: #112e39; color: #80dcea; }
 :root .task-priority-label { font-size: .8rem; }
 :root[data-theme="dark"] .task-priority-label { color: #acbbcf; }
 :root[data-theme="dark"] .task-priority-label[data-priority="urgent"] { color: #f5a3b1; }
@@ -360,6 +369,14 @@ body {
 :root:not([data-theme="dark"]) .dependency-pill[data-status="blocking"] { color: #795d18; background: #faf3d9; border-color: #e5d698; }
 :root:not([data-theme="dark"]) .dependency-callout[data-type="blocked"] { color: #795d18; background: #faf3d9; border-color: #e5d698; }
 :root:not([data-theme="dark"]) .dependency-callout[data-type="unblocked"] { color: #28644f; background: #e4f2e9; border-color: #bad7c7; }
+:root:not([data-theme="dark"]) .action-center-pill { color: #526868; background: #eef3f3; border-color: #d3dfdf; }
+:root:not([data-theme="dark"]) .action-center-pill[data-variant="action"] { color: #795d18; background: #faf3d9; border-color: #e5d698; }
+:root:not([data-theme="dark"]) .action-center-pill[data-variant="success"] { color: #28644f; background: #e4f2e9; border-color: #bad7c7; }
+:root:not([data-theme="dark"]) .action-center-pill[data-variant="blue"] { color: #075985; background: #dceffc; border-color: #acd4eb; }
+:root:not([data-theme="dark"]) .action-center-pill[data-variant="purple"] { color: #581c87; background: #f3e8ff; border-color: #e9d5ff; }
+:root:not([data-theme="dark"]) .action-center-pill[data-variant="neutral"] { color: #526868; background: #eef3f3; border-color: #d3dfdf; }
+:root:not([data-theme="dark"]) .action-center-empty-success { border: 1px dashed #bad7c7; background: #e4f2e966; color: #28644f; }
+:root:not([data-theme="dark"]) .action-center-icon-wrap { background: #dceffc; color: #086b6b; }
 :root:not([data-theme="dark"]) .task-priority-label { color:#617576; }
 :root:not([data-theme="dark"]) .task-priority-label[data-priority="urgent"] { color:#a14036; }
 :root:not([data-theme="dark"]) .task-priority-label[data-priority="high"] { color:#80611c; }

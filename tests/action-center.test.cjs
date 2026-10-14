@@ -57,8 +57,6 @@ test('Action Center logic: stalled review task (>48h) triggers critical SLA warn
 });
 
 test('Action Center bucket classification and mutual exclusivity', () => {
-  const today = '2026-10-14';
-
   const mockTasks = [
     {
       id: 't1',

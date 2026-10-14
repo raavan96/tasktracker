@@ -89,10 +89,10 @@ export default function ActionCenter({ data }: { data: ActionCenterData }) {
               <span className="text-gray-400">No deadline</span>
             )}
             {item.priority === 'urgent' && (
-              <span className="font-semibold text-rose-600">· Urgent</span>
+              <span className="task-priority-label font-semibold" data-priority="urgent">· Urgent</span>
             )}
             {item.priority === 'high' && (
-              <span className="font-medium text-amber-600">· High</span>
+              <span className="task-priority-label font-medium" data-priority="high">· High</span>
             )}
           </div>
 
@@ -149,13 +149,13 @@ export default function ActionCenter({ data }: { data: ActionCenterData }) {
       {/* Top Header / Greeting Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5 border-b border-gray-100">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl action-center-icon-wrap">
             <Sparkles className="h-5 w-5" aria-hidden="true" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold text-gray-900">My Focus</h2>
-              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+              <span className="action-center-pill px-2 py-0.5 font-semibold" data-variant="blue">
                 Action Center
               </span>
             </div>
@@ -169,11 +169,8 @@ export default function ActionCenter({ data }: { data: ActionCenterData }) {
           {/* Quick Counter Badges */}
           <div className="hidden sm:flex items-center gap-1.5 text-xs">
             <span
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-semibold ${
-                needsActionCount > 0
-                  ? 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-300'
-                  : 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-300'
-              }`}
+              className="action-center-pill px-2.5 py-1 font-semibold gap-1"
+              data-variant={needsActionCount > 0 ? 'action' : 'success'}
             >
               {needsActionCount > 0 ? (
                 <>
@@ -188,11 +185,11 @@ export default function ActionCenter({ data }: { data: ActionCenterData }) {
               )}
             </span>
 
-            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+            <span className="action-center-pill px-2.5 py-1 font-medium gap-1" data-variant="blue">
               <span>{activeWorkCount} active</span>
             </span>
 
-            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+            <span className="action-center-pill px-2.5 py-1 font-medium gap-1" data-variant="neutral">
               <span>{waitingCount} waiting</span>
             </span>
           </div>
@@ -274,7 +271,7 @@ export default function ActionCenter({ data }: { data: ActionCenterData }) {
                   <AlertCircle className="h-4 w-4 text-amber-600" aria-hidden="true" />
                   <h3 className="text-sm font-bold text-gray-900">Needs My Action</h3>
                 </div>
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+                <span className="action-center-pill px-2 py-0.5 font-semibold" data-variant="action">
                   {needsActionCount}
                 </span>
               </div>
@@ -284,12 +281,12 @@ export default function ActionCenter({ data }: { data: ActionCenterData }) {
 
               <div className="space-y-2.5">
                 {effectiveNeedsAction.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/20 p-5 text-center">
-                    <CheckCircle2 className="mx-auto h-6 w-6 text-emerald-600 dark:text-emerald-400 mb-1" />
-                    <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                  <div className="rounded-xl p-5 text-center action-center-empty-success">
+                    <CheckCircle2 className="mx-auto h-6 w-6 mb-1" aria-hidden="true" />
+                    <p className="text-xs font-semibold">
                       All caught up!
                     </p>
-                    <p className="mt-0.5 text-xs text-emerald-700/80 dark:text-emerald-400/80">
+                    <p className="mt-0.5 text-xs opacity-90">
                       No reviews or pending actions require you right now.
                     </p>
                   </div>
@@ -310,7 +307,7 @@ export default function ActionCenter({ data }: { data: ActionCenterData }) {
                   <Clock className="h-4 w-4 text-blue-600" aria-hidden="true" />
                   <h3 className="text-sm font-bold text-gray-900">My Active Work</h3>
                 </div>
-                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                <span className="action-center-pill px-2 py-0.5 font-semibold" data-variant="blue">
                   {activeWorkCount}
                 </span>
               </div>
@@ -348,7 +345,7 @@ export default function ActionCenter({ data }: { data: ActionCenterData }) {
                   <Hourglass className="h-4 w-4 text-purple-600" aria-hidden="true" />
                   <h3 className="text-sm font-bold text-gray-900">Waiting on Others</h3>
                 </div>
-                <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-800 dark:bg-purple-900/50 dark:text-purple-200">
+                <span className="action-center-pill px-2 py-0.5 font-semibold" data-variant="purple">
                   {waitingCount}
                 </span>
               </div>
