@@ -434,6 +434,7 @@ body {
 :root:not([data-theme="dark"]) .command-palette-trigger { border-color: #cbd5e1; background-color: #f8fafc; color: #334155; }
 :root:not([data-theme="dark"]) .command-palette-trigger:hover { background-color: #f1f5f9; border-color: #94a3b8; color: #0f172a; }
 :root:not([data-theme="dark"]) .command-palette-trigger-kbd { background-color: #e2e8f0; border: 1px solid #cbd5e1; color: #334155; }
+@media (max-width: 639px) { .command-palette-trigger-wrap { display: none !important; } }
 :root:not([data-theme="dark"]) .task-priority-label { color:#617576; }
 :root:not([data-theme="dark"]) .task-priority-label[data-priority="urgent"] { color:#a14036; }
 :root:not([data-theme="dark"]) .task-priority-label[data-priority="high"] { color:#80611c; }

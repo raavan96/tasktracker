@@ -41,7 +41,7 @@ export default function WorkspaceNav({ isAdmin, mobile = false }: { isAdmin: boo
   </nav>;
   return <div className={`workspace-nav-stack ${mobile?'workspace-nav-stack-mobile':''}`}>
     <div className="workspace-back-slot"><WorkspaceBack /></div>
-    <Link href="/dashboard/search" onClick={(e)=>{if(!e.metaKey&&!e.ctrlKey&&!e.shiftKey&&!e.altKey&&e.button===0){e.preventDefault();window.dispatchEvent(new CustomEvent('tasktracker:open-command-palette'));}}} className="workspace-search-pill workspace-nav-pill" aria-label="Search or command palette (Cmd+K)" data-tooltip="Search (⌘K)" title="Search (⌘K)" aria-current={pathname==='/dashboard/search'?'page':undefined}><Search aria-hidden="true" className="h-4 w-4"/></Link>
+    <Link href="/dashboard/search" onClick={(e)=>{if(!e.metaKey&&!e.ctrlKey&&!e.shiftKey&&!e.altKey&&e.button===0){e.preventDefault();window.dispatchEvent(new CustomEvent('tasktracker:open-command-palette'));}}} className="workspace-search-pill workspace-nav-pill" aria-label="Search" data-tooltip="Search" title="Search" aria-current={pathname==='/dashboard/search'?'page':undefined}><Search aria-hidden="true" className="h-4 w-4"/></Link>
     <div className={`workspace-nav-group ${mobile?"workspace-nav-group-mobile":""}`}>
     {mobile&&<button type="button" className="workspace-nav-overflow" disabled={!overflow.before} aria-label="Show previous sections" title="Show previous sections" onClick={()=>scrollNavigation(-1)}><ChevronLeft aria-hidden="true" size={16}/></button>}
     <div ref={menu} className={`workspace-nav-pill workspace-nav-main ${mobile?'workspace-mobile-nav':''}`} aria-label={mobile?'Workspace navigation — swipe for more':undefined}>{navigation}</div>
