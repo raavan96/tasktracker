@@ -11,8 +11,10 @@ import {
   ChevronDown,
   ArrowRight,
   Sparkles,
+  FileText,
 } from 'lucide-react';
 import type { ActionCenterData, ActionCenterItem } from '@/lib/action-center';
+import DailyStandupModal from '@/components/DailyStandupModal';
 
 export default function ActionCenter({ data }: { data: ActionCenterData }) {
   const router = useRouter();
@@ -20,6 +22,7 @@ export default function ActionCenter({ data }: { data: ActionCenterData }) {
   const [acceptedIds, setAcceptedIds] = useState<Record<string, boolean>>({});
   const [mobileTab, setMobileTab] = useState<'needsAction' | 'activeWork' | 'waitingOnOthers'>('needsAction');
   const [isOpen, setIsOpen] = useState(true);
+  const [isStandupOpen, setIsStandupOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   async function handleAccept(acknowledgementId: string, taskId: string) {
@@ -196,6 +199,17 @@ export default function ActionCenter({ data }: { data: ActionCenterData }) {
 
           <button
             type="button"
+            onClick={() => setIsStandupOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-surface px-2.5 py-1.5 text-xs font-semibold text-gray-700 hover:text-blue-600 hover:border-blue-300 dark:hover:bg-gray-800 transition shadow-sm"
+            title="Generate 1-Click Daily Standup & Handoff"
+          >
+            <FileText className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" aria-hidden="true" />
+            <span className="hidden sm:inline">Daily Standup</span>
+            <span className="sm:hidden">Standup</span>
+          </button>
+
+          <button
+            type="button"
             aria-expanded={isOpen}
             onClick={() => setIsOpen(!isOpen)}
             className="rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
@@ -367,6 +381,9 @@ export default function ActionCenter({ data }: { data: ActionCenterData }) {
             </div>
           </div>
         </div>
+      )}
+      {isStandupOpen && (
+        <DailyStandupModal onClose={() => setIsStandupOpen(false)} />
       )}
     </section>
   );
