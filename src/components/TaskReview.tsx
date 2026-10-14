@@ -3,6 +3,7 @@ import {useState} from 'react';
 import {Check, RotateCcw, Undo2, MessageSquare, ArrowRight} from 'lucide-react';
 import {reviewTask} from '@/app/dashboard/tasks/review';
 import {assignedIds,type Task} from '@/lib/task-types';
+import {getReviewAging} from '@/lib/review-aging';
 import ActionsMenu from './ActionsMenu';
 
 type ActiveStatus='todo'|'in_progress'|'blocked';
@@ -19,6 +20,8 @@ export default function TaskReview({task,userId,isAdmin,readOnly,reviewEnabled,o
  const disabled=busy||externalBusy;
  const creatorEligible=task.creator?.is_active!==false&&(task.creator?.role==='admin'||(reviewEnabled&&!ids.includes(task.created_by)));
  const waiting=creatorEligible&&task.creator?.full_name?`${task.creator.full_name} or an admin`:'an admin';
+ const reviewerShort=creatorEligible&&task.creator?.full_name?task.creator.full_name.split(' ')[0]:'Admin';
+ const aging=task.status==='in_review'?getReviewAging({status:task.status,updatedAt:task.updated_at,reviewerName:reviewerShort}):null;
  const assignees=task.assignees?.map(m=>m.full_name).join(', ')||task.assignee?.full_name||'an assignee';
  const next=readOnly?'Archived work is read-only.':task.status==='in_review'?`Waiting for ${waiting}`:task.status==='done'?task.completed_at?`Completed ${new Date(task.completed_at).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST`:'Work is complete.':!ids.length?'Assign a teammate before submitting for review.':!active?'Reassign inactive teammates before submitting this shared task for review.':`Next: ${assignees} · ${task.status==='blocked'?'resolve the blocker, then continue work':'complete the work and submit for review'}`;
  async function run(action:string){setBusy(true);onBusyChange?.(true);setError('');try{const r=await reviewTask(task.id,task.project_id,Number(task.review_version||0),action,reason);if(r.error)setError(r.error);else {setReason('');setReasonAction(null);}}catch{setError('Could not confirm the review. Refresh and try again.');}finally{setBusy(false);onBusyChange?.(false);}}
@@ -26,7 +29,13 @@ export default function TaskReview({task,userId,isAdmin,readOnly,reviewEnabled,o
  const reasonAllowed=reasonAction==='changes'?decide:reasonAction==='withdraw'?withdraw:reasonAction==='reopen'?reopen:false;
  return <section className="my-4 space-y-3 rounded-xl border bg-surface p-4" aria-label="Task review">
   <div className="flex flex-wrap items-start justify-between gap-3">
-   <div><h3 className="font-semibold" aria-label="Current task status">{labels[task.status]||task.status}</h3><p className="mt-1 text-sm text-gray-500">{next}</p></div>
+   <div>
+    <div className="flex flex-wrap items-center gap-2">
+     <h3 className="font-semibold" aria-label="Current task status">{labels[task.status]||task.status}</h3>
+     {aging&&<span className="review-sla-badge" data-tier={aging.tier} role="status" title={aging.slaDescription}><span className="review-sla-dot" aria-hidden="true"/>{aging.label}</span>}
+    </div>
+    <p className="mt-1 text-sm text-gray-500">{next}{aging?` · ${aging.slaDescription}`:''}</p>
+   </div>
    <div className="flex flex-wrap items-center gap-2">
     {submit&&<button disabled={disabled} onClick={()=>run('submit')} className="rounded-lg border px-3 py-2 text-sm">Ready for review</button>}
     {decide&&<button disabled={disabled} onClick={()=>run('approve')} className="rounded-lg bg-blue-600 px-3 py-2 text-sm text-white">Approve &amp; complete</button>}

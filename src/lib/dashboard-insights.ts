@@ -2,7 +2,7 @@ import 'server-only';
 import { workspaceRead } from './workspace-data';
 import { todayKey } from './task-presentation';
 export type InsightProject={id:string;name:string;creator:string;is_archived:boolean;completed_at:string|null;total:number;done:number;attention:boolean};
-export type DashboardInsights={today:string;month:string;isAdmin:boolean;projects:InsightProject[];attentionTasks:{id:string;project_id:string;title:string;project:string;due_date:string|null;status:string}[];status:{status:string;count:number}[];overdue:number;trend:{week:string;count:number}[];workload:{id:string|null;name:string;count:number}[];calendar:{day:string;count:number}[];deadlines:{id:string;project_id:string;title:string;project:string;due_date:string;status:string}[];deadlineTotal:number;day:string};
+export type DashboardInsights={today:string;month:string;isAdmin:boolean;projects:InsightProject[];attentionTasks:{id:string;project_id:string;title:string;project:string;due_date:string|null;status:string;updated_at?:string|null}[];status:{status:string;count:number}[];overdue:number;trend:{week:string;count:number}[];workload:{id:string|null;name:string;count:number}[];calendar:{day:string;count:number}[];deadlines:{id:string;project_id:string;title:string;project:string;due_date:string;status:string}[];deadlineTotal:number;day:string};
 export async function dashboardInsights(monthInput?:string,dayInput?:string):Promise<DashboardInsights>{
  const today=todayKey(),month=monthInput||today.slice(0,7);
  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)||Number(month.slice(0,4))<2000||Number(month.slice(0,4))>2100)throw new Error('Invalid month');
@@ -15,7 +15,7 @@ export async function dashboardInsights(monthInput?:string,dayInput?:string):Pro
    coalesce(bool_or(NOT t.is_archived AND (t.status='blocked' OR (t.status NOT IN ('done','in_review') AND t.due_date<$1::date))),false) attention
    FROM projects p LEFT JOIN profiles u ON u.id=p.created_by LEFT JOIN tasks t ON t.project_id=p.id GROUP BY p.id,u.full_name,u.email ORDER BY p.is_archived,p.name,p.id`,[today])).rows;
   const active=`FROM tasks t JOIN projects p ON p.id=t.project_id WHERE NOT t.is_archived AND NOT p.is_archived`;
-  const attentionTasks=(await db.query<DashboardInsights['attentionTasks'][number]>(`SELECT t.id,t.project_id,t.title,p.name project,t.due_date::text,t.status::text ${active}
+  const attentionTasks=(await db.query<DashboardInsights['attentionTasks'][number]>(`SELECT t.id,t.project_id,t.title,p.name project,t.due_date::text,t.status::text,t.updated_at::text ${active}
    AND ((auth.uid()=ANY(t.assignee_ids) AND (t.status='blocked' OR (t.status NOT IN ('done','in_review') AND t.due_date<=$1::date)))
    OR (t.status='in_review' AND NOT(auth.uid()=ANY(t.assignee_ids)) AND (public.is_admin() OR (public.review_enabled() AND t.created_by=auth.uid()))))
    ORDER BY t.due_date ASC NULLS LAST,t.title,t.id`,[today])).rows;

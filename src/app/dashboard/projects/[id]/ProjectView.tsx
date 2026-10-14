@@ -19,6 +19,7 @@ import {useUrlState} from '@/lib/use-url-state';
 import TaskAcknowledgement from '@/components/TaskAcknowledgement';
 import TaskReview from '@/components/TaskReview';
 import TaskForm from '@/components/TaskForm';
+import {getReviewAging,getEligibleReviewer} from '@/lib/review-aging';
 import type { Task, Member } from '@/lib/task-types';
 import {
   createTask,
@@ -281,7 +282,14 @@ export default function ProjectView({
                         </span>
                       </div>
 
-                      {task.status==='in_review'&&<span className="task-status-label" data-status="in_review">In Review (Waiting on Creator)</span>}
+                      {task.status==='in_review'&&(()=>{
+                        const reviewer=getEligibleReviewer(task,{reviewEnabled,isAdmin});
+                        const aging=getReviewAging({status:task.status,updatedAt:task.updated_at,reviewerName:reviewer.name});
+                        return <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="task-status-label" data-status="in_review">In review</span>
+                          {aging&&<span className="review-sla-badge" data-tier={aging.tier} title={aging.slaDescription}><span className="review-sla-dot" aria-hidden="true"/>{aging.label}</span>}
+                        </div>;
+                      })()}
                       {task.due_date && <p className="flex items-center gap-1.5 text-xs text-slate-600"><Calendar className="h-3.5 w-3.5" />{deadlineLabel(task.due_date, task.status, today)}</p>}
                       {task.description && (
                         <p className="text-xs text-gray-500 line-clamp-2">{task.description}</p>
