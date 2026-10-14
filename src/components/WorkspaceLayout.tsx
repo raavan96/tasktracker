@@ -15,6 +15,7 @@ import AppLogoMark from './AppLogo';
 import CommandPaletteTrigger from './CommandPaletteTrigger';
 import GlobalCommandPalette from './GlobalCommandPalette';
 import MobileBottomNav from './MobileBottomNav';
+import DesktopNavHubs from './DesktopNavHubs';
 import { 
   LogOut, 
   Bell,
@@ -62,6 +63,7 @@ export default async function WorkspaceLayout({
             </Link>
 
             <span className="workspace-context">Central Team Workspace</span>
+            <DesktopNavHubs isAdmin={isAdmin} />
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">
