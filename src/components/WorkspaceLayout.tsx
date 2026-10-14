@@ -14,6 +14,7 @@ import WorkspaceTooltips from './WorkspaceTooltips';
 import AppLogoMark from './AppLogo';
 import CommandPaletteTrigger from './CommandPaletteTrigger';
 import GlobalCommandPalette from './GlobalCommandPalette';
+import MobileBottomNav from './MobileBottomNav';
 import { 
   LogOut, 
   Bell,
@@ -111,7 +112,7 @@ export default async function WorkspaceLayout({
         <WorkspaceHelp userId={user.id} isAdmin={isAdmin} /><MorningPrompt userId={user.id} />
         {children}
       </main>
-      <AppFooter workspace /><ChatPopup userId={user.id} /><GlobalCommandPalette isAdmin={isAdmin} />
+      <AppFooter workspace /><ChatPopup userId={user.id} /><GlobalCommandPalette isAdmin={isAdmin} /><MobileBottomNav unreadCount={Number(unreadCount) || 0} />
     </div></WorkspaceBackProvider>
   );
 }
