@@ -545,11 +545,8 @@ body {
 }
 
 @media (max-width: 767px) {
-  :root[data-theme] .workspace-main {
-    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px)) !important;
-  }
   .app-footer {
-    margin-bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   }
 }
 
