@@ -29,12 +29,12 @@ export default async function NotificationsPage({
         count(*) FILTER (WHERE NOT n.is_read) unread,
         count(*) FILTER (
           WHERE (n.title = 'Ready for review' AND t.status = 'in_review' AND NOT coalesce(t.is_archived, false))
-             OR (n.title IN ('Task assigned', 'Due today', 'Task overdue', 'Due tomorrow') AND t.status NOT IN ('done') AND NOT coalesce(t.is_archived, false))
+             OR (n.title IN ('Task assigned', 'Due today', 'Task overdue', 'Due tomorrow', 'Dependency unblocked') AND t.status NOT IN ('done') AND NOT coalesce(t.is_archived, false))
              OR (n.title = 'Changes requested' AND t.status = 'in_progress' AND NOT coalesce(t.is_archived, false))
         ) action,
         count(*) FILTER (
           WHERE ((n.title = 'Ready for review' AND t.status = 'in_review' AND NOT coalesce(t.is_archived, false))
-             OR (n.title IN ('Task assigned', 'Due today', 'Task overdue', 'Due tomorrow') AND t.status NOT IN ('done') AND NOT coalesce(t.is_archived, false))
+             OR (n.title IN ('Task assigned', 'Due today', 'Task overdue', 'Due tomorrow', 'Dependency unblocked') AND t.status NOT IN ('done') AND NOT coalesce(t.is_archived, false))
              OR (n.title = 'Changes requested' AND t.status = 'in_progress' AND NOT coalesce(t.is_archived, false)))
             AND NOT n.is_read
         ) action_unread,
@@ -74,7 +74,7 @@ export default async function NotificationsPage({
     if (category === 'action') {
       categoryFilterSql = `AND (
         (n.title = 'Ready for review' AND t.status = 'in_review' AND NOT coalesce(t.is_archived, false))
-        OR (n.title IN ('Task assigned', 'Due today', 'Task overdue', 'Due tomorrow') AND t.status NOT IN ('done') AND NOT coalesce(t.is_archived, false))
+        OR (n.title IN ('Task assigned', 'Due today', 'Task overdue', 'Due tomorrow', 'Dependency unblocked') AND t.status NOT IN ('done') AND NOT coalesce(t.is_archived, false))
         OR (n.title = 'Changes requested' AND t.status = 'in_progress' AND NOT coalesce(t.is_archived, false))
       )`;
     } else if (category === 'mentions') {
@@ -84,7 +84,7 @@ export default async function NotificationsPage({
     } else if (category === 'updates') {
       categoryFilterSql = `AND NOT (
         (n.title = 'Ready for review' AND t.status = 'in_review' AND NOT coalesce(t.is_archived, false))
-        OR (n.title IN ('Task assigned', 'Due today', 'Task overdue', 'Due tomorrow') AND t.status NOT IN ('done') AND NOT coalesce(t.is_archived, false))
+        OR (n.title IN ('Task assigned', 'Due today', 'Task overdue', 'Due tomorrow', 'Dependency unblocked') AND t.status NOT IN ('done') AND NOT coalesce(t.is_archived, false))
         OR (n.title = 'Changes requested' AND t.status = 'in_progress' AND NOT coalesce(t.is_archived, false))
       ) AND NOT (
         n.title = 'Chat mention' OR n.title = 'You were mentioned' OR n.dedupe_key LIKE 'mention:%'

@@ -159,3 +159,79 @@ test('UX-10: Mentions and chat notices are correctly resolved', () => {
   };
   assert.equal(getNotificationResolution(chatNotice).badge, 'Chat mention');
 });
+
+test('Dependency unblocked: active task shows Ready to start', () => {
+  const notice = {
+    id: 'n9',
+    title: 'Dependency unblocked',
+    message: 'Feature B is ready to start',
+    dedupe_key: 'unblocked:t2:t1:u1',
+    created_at: '2026-10-14T10:00:00Z',
+    is_read: false,
+    task: { id: 't2', project_id: 'p1', title: 'Feature B', status: 'todo' },
+  };
+  const res = getNotificationResolution(notice);
+  assert.equal(res.badge, 'Ready to start');
+  assert.equal(res.variant, 'action');
+  assert.equal(res.isStaleAction, false);
+  assert.match(res.explanation, /unblocked and ready to start/i);
+});
+
+test('Dependency unblocked: in progress task shows In progress', () => {
+  const notice = {
+    id: 'n10',
+    title: 'Dependency unblocked',
+    message: 'Feature B is ready to start',
+    dedupe_key: 'unblocked:t2:t1:u1',
+    created_at: '2026-10-14T10:00:00Z',
+    is_read: true,
+    task: { id: 't2', project_id: 'p1', title: 'Feature B', status: 'in_progress' },
+  };
+  const res = getNotificationResolution(notice);
+  assert.equal(res.badge, 'In progress');
+  assert.equal(res.variant, 'info');
+  assert.equal(res.isStaleAction, false);
+});
+
+test('Dependency unblocked: completed task resolves as Already completed', () => {
+  const notice = {
+    id: 'n11',
+    title: 'Dependency unblocked',
+    message: 'Feature B is ready to start',
+    dedupe_key: 'unblocked:t2:t1:u1',
+    created_at: '2026-10-14T10:00:00Z',
+    is_read: true,
+    task: { id: 't2', project_id: 'p1', title: 'Feature B', status: 'done' },
+  };
+  const res = getNotificationResolution(notice);
+  assert.equal(res.badge, 'Already completed');
+  assert.equal(res.variant, 'success');
+  assert.equal(res.isStaleAction, true);
+});
+
+test('Dependency unblocked: archived or removed task resolves gracefully', () => {
+  const archivedNotice = {
+    id: 'n12',
+    title: 'Dependency unblocked',
+    message: 'Feature B is ready to start',
+    dedupe_key: 'unblocked:t2:t1:u1',
+    created_at: '2026-10-14T10:00:00Z',
+    is_read: true,
+    task: { id: 't2', project_id: 'p1', title: 'Feature B', status: 'todo', is_archived: true },
+  };
+  assert.equal(getNotificationResolution(archivedNotice).badge, 'Task archived');
+  assert.equal(getNotificationResolution(archivedNotice).isStaleAction, true);
+
+  const removedNotice = {
+    id: 'n13',
+    title: 'Dependency unblocked',
+    message: 'Feature B is ready to start',
+    dedupe_key: 'unblocked:t2:t1:u1',
+    created_at: '2026-10-14T10:00:00Z',
+    is_read: true,
+    task: null,
+  };
+  assert.equal(getNotificationResolution(removedNotice).badge, 'Task removed');
+  assert.equal(getNotificationResolution(removedNotice).isStaleAction, true);
+});
+

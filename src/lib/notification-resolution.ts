@@ -91,7 +91,27 @@ export function getNotificationResolution(n: Notification): ResolutionContext {
     return { badge: 'Deadline pending', variant: 'action', explanation: 'Task deadline requires attention.', isStaleAction: false };
   }
 
-  // 4. Mentions:
+  // 4. Dependency unblocked:
+  if (title === 'Dependency unblocked' || dedupe.startsWith('unblocked:')) {
+    if (!task) {
+      return { badge: 'Task removed', variant: 'muted', explanation: 'The referenced task is no longer available.', isStaleAction: true };
+    }
+    if (task.is_archived) {
+      return { badge: 'Task archived', variant: 'muted', explanation: 'This task was archived.', isStaleAction: true };
+    }
+    if (task.status === 'done') {
+      return { badge: 'Already completed', variant: 'success', explanation: 'This task has already been completed.', isStaleAction: true };
+    }
+    if (task.status === 'in_progress') {
+      return { badge: 'In progress', variant: 'info', explanation: 'Task is currently being worked on.', isStaleAction: false };
+    }
+    if (task.status === 'in_review') {
+      return { badge: 'In review', variant: 'info', explanation: 'Task has been submitted for review.', isStaleAction: false };
+    }
+    return { badge: 'Ready to start', variant: 'action', explanation: 'All blocking dependencies completed — task is unblocked and ready to start!', isStaleAction: false };
+  }
+
+  // 5. Mentions:
   if (title === 'You were mentioned' || dedupe.startsWith('mention:')) {
     if (task?.status === 'done') {
       return { badge: 'Task completed', variant: 'muted', isStaleAction: false };

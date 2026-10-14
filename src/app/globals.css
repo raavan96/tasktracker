@@ -194,6 +194,13 @@ body {
 :root[data-theme="dark"] .kind-chip[data-kind="Archived"] { color: #c1cddd; background: #1b2330; border-color: #364151; }
 :root[data-theme="dark"] .search-highlight { background-color: #452c13; color: #fef08a; border-radius: 0.25rem; padding: 0 0.125rem; font-weight: 500; }
 :root[data-theme="dark"] .notification-tab-active-count { background-color: #061628; color: #a0edfa; }
+:root .dependency-pill { display: inline-flex; align-items: center; border: 1px solid var(--field-border); border-radius: 9999px; padding: 0.125rem 0.5rem; font-size: 0.75rem; font-weight: 500; line-height: 1rem; }
+:root .dependency-callout { border-radius: 0.5rem; border: 1px solid; padding: 0.625rem 0.75rem; font-size: 0.75rem; line-height: 1rem; }
+:root[data-theme="dark"] .dependency-pill { border-color: #364151; background: #1b2330; color: #c1cddd; }
+:root[data-theme="dark"] .dependency-pill[data-status="done"] { color: #8bdcbb; background: #152b27; border-color: #2b4b42; }
+:root[data-theme="dark"] .dependency-pill[data-status="blocking"] { color: #fef08a; background: #33291e; border-color: #543b18; }
+:root[data-theme="dark"] .dependency-callout[data-type="blocked"] { color: #fef08a; background: #33291e; border-color: #543b18; }
+:root[data-theme="dark"] .dependency-callout[data-type="unblocked"] { color: #8bdcbb; background: #152b27; border-color: #2b4b42; }
 :root .task-priority-label { font-size: .8rem; }
 :root[data-theme="dark"] .task-priority-label { color: #acbbcf; }
 :root[data-theme="dark"] .task-priority-label[data-priority="urgent"] { color: #f5a3b1; }
@@ -348,6 +355,11 @@ body {
 :root:not([data-theme="dark"]) .kind-chip[data-kind="Archived"] { color: #526868; background: #eef3f3; border-color: #d3dfdf; }
 :root:not([data-theme="dark"]) .search-highlight { background-color: #fef08a; color: #713f12; border-radius: 0.25rem; padding: 0 0.125rem; font-weight: 500; }
 :root:not([data-theme="dark"]) .notification-tab-active-count { background-color: #1d4ed8; color: #ffffff; }
+:root:not([data-theme="dark"]) .dependency-pill { color: #526868; background: #eef3f3; border-color: #d3dfdf; }
+:root:not([data-theme="dark"]) .dependency-pill[data-status="done"] { color: #28644f; background: #e4f2e9; border-color: #bad7c7; }
+:root:not([data-theme="dark"]) .dependency-pill[data-status="blocking"] { color: #795d18; background: #faf3d9; border-color: #e5d698; }
+:root:not([data-theme="dark"]) .dependency-callout[data-type="blocked"] { color: #795d18; background: #faf3d9; border-color: #e5d698; }
+:root:not([data-theme="dark"]) .dependency-callout[data-type="unblocked"] { color: #28644f; background: #e4f2e9; border-color: #bad7c7; }
 :root:not([data-theme="dark"]) .task-priority-label { color:#617576; }
 :root:not([data-theme="dark"]) .task-priority-label[data-priority="urgent"] { color:#a14036; }
 :root:not([data-theme="dark"]) .task-priority-label[data-priority="high"] { color:#80611c; }
