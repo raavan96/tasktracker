@@ -144,7 +144,7 @@ export default function DesktopNavHubs({ isAdmin }: DesktopNavHubsProps) {
     <nav
       ref={containerRef}
       aria-label="Desktop navigation hubs"
-      className="desktop-nav-hubs hidden lg:flex items-center gap-1.5 ml-4"
+      className="desktop-nav-hubs hidden lg:flex items-center gap-1 shrink-0"
     >
       {hubs.map(hub => {
         const isOpen = openHubId === hub.id;
@@ -165,7 +165,7 @@ export default function DesktopNavHubs({ isAdmin }: DesktopNavHubsProps) {
               onKeyDown={e => handleKeyDown(e, hub)}
               data-active={isActive ? 'true' : 'false'}
               data-open={isOpen ? 'true' : 'false'}
-              className="desktop-nav-hub-trigger flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition cursor-pointer select-none"
+              className="desktop-nav-hub-trigger flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition cursor-pointer select-none whitespace-nowrap"
             >
               {renderIcon(hub.iconName, 'h-3.5 w-3.5 shrink-0')}
               <span>{hub.label}</span>

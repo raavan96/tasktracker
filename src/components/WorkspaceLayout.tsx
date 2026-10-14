@@ -54,15 +54,15 @@ export default async function WorkspaceLayout({
       {/* Top Navigation */}
       <div className="workspace-header-mask"><header className="workspace-header bg-surface border-b border-gray-200 sticky top-0 z-30">
         <div className="workspace-header-inner max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-8">
-            <Link href="/dashboard" className="workspace-header-brand flex items-center space-x-2 font-bold text-gray-900 text-base sm:text-lg">
+          <div className="flex items-center gap-3 xl:gap-5 min-w-0">
+            <Link href="/dashboard" className="workspace-header-brand flex items-center space-x-2 font-bold text-gray-900 text-base sm:text-lg shrink-0">
               <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center">
                 <AppLogoMark className="w-5 h-5" />
               </div>
               <span>TaskTracker<span className="workspace-brand-caption">collegedunia.com</span></span>
             </Link>
 
-            <span className="workspace-context">Central Team Workspace</span>
+            <span className="workspace-context hidden 2xl:inline shrink-0">Central Team Workspace</span>
             <DesktopNavHubs isAdmin={isAdmin} />
           </div>
 
