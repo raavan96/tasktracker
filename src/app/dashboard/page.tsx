@@ -9,8 +9,6 @@ import ProjectCollection from '@/components/ProjectCollection';
 import TaskSummary from '@/components/TaskSummary';
 import { todayKey, matchesSummary } from '@/lib/task-presentation';
 import CreateProjectModal from './CreateProjectModal';
-import ActionCenter from '@/components/ActionCenter';
-import { getActionCenterData } from '@/lib/action-center';
 
 export default async function DashboardPage({searchParams}:{searchParams:Promise<{archive?:string;status?:string}>}) {
   const query=await searchParams;
@@ -26,14 +24,13 @@ export default async function DashboardPage({searchParams}:{searchParams:Promise
 
   const isAdmin = profile?.role === 'admin';
 
-  const [{ data: projects, error: projectsError }, { data: allUsers, error: usersError },taskRecency,actionCenterData] = await Promise.all([
+  const [{ data: projects, error: projectsError }, { data: allUsers, error: usersError },taskRecency] = await Promise.all([
     supabase.from('projects').select(`
       id, name, description, is_archived, completed_at, created_at, created_by,
       project_members(count), tasks(id, title, created_by, assignee_id,assignee_ids, status, due_date, is_archived)
     `).order('created_at', { ascending: false }),
     supabase.from('profiles').select('id, full_name, email, is_active').order('full_name'),
     workspaceRead(async db=>(await db.query<{project_id:string;last_task_edit_at:string}>(projectRecencySQL)).rows),
-    getActionCenterData(),
   ]);
 
   if(projectsError||usersError)throw new Error('The workspace could not load. Please retry.');
@@ -63,8 +60,6 @@ export default async function DashboardPage({searchParams}:{searchParams:Promise
 
         <CreateProjectModal users={(allUsers || []).filter(u=>u.is_active!==false)} />
       </div>
-
-      <ActionCenter data={actionCenterData} />
 
       <ProjectOverview userId={user!.id}>
       <section className="space-y-4"><div><h2 className="text-lg font-semibold">Project overview</h2><p className="mt-1 text-sm text-gray-500">Across projects you can access. Attention and ready-to-complete counts are subsets of active projects.</p></div><OverviewCards label="Project overview" items={projectItems}/></section>
