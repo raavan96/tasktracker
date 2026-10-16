@@ -66,6 +66,7 @@ export default function ActionCenter({ data }: { data: ActionCenterData }) {
             </span>
             <Link
               href={`/dashboard/projects/${item.project_id}?task=${item.id}`}
+              aria-label={`${item.title} (${item.project_name})`}
               className="mt-0.5 block font-semibold text-gray-900 group-hover:text-blue-600 line-clamp-2 text-sm leading-snug"
             >
               {item.title}
