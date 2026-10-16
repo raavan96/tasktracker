@@ -28,6 +28,7 @@ CREATE INDEX sessions_expiry_idx ON auth.sessions(expires_at);
 CREATE TABLE auth.login_attempts(key text PRIMARY KEY,attempts integer NOT NULL,window_start timestamptz NOT NULL);
 CREATE POLICY notifications_read ON notifications FOR SELECT TO authenticated USING(user_id=auth.uid());
 CREATE POLICY notifications_update ON notifications FOR UPDATE TO authenticated USING(user_id=auth.uid()) WITH CHECK(user_id=auth.uid());
+CREATE POLICY notifications_delete ON notifications FOR DELETE TO authenticated USING(user_id=auth.uid());
 REVOKE UPDATE ON notifications FROM authenticated;
 GRANT UPDATE(is_read) ON notifications TO authenticated;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;

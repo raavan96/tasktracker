@@ -11,3 +11,17 @@ export async function setNotificationRead(id:string|null,isRead:boolean){
  revalidatePath('/dashboard','layout');revalidatePath('/admin','layout');
  return {success:true};
 }
+
+export async function deleteNotification(id: string | null) {
+  const db = await createClient();
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) return { error: 'Please sign in again.' };
+  let query = db.from('notifications').delete().eq('user_id', user.id);
+  if (id) query = query.eq('id', id);
+  const { error } = await query;
+  if (error) return { error: 'Could not delete notifications. Please try again.' };
+  revalidatePath('/dashboard', 'layout');
+  revalidatePath('/admin', 'layout');
+  return { success: true };
+}
+

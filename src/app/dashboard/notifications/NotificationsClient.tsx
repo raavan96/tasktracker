@@ -3,7 +3,7 @@ import WorkspaceHeading from '@/components/WorkspaceHeading';
 import {useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
-import {setNotificationRead} from './actions';
+import {setNotificationRead, deleteNotification} from './actions';
 import {
   type Notification,
   type NotificationTask,
@@ -56,6 +56,29 @@ export default function NotificationsClient({
       if (result.error) setError(result.error);
     } catch {
       setError('Could not confirm the change. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(id: string | null) {
+    if (id === null) {
+      const confirmed = window.confirm(
+        'Are you sure you want to delete all notifications? This action cannot be undone.'
+      );
+      if (!confirmed) return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      const result = await deleteNotification(id);
+      if (result.error) {
+        setError(result.error);
+      } else if (id === null) {
+        router.push('/dashboard/notifications');
+      }
+    } catch {
+      setError('Could not delete notifications. Please try again.');
     } finally {
       setBusy(false);
     }
@@ -128,6 +151,14 @@ export default function NotificationsClient({
             onClick={() => update(null, true)}
           >
             Mark all as read
+          </button>
+          <button
+            type="button"
+            disabled={busy || total === 0}
+            className="rounded-lg border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/30 px-3.5 py-2 text-sm font-medium disabled:opacity-50 transition"
+            onClick={() => remove(null)}
+          >
+            Delete all
           </button>
         </div>
       </div>
@@ -225,6 +256,15 @@ export default function NotificationsClient({
                   className="inline-flex min-h-11 items-center text-blue-600 underline disabled:opacity-50"
                 >
                   {n.is_read ? 'Mark as unread' : 'Mark as read'}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => remove(n.id)}
+                  aria-label={`Delete notification ${n.title}`}
+                  className="inline-flex min-h-11 items-center text-red-600 hover:text-red-700 underline disabled:opacity-50"
+                >
+                  Delete
                 </button>
               </div>
             </article>

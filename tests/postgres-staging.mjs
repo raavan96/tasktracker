@@ -83,6 +83,15 @@ const notifications=await q('notifications').select('*',{head:true,count:'exact'
 assert.ok(notifications.count>=1);assert.equal(notifications.data,null);
 assert.equal((await q('notifications').update({is_read:true}).eq('user_id',member).execute()).error,null);
 assert.ok((await q('notifications').update({user_id:outsider}).eq('user_id',member).execute()).error);
+await as(null);
+const delNotice=(await rows("INSERT INTO notifications(user_id,title,message) VALUES($1,'Delete Test','Test') RETURNING id",[member]))[0];
+const ownerNotice=(await rows("INSERT INTO notifications(user_id,title,message) VALUES($1,'Owner Notice','Test') RETURNING id",[owner]))[0];
+await as(member);
+const failedDel=await q('notifications').delete().eq('id',ownerNotice.id).select().execute();
+assert.equal(failedDel.data?.length ?? 0,0);
+const successfulDel=await q('notifications').delete().eq('id',delNotice.id).select().execute();
+assert.equal(successfulDel.error,null);
+assert.equal(successfulDel.data?.length,1);
 assert.throws(()=>q('auth.users'));
 assert.ok((await q('profiles').select('id); DROP TABLE profiles;--').execute()).error);
 await as(owner);
