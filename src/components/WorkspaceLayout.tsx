@@ -15,7 +15,6 @@ import AppLogoMark from './AppLogo';
 import CommandPaletteTrigger from './CommandPaletteTrigger';
 import GlobalCommandPalette from './GlobalCommandPalette';
 import MobileBottomNav from './MobileBottomNav';
-import DesktopNavHubs from './DesktopNavHubs';
 import { 
   LogOut, 
   Bell,
@@ -42,6 +41,7 @@ export default async function WorkspaceLayout({
 
   return (
     <WorkspaceBackProvider><div className="workspace-shell min-h-screen bg-gray-50 flex flex-col">
+      <script dangerouslySetInnerHTML={{ __html: `try{if(localStorage.getItem('tasktracker-sidebar-expanded')==='false'){document.documentElement.setAttribute('data-sidebar-expanded','false')}else{document.documentElement.setAttribute('data-sidebar-expanded','true')}}catch(e){}` }} />
       <div className="workspace-wallpaper" aria-hidden="true" /><WorkspaceTooltips />
       <aside className="dark-workspace-sidebar" aria-label="Sidebar">
         <Link href="/dashboard" className="workspace-brand flex items-center gap-3 font-semibold">
@@ -63,7 +63,6 @@ export default async function WorkspaceLayout({
             </Link>
 
             <span className="workspace-context hidden 2xl:inline shrink-0">Central Team Workspace</span>
-            <DesktopNavHubs isAdmin={isAdmin} />
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">
