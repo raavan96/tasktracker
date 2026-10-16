@@ -10,19 +10,19 @@ export const MOBILE_NAV_ITEMS: MobileNavItem[] = [
   {
     id: 'mobile-nav-focus',
     label: 'Focus',
-    href: '/dashboard',
+    href: '/dashboard/my-tasks#focus',
     iconName: 'sparkles',
   },
   {
     id: 'mobile-nav-my-tasks',
     label: 'My Tasks',
-    href: '/dashboard/my-tasks',
+    href: '/dashboard/my-tasks#tasks',
     iconName: 'check',
   },
   {
     id: 'mobile-nav-projects',
     label: 'Projects',
-    href: '/dashboard#projects',
+    href: '/dashboard',
     iconName: 'folder',
   },
   {
@@ -39,20 +39,52 @@ export const MOBILE_NAV_ITEMS: MobileNavItem[] = [
   },
 ];
 
-export function isMobileNavActive(itemHref: string | undefined, currentPath: string): boolean {
+export function isMobileNavActive(
+  itemHref: string | undefined,
+  currentPath: string,
+  currentHash?: string
+): boolean {
   if (!itemHref) return false;
 
-  // Exact match for /dashboard
-  if (itemHref === '/dashboard' || itemHref === '/dashboard#projects') {
-    if (itemHref === '/dashboard') {
-      return currentPath === '/dashboard';
+  // Extract path and hash from itemHref
+  const [itemPath, itemHash] = itemHref.split('#');
+
+  // Extract path and hash from currentPath if currentPath contains hash
+  let activePath = currentPath;
+  let activeHash = currentHash || '';
+  if (currentPath.includes('#')) {
+    const parts = currentPath.split('#');
+    activePath = parts[0];
+    if (!activeHash) {
+      activeHash = '#' + parts[1];
     }
-    // For Projects, active on project pages or dashboard projects anchor
-    return currentPath.startsWith('/dashboard/projects');
+  }
+
+  // Normalize activeHash
+  if (activeHash && !activeHash.startsWith('#')) {
+    activeHash = '#' + activeHash;
+  }
+
+  // Projects item (/dashboard or legacy /dashboard#projects)
+  if (itemPath === '/dashboard') {
+    return activePath === '/dashboard' || activePath.startsWith('/dashboard/projects');
+  }
+
+  // Focus item (/dashboard/my-tasks#focus)
+  if (itemPath === '/dashboard/my-tasks' && itemHash === 'focus') {
+    if (activePath !== '/dashboard/my-tasks') return false;
+    return activeHash === '#focus';
+  }
+
+  // My Tasks item (/dashboard/my-tasks#tasks or /dashboard/my-tasks)
+  if (itemPath === '/dashboard/my-tasks' && (itemHash === 'tasks' || !itemHash)) {
+    if (activePath !== '/dashboard/my-tasks') return false;
+    // Active if hash is #tasks OR default on /dashboard/my-tasks when hash is not #focus
+    return activeHash === '#tasks' || activeHash === '' || !activeHash;
   }
 
   // Exact or prefix match for other routes
-  return currentPath === itemHref || currentPath.startsWith(itemHref + '/');
+  return activePath === itemPath || activePath.startsWith(itemPath + '/');
 }
 
 export function formatUnreadBadge(count: number): string | null {

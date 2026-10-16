@@ -4,12 +4,14 @@ import TaskTable from '@/components/TaskTable';
 import ActionCenter from '@/components/ActionCenter';
 import { getActionCenterData } from '@/lib/action-center';
 import { todayKey } from '@/lib/task-presentation';
+import MyTasksHashScroll from './MyTasksHashScroll';
 
 export default async function MyTasksPage() {
   const actionCenterData = await getActionCenterData();
 
   return (
     <div className="space-y-6">
+      <MyTasksHashScroll />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <WorkspaceHeading className="text-2xl font-bold">My Assigned Tasks</WorkspaceHeading>
@@ -17,10 +19,14 @@ export default async function MyTasksPage() {
         </div>
       </div>
 
-      <ActionCenter data={actionCenterData} />
+      <section id="focus" aria-label="My Focus Area" className="scroll-mt-20">
+        <ActionCenter data={actionCenterData} />
+      </section>
 
-      <TaskOverview mine />
-      <TaskTable mine today={todayKey()} />
+      <section id="tasks" aria-label="My Assigned Tasks" className="space-y-6 scroll-mt-20">
+        <TaskOverview mine />
+        <TaskTable mine today={todayKey()} />
+      </section>
     </div>
   );
 }

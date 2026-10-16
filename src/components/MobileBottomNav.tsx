@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -21,10 +22,40 @@ interface MobileBottomNavProps {
 
 export default function MobileBottomNav({ unreadCount = 0 }: MobileBottomNavProps) {
   const pathname = usePathname();
+  const [currentHash, setCurrentHash] = useState('');
   const unreadBadgeText = formatUnreadBadge(unreadCount);
+
+  useEffect(() => {
+    const updateHash = () => {
+      setCurrentHash(typeof window !== 'undefined' ? window.location.hash || '' : '');
+    };
+    updateHash();
+    window.addEventListener('hashchange', updateHash);
+    return () => window.removeEventListener('hashchange', updateHash);
+  }, [pathname]);
 
   const handleJumpClick = () => {
     window.dispatchEvent(new CustomEvent('tasktracker:open-command-palette'));
+  };
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href?: string) => {
+    if (!href) return;
+    const [targetPath, hash] = href.split('#');
+    if (hash) {
+      if (pathname === targetPath) {
+        e.preventDefault();
+        const element = document.getElementById(hash);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+          window.history.replaceState(null, '', href);
+          setCurrentHash(`#${hash}`);
+        }
+      } else {
+        setCurrentHash(`#${hash}`);
+      }
+    } else {
+      setCurrentHash('');
+    }
   };
 
   const renderIcon = (iconName: string, className: string) => {
@@ -51,7 +82,7 @@ export default function MobileBottomNav({ unreadCount = 0 }: MobileBottomNavProp
     >
       <div className="mobile-bottom-nav-inner flex items-center justify-around px-2 py-1.5">
         {MOBILE_NAV_ITEMS.map(item => {
-          const isActive = isMobileNavActive(item.href, pathname);
+          const isActive = isMobileNavActive(item.href, pathname, currentHash);
           const iconClass = 'h-5 w-5 shrink-0 transition-transform';
 
           if (item.isAction) {
@@ -80,6 +111,7 @@ export default function MobileBottomNav({ unreadCount = 0 }: MobileBottomNavProp
               aria-label={item.label}
               aria-current={isActive ? 'page' : undefined}
               data-active={isActive ? 'true' : 'false'}
+              onClick={e => handleNavClick(e, item.href)}
               className="mobile-bottom-nav-item flex flex-col items-center justify-center min-w-[56px] min-h-[48px] rounded-xl px-2 py-1 text-center transition relative"
             >
               <span className="mobile-bottom-nav-icon-wrap relative flex items-center justify-center px-2.5 py-0.5 rounded-full">
