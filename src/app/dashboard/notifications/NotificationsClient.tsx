@@ -119,8 +119,8 @@ export default function NotificationsClient({
             value={filter}
             onChange={e => router.push(href(1, e.target.value, category))}
           >
-            <option value="all">All notifications</option>
             <option value="unread">Unread ({unread})</option>
+            <option value="all">All notifications</option>
           </select>
           <button
             disabled={busy || !unread}

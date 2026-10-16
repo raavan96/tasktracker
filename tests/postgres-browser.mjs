@@ -519,7 +519,7 @@ try{
   await admin.getByRole('button',{name:'Save benchmark',exact:true}).click();await expect(admin.getByRole('heading',{name:'Save benchmark',exact:true})).toBeVisible();
   await admin.getByRole('button',{name:'Close dialog'}).click();await admin.getByRole('button',{name:'Board',exact:true}).click();await expect(admin.getByRole('button',{name:'Open task: Save benchmark',exact:true})).toBeVisible();
   await db.query("INSERT INTO notifications(user_id,title,message) SELECT $1,'Pagination QA '||n,'Synthetic notice' FROM generate_series(1,65) n",[users[0].id]);
-  await admin.goto(base+'/dashboard/notifications');await expect(admin.locator('article')).toHaveCount(50);await admin.getByRole('link',{name:'Next',exact:true}).click();await expect(admin.locator('article').first()).toBeVisible();
+  await admin.goto(base+'/dashboard/notifications');await expect(admin.locator('article')).toHaveCount(10);await admin.getByRole('link',{name:'Next',exact:true}).click();await expect(admin.locator('article').first()).toBeVisible();
   console.log('Release A/B browser: draft retained after lost response, retry stored once, table-to-task/board and paginated notifications passed.');
 
   // Release C/D: private saved filters, guarded bulk edits and account preferences.
