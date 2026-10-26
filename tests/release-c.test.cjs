@@ -31,6 +31,7 @@ test('start pages cannot become an external or arbitrary redirect',()=>{
 });
 test('shared date/status text uses calendar dates and exact India timestamps',()=>{
  assert.equal(workspaceDate('2026-10-26'),'26 Oct 2026');
+ assert.equal(workspaceDate('2026-10-25T20:00:00Z'),'26 Oct 2026');
  assert.match(workspaceTimestamp('2026-10-25T20:00:00Z'),/26 Oct 2026, 1:30:00 am IST/);
  assert.equal(workspaceTimestamp('invalid'),'Time unavailable');
  assert.equal(taskStatusLabels.done,'Completed');assert.equal(taskStatusLabels.todo,'To do');

@@ -2,7 +2,7 @@ export const WORKSPACE_TIMEZONE = 'Asia/Kolkata';
 export const taskStatusLabels:Record<string,string>={todo:'To do',in_progress:'In progress',blocked:'Blocked',in_review:'In review',done:'Completed'};
 export function workspaceDate(value:string|null|undefined){
  if(!value)return 'No date';
- const date=new Date(value.slice(0,10)+'T12:00:00Z');
+ const date=new Date(value.includes('T')?value:value.slice(0,10)+'T12:00:00Z');
  return Number.isFinite(date.getTime())?date.toLocaleDateString('en-IN',{timeZone:WORKSPACE_TIMEZONE,day:'numeric',month:'short',year:'numeric'}):'Date unavailable';
 }
 export function workspaceTimestamp(value:string|null|undefined){
