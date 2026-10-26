@@ -94,19 +94,19 @@ export default function WorkspaceNav({ isAdmin, mobile = false }: { isAdmin: boo
     </Link>)}
   </nav>;
   return <div className={`workspace-nav-stack ${mobile?'workspace-nav-stack-mobile':''}`}>
-    <div className="workspace-back-slot">
-      <WorkspaceBack />
-      {!mobile && isExpanded && (
-        <button
-          type="button"
-          onClick={toggleSidebar}
-          aria-label="Collapse sidebar"
-          title="Collapse sidebar"
-          className="workspace-toggle-top-btn"
-        >
-          <PanelLeftClose aria-hidden="true" className="h-4 w-4" />
-        </button>
-      )}
+    <div className="workspace-nav-utilities">
+      <div className="workspace-back-slot"><WorkspaceBack /></div>
+      {!mobile && <button
+        type="button"
+        onClick={toggleSidebar}
+        aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+        aria-expanded={isExpanded}
+        title={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+        data-tooltip={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+        className="workspace-sidebar-toggle-btn workspace-nav-pill"
+      >
+        {isExpanded ? <PanelLeftClose aria-hidden="true" className="h-4 w-4" /> : <PanelLeftOpen aria-hidden="true" className="h-4 w-4" />}
+      </button>}
     </div>
     <Link href="/dashboard/search" onClick={(e)=>{if(!e.metaKey&&!e.ctrlKey&&!e.shiftKey&&!e.altKey&&e.button===0){e.preventDefault();window.dispatchEvent(new CustomEvent('tasktracker:open-command-palette'));}}} className="workspace-search-pill workspace-nav-pill" aria-label="Search" data-tooltip={!mobile && !isExpanded ? "Search" : undefined} title={!mobile && !isExpanded ? "Search" : undefined} aria-current={pathname==='/dashboard/search'?'page':undefined}>
       <div className="workspace-search-content">
@@ -120,26 +120,6 @@ export default function WorkspaceNav({ isAdmin, mobile = false }: { isAdmin: boo
       <div ref={menu} className={`workspace-nav-pill workspace-nav-main ${mobile?'workspace-mobile-nav':''}`} aria-label={mobile?'Workspace navigation — swipe for more':undefined}>{navigation}</div>
       {mobile&&<button type="button" className="workspace-nav-overflow" disabled={!overflow.after} aria-label="Show more sections" title="Show more sections" onClick={()=>scrollNavigation(1)}><ChevronRight aria-hidden="true" size={16}/></button>}
     </div>
-    {!mobile && (
-      <div className="workspace-sidebar-toggle-slot">
-        <button
-          type="button"
-          onClick={toggleSidebar}
-          aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
-          title={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
-          data-tooltip={!isExpanded ? "Expand sidebar" : undefined}
-          className="workspace-sidebar-toggle-btn workspace-nav-pill"
-        >
-          {isExpanded ? (
-            <>
-              <PanelLeftClose aria-hidden="true" className="h-4 w-4 shrink-0" />
-              <span className="workspace-toggle-label">Collapse sidebar</span>
-            </>
-          ) : (
-            <PanelLeftOpen aria-hidden="true" className="h-4 w-4 shrink-0" />
-          )}
-        </button>
-      </div>
-    )}
+
   </div>;
 }

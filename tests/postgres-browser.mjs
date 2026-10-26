@@ -39,11 +39,16 @@ try{
    await expect(admin.locator(shell+' .workspace-search-pill')).toBeVisible();
    await expect(admin.locator(shell).getByRole('button',{name:'Go back',exact:true})).toHaveCount(0);
    const positions=()=>admin.locator(shell+' .workspace-nav-stack').evaluate(el=>[...el.querySelectorAll('.workspace-search-pill,.workspace-nav-main')].map(n=>{const r=n.getBoundingClientRect();return [r.x,r.y,r.width];}));
+   if(width===1440){
+    const toggle=admin.locator(shell).getByRole('button',{name:'Collapse sidebar',exact:true});await expect(toggle).toHaveCount(1);
+    assert.deepEqual(await toggle.evaluate(el=>{const r=el.getBoundingClientRect();return [r.width,r.height];}),[44,44]);
+   }
    const before=await positions();
    await admin.locator(shell).getByRole('link',{name:'All Tasks',exact:true}).click();
    await expect(admin).toHaveURL(base+'/dashboard/tasks');
    await expect(admin.locator(shell).getByRole('button',{name:'Go back',exact:true})).toBeVisible();
    assert.deepEqual(await positions(),before,'Back appearing must not move navigation');
+   assert.deepEqual(await admin.locator(shell).getByRole('button',{name:'Go back',exact:true}).evaluate(el=>{const r=el.getBoundingClientRect();return [r.width,r.height];}),[44,44],'Back must remain a compact target');
    await admin.locator(shell).getByRole('button',{name:'Go back',exact:true}).click();
    await expect(admin).toHaveURL(base+'/dashboard');
    await expect(admin.locator(shell).getByRole('button',{name:'Go back',exact:true})).toHaveCount(0);
