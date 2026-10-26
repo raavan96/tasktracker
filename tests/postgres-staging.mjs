@@ -681,4 +681,21 @@ assert.equal((await rows(noticeContext+' SELECT action_needed FROM classified WH
 await rows("SELECT set_archive('project',$1,true,true,false)",[abProject]);assert.equal((await rows('SELECT can_review_workspace_task($1) yes',[abSelf]))[0].yes,false);
 console.log('Release AB: review eligibility/admin self-review, immutable event actor, notification read without email, reassignment and archive resolution passed.');
 
+
+// Release C: favorites and start pages are personal, RLS protected and read-only for inactive members.
+await as(null);await db.exec(read('postgres/027_personal_workspace.sql'));
+await as(ab[1]);const cProject=(await rows("SELECT create_workspace_project('C private favorite','',ARRAY[$1::uuid],true) id",[ab[2]]))[0].id;
+await rows('INSERT INTO project_favorites(user_id,project_id) VALUES($1,$2)',[ab[1],cProject]);
+await rows("INSERT INTO workspace_preferences(user_id,landing_page) VALUES($1,'/dashboard/my-tasks')",[ab[1]]);
+assert.equal((await rows('SELECT landing_page FROM workspace_preferences'))[0].landing_page,'/dashboard/my-tasks');
+await assert.rejects(()=>rows("UPDATE workspace_preferences SET landing_page='https://outside.example' WHERE user_id=$1",[ab[1]]));
+await as(ab[2]);assert.equal((await rows('SELECT * FROM project_favorites')).length,0);assert.equal((await rows('SELECT * FROM workspace_preferences')).length,0);
+await assert.rejects(()=>rows("INSERT INTO workspace_preferences(user_id,landing_page) VALUES($1,'/dashboard/tasks')",[ab[1]]));
+await as(ab[3]);await assert.rejects(()=>rows('INSERT INTO project_favorites(user_id,project_id) VALUES($1,$2)',[ab[3],cProject]));
+await as(ab[0]);await rows("SELECT set_member_active($1,false,'C inactive preferences test')",[ab[1]]);
+await as(ab[1]);assert.equal((await rows('SELECT * FROM workspace_preferences')).length,0);await assert.rejects(()=>rows('INSERT INTO project_favorites(user_id,project_id) VALUES($1,$2)',[ab[1],abProject]));
+await as(ab[0]);await rows("SELECT set_member_active($1,true,'C inactive preferences complete')",[ab[1]]);
+await as(ab[1]);await rows('DELETE FROM project_favorites WHERE project_id=$1',[cProject]);assert.equal((await rows('SELECT * FROM project_favorites')).length,0);
+console.log('Release C: personal favorites, private-project denial, safe start pages, cross-user RLS and inactive-member restrictions passed.');
+
 await db.close();

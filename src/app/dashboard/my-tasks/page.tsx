@@ -19,7 +19,7 @@ export default async function MyTasksPage({searchParams}:{searchParams:Promise<R
       <MyTasksHashScroll />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <WorkspaceHeading className="text-2xl font-bold">My Assigned Tasks</WorkspaceHeading>
+          <WorkspaceHeading className="text-2xl font-bold">My Tasks</WorkspaceHeading>
           <p className="text-sm text-gray-500">Your assignments and work that needs your attention.</p>
         </div>
       </div>

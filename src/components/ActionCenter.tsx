@@ -1,5 +1,6 @@
 'use client';
 
+import {deadlineLabel,workspaceDate} from '@/lib/task-presentation';
 import { useState, useTransition, useEffect } from 'react';
 import Link from './IntentLink';
 import { useRouter } from 'next/navigation';
@@ -91,7 +92,7 @@ export default function ActionCenter({ data,initialOpen=false }: { data: ActionC
             {item.due_date ? (
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>Due {item.due_date}</span>
+                <span title={workspaceDate(item.due_date)}>{deadlineLabel(item.due_date,item.status,data.today)}</span>
               </span>
             ) : (
               <span className="text-gray-400">No deadline</span>

@@ -34,7 +34,7 @@ function setup({user = {id:'admin'}, role = 'admin', authError = null, profileEr
     }},
     from(){const q={select:()=>q,eq:()=>q,single:async()=>({data:memberExists?{id:'new-id'}:null}),upsert:async(payload)=>{writes.push(['profile',payload]);return {error:profileError};}};return q;}
   };
-  const actions=load('src/app/auth/actions.ts',{'next/cache':{revalidatePath:p=>invalidated.push(p)},'next/navigation':{redirect:()=>{}},'@/lib/supabase/server':{createClient:async()=>client,createAdminClient:()=>admin}});
+  const actions=load('src/app/auth/actions.ts',{'@/lib/postgres/db':{transaction:async()=>{throw Error('Unexpected login database access');}},'@/lib/workspace-preferences':load('src/lib/workspace-preferences.ts',{}),'next/cache':{revalidatePath:p=>invalidated.push(p)},'next/navigation':{redirect:()=>{}},'@/lib/supabase/server':{createClient:async()=>client,createAdminClient:()=>admin}});
   return {actions,writes,invalidated};
 }
 test('signed-out users and members cannot create accounts or reset passwords',async()=>{
@@ -74,4 +74,21 @@ test('admin can assign a replacement password without sending a recovery email',
   const t=setup();assert.ok((await t.actions.resetMemberPassword('target',form())).success);
   assert.deepEqual(t.writes,[['reset','target',{password:'test-password-123',email_confirm:true}]]);
   const failed=setup({authError:{message:'Password rejected'}});assert.equal((await failed.actions.resetMemberPassword('target',form())).error,'Password rejected');
+});
+
+
+test('personal start page is used at sign-in while acceptance links take priority',async()=>{
+ const previous=process.env.DATA_BACKEND;process.env.DATA_BACKEND='postgres';
+ const prefs=load('src/lib/workspace-preferences.ts',{});let reads=0;let landing='/dashboard/my-tasks';
+ const actions=load('src/app/auth/actions.ts',{
+  'next/cache':{revalidatePath:()=>{}},'next/navigation':{redirect:path=>{throw Error('REDIRECT:'+path);}},
+  '@/lib/supabase/server':{createClient:async()=>({auth:{signInWithPassword:async()=>({data:{user:{id:'member'}},error:null})}})},
+  '@/lib/postgres/db':{transaction:async(user,work)=>{assert.equal(user,'member');return work({query:async sql=>{if(sql.includes('workspace_preferences')){reads++;return {rows:[{landing_page:landing}]};}return {rows:[]};}});}},
+  '@/lib/workspace-preferences':prefs,
+ });
+ try{
+  await assert.rejects(()=>actions.signIn(form()),/REDIRECT:\/dashboard\/my-tasks/);assert.equal(reads,1);
+  const next='/acknowledge/00000000-0000-0000-0000-000000000001';await assert.rejects(()=>actions.signIn(form({next})),error=>error.message==='REDIRECT:'+next);assert.equal(reads,1);
+  landing='https://outside.example';await assert.rejects(()=>actions.signIn(form()),error=>error.message==='REDIRECT:/dashboard');
+ }finally{if(previous===undefined)delete process.env.DATA_BACKEND;else process.env.DATA_BACKEND=previous;}
 });

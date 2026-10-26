@@ -20,7 +20,7 @@ test('Review Aging: non-review statuses return null', () => {
   }
 });
 
-test('Review Aging: Fresh tier (<24h) returns on_track SLA metrics', () => {
+test('Review Aging: Fresh tier (<24h) reports elapsed time without a configured SLA', () => {
   const base = new Date('2026-10-14T12:00:00Z').getTime();
 
   // Just now
@@ -35,7 +35,7 @@ test('Review Aging: Fresh tier (<24h) returns on_track SLA metrics', () => {
   assert.equal(justNow.label, 'In review · just now');
   assert.equal(justNow.shortBadgeLabel, '<1h');
   assert.equal(justNow.isOverdueSla, false);
-  assert.equal(justNow.slaStatus, 'on_track');
+  assert.equal(justNow.slaStatus, 'not_configured');
 
   // 3 hours ago
   const threeHours = getReviewAging({
@@ -60,7 +60,7 @@ test('Review Aging: Fresh tier (<24h) returns on_track SLA metrics', () => {
   assert.equal(twentyThreeHours.isOverdueSla, false);
 });
 
-test('Review Aging: Aging tier (24h to 48h) includes reviewer target and warning SLA', () => {
+test('Review Aging: Aging tier (24h to 48h) includes reviewer target and elapsed time', () => {
   const base = new Date('2026-10-14T12:00:00Z').getTime();
 
   // Exactly 24 hours
@@ -76,7 +76,7 @@ test('Review Aging: Aging tier (24h to 48h) includes reviewer target and warning
   assert.equal(oneDay.label, 'Waiting 1d · Maya');
   assert.equal(oneDay.shortBadgeLabel, 'Waiting 1d');
   assert.equal(oneDay.isOverdueSla, false);
-  assert.equal(oneDay.slaStatus, 'aging');
+  assert.equal(oneDay.slaStatus, 'not_configured');
 
   // 36 hours without reviewer name
   const thirtySixHours = getReviewAging({
@@ -101,7 +101,7 @@ test('Review Aging: Aging tier (24h to 48h) includes reviewer target and warning
   assert.equal(fortySevenHours.label, 'Waiting 1d · Admin');
 });
 
-test('Review Aging: Stalled tier (>=48h) marks overdue SLA critical bottleneck', () => {
+test('Review Aging: Stalled tier (>=48h) does not invent an overdue SLA', () => {
   const base = new Date('2026-10-14T12:00:00Z').getTime();
 
   // Exactly 48 hours (2 days)
@@ -114,10 +114,10 @@ test('Review Aging: Stalled tier (>=48h) marks overdue SLA critical bottleneck',
   assert.equal(twoDays.tier, 'stalled');
   assert.equal(twoDays.hours, 48);
   assert.equal(twoDays.days, 2);
-  assert.equal(twoDays.label, 'Stalled · 2d · Maya');
-  assert.equal(twoDays.shortBadgeLabel, 'Stalled · 2d');
-  assert.equal(twoDays.isOverdueSla, true);
-  assert.equal(twoDays.slaStatus, 'overdue');
+  assert.equal(twoDays.label, 'Waiting 2d · Maya');
+  assert.equal(twoDays.shortBadgeLabel, 'Waiting 2d');
+  assert.equal(twoDays.isOverdueSla, false);
+  assert.equal(twoDays.slaStatus, 'not_configured');
 
   // 72 hours (3 days)
   const threeDays = getReviewAging({
@@ -128,8 +128,8 @@ test('Review Aging: Stalled tier (>=48h) marks overdue SLA critical bottleneck',
   });
   assert.equal(threeDays.tier, 'stalled');
   assert.equal(threeDays.days, 3);
-  assert.equal(threeDays.label, 'Stalled · 3d · Maya');
-  assert.equal(threeDays.shortBadgeLabel, 'Stalled · 3d');
+  assert.equal(threeDays.label, 'Waiting 3d · Maya');
+  assert.equal(threeDays.shortBadgeLabel, 'Waiting 3d');
 
   // 7 days
   const sevenDays = getReviewAging({
@@ -139,8 +139,8 @@ test('Review Aging: Stalled tier (>=48h) marks overdue SLA critical bottleneck',
   });
   assert.equal(sevenDays.tier, 'stalled');
   assert.equal(sevenDays.days, 7);
-  assert.equal(sevenDays.label, 'Stalled · 7d');
-  assert.equal(sevenDays.isOverdueSla, true);
+  assert.equal(sevenDays.label, 'Waiting 7d');
+  assert.equal(sevenDays.isOverdueSla, false);
 });
 
 test('Review Aging: submittedAt takes precedence over updatedAt', () => {

@@ -1,5 +1,8 @@
 'use client';
 import WorkspaceHeading from '@/components/WorkspaceHeading';
+import ActionsMenu from '@/components/ActionsMenu';
+import {Trash2} from 'lucide-react';
+import {workspaceTimestamp} from '@/lib/task-presentation';
 import {useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
@@ -152,14 +155,14 @@ export default function NotificationsClient({
           >
             Mark all as read
           </button>
-          <button
+          <ActionsMenu label="Notification actions"><button
             type="button"
             disabled={busy || total === 0}
             className="rounded-lg border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/30 px-3.5 py-2 text-sm font-medium disabled:opacity-50 transition"
             onClick={() => remove(null)}
           >
-            Delete all
-          </button>
+            <Trash2 className="mr-2 inline h-4 w-4" aria-hidden="true"/>Delete all
+          </button></ActionsMenu>
         </div>
       </div>
 
@@ -206,7 +209,7 @@ export default function NotificationsClient({
                     )}
                     {(n.task?.project_name || n.actor_name) && <span aria-hidden="true">·</span>}
                     <time dateTime={n.created_at}>
-                      {new Date(n.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
+                      {workspaceTimestamp(n.created_at)}
                     </time>
                   </div>
                 </div>

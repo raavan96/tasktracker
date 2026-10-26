@@ -1,4 +1,5 @@
 'use client';
+import {workspaceTimestamp} from '@/lib/task-presentation';
 import {useEffect,useState} from 'react';
 import Modal from './Modal';
 import {memberImpact,changeMemberState,reassignMemberWork} from '@/app/admin/users/lifecycle';
@@ -22,7 +23,7 @@ export default function MemberLifecycle({member,onClose}:{member:Member;onClose:
  <select aria-label="Replacement assignee" value={replacement} disabled={!project} onChange={e=>{setReplacement(e.target.value);setPreview(false);}} className="w-full rounded-lg border p-3"><option value="">Choose replacement</option><option value="unassigned">Leave unassigned</option>{eligible.map(p=><option key={p.id} value={p.id}>{p.full_name||p.email}</option>)}</select>
  <button disabled={busy||!project||!replacement||!tasks.length} onClick={()=>setPreview(true)} className="rounded-lg border px-4 py-2 text-sm disabled:opacity-50">Preview reassignment</button>
  {preview&&<div className="rounded-lg border p-3 text-sm"><p className="font-semibold">{tasks.length} tasks → {replacement==='unassigned'?'Unassigned':eligible.find(p=>p.id===replacement)?.full_name||eligible.find(p=>p.id===replacement)?.email}</p><ul className="my-3 list-disc pl-5">{tasks.map(t=><li key={t.id}>{t.title} · {t.status.replaceAll('_',' ')}</li>)}</ul><button disabled={busy} onClick={reassign} className="rounded-lg bg-blue-600 px-4 py-2 text-white">Confirm reassignment</button></div>}</section>
- <section className="border-t pt-4"><h3 className="font-semibold">Member history</h3>{impact.events.map(event=><p key={event.id} className="mt-2 text-sm">{event.action.replaceAll('_',' ')} · {event.reason}<span className="block text-xs text-gray-500">{impact.people.find(p=>p.id===event.actor_id)?.full_name||'System'} · {new Date(event.created_at).toLocaleString()}</span></p>)}</section>
+ <section className="border-t pt-4"><h3 className="font-semibold">Member history</h3>{impact.events.map(event=><p key={event.id} className="mt-2 text-sm">{event.action.replaceAll('_',' ')} · {event.reason}<span className="block text-xs text-gray-500">{impact.people.find(p=>p.id===event.actor_id)?.full_name||'System'} · {workspaceTimestamp(event.created_at)}</span></p>)}</section>
  </div>}
  </Modal>;
 }

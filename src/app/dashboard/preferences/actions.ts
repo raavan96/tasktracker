@@ -1,6 +1,19 @@
 'use server';
 import {workspaceRead} from '@/lib/workspace-data';
 import {cleanView,type SavedTaskView} from '@/lib/task-views';
+import {landingPages} from '@/lib/workspace-preferences';
+export async function saveStartPage(path:string){try{return await workspaceRead(async(db,user)=>{
+ if(!landingPages.some(p=>p.value===path))throw new Error('Choose a start page from the list.');
+ await db.query('INSERT INTO workspace_preferences(user_id,landing_page) VALUES($1,$2) ON CONFLICT(user_id) DO UPDATE SET landing_page=excluded.landing_page',[user,path]);
+ return {error:''};
+ });}catch{return {error:'Start page could not be saved. Please retry.'};}}
+export async function setProjectFavorite(project:string,favorite:boolean){try{return await workspaceRead(async(db,user)=>{
+ if(typeof favorite!=='boolean'||!(/^[0-9a-f-]{36}$/i.test(project)))throw new Error('Choose a valid project.');
+ if(!(await db.query('SELECT id FROM projects WHERE id=$1',[project])).rowCount)throw new Error('Project unavailable.');
+ if(favorite)await db.query('INSERT INTO project_favorites(user_id,project_id) VALUES($1,$2) ON CONFLICT DO NOTHING',[user,project]);
+ else await db.query('DELETE FROM project_favorites WHERE user_id=$1 AND project_id=$2',[user,project]);
+ return {error:''};
+ });}catch{return {error:'Favorite could not be saved. Refresh and try again.'};}}
 export async function saveTaskView(name:string,input:unknown){try{return await workspaceRead(async(db,user)=>{
  if(typeof name!=='string'||!name.trim()||name.trim().length>60)throw new Error('Name this view using 1–60 characters.');
  const filters=cleanView(input);

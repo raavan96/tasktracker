@@ -1,6 +1,7 @@
 import 'server-only';
 import { workspaceRead } from './workspace-data';
 import { todayKey } from './task-presentation';
+import {deadlineLabel} from './task-presentation';
 import { getReviewAging } from './review-aging';
 
 export type ActionType =
@@ -224,13 +225,8 @@ export async function getActionCenterData(): Promise<ActionCenterData> {
         updated_at: r.updated_at,
         review_version: r.review_version,
         action_type: 'review_needed',
-        badge_label:
-          aging?.tier === 'stalled'
-            ? `Review stalled (${aging.days}d)`
-            : aging?.tier === 'aging'
-              ? `Review aging (${aging.days}d)`
-              : 'Review requested',
-        badge_variant: aging?.tier === 'stalled' ? 'warn' : 'action',
+        badge_label: aging&&aging.hours>0?`Review requested · ${aging.hours<24?aging.hours+'h':aging.days+'d'}`:'Review requested',
+        badge_variant: 'action',
         reviewer_target: r.creator_name,
         sla_days: aging?.days,
         sla_tier: aging?.tier,
@@ -347,7 +343,7 @@ export async function getActionCenterData(): Promise<ActionCenterData> {
         updated_at: up.updated_at,
         review_version: up.review_version,
         action_type: 'upcoming',
-        badge_label: up.due_date ? `Due ${up.due_date}` : 'To do',
+        badge_label: deadlineLabel(up.due_date,up.status,today),
         badge_variant: 'muted',
       });
     }
@@ -368,7 +364,7 @@ export async function getActionCenterData(): Promise<ActionCenterData> {
           review_version: w.review_version,
           action_type: 'waiting_review',
           badge_label: `Waiting on ${w.creator_name || 'Reviewer'}${aging ? ` (${aging.days}d)` : ''}`,
-          badge_variant: aging?.tier === 'stalled' ? 'warn' : 'info',
+          badge_variant: 'info',
           reviewer_target: w.creator_name,
           sla_days: aging?.days,
           sla_tier: aging?.tier,

@@ -3,7 +3,7 @@ import AssigneePicker from './AssigneePicker';
 import {useEffect,useState} from 'react';
 import {getSchedule,saveSchedule,type Schedule} from '@/app/dashboard/schedules/actions';
 import {scheduleDates} from '@/lib/schedule-dates';
-import {todayKey} from '@/lib/task-presentation';
+import {todayKey,workspaceDate,workspaceTimestamp} from '@/lib/task-presentation';
 import type {Member} from '@/lib/task-types';
 function ScheduleForm({schedule,members,onSaved,onBusyChange}:{schedule:Schedule;members:Member[];onSaved:()=>Promise<void>;onBusyChange:(busy:boolean)=>void}){
  const tomorrow=new Date(Date.parse(todayKey())+86400000).toISOString().slice(0,10);
@@ -16,5 +16,5 @@ export default function TaskSchedule({taskId,members,onBusyChange,active=true}:{
  useEffect(()=>{if(!active||data)return;let live=true;getSchedule(taskId).then(r=>{if(live)setData(r);}).catch(()=>{if(live)setError('Schedule could not load.');});return()=>{live=false};},[taskId,active,data]);
  async function reload(){setData(await getSchedule(taskId));}
  if(error)return <p role="alert">{error}</p>;if(!data?.schedule)return null;
- const s=data.schedule;return <section className="space-y-3 rounded-xl border p-4"><h3 className="font-semibold">Recurring schedule</h3><p className="text-sm">{s.archived?'Held — archived work':s.held?'Held — inactive creator or assignee':s.paused?'Paused':s.end_date&&s.next_run>s.end_date?'Ended':'Running'} · Next scheduled date: {s.next_run}</p><details><summary className="cursor-pointer py-2 text-sm font-semibold">Edit future occurrences</summary><ScheduleForm key={String(s.version)} schedule={s} members={members} onSaved={reload} onBusyChange={onBusyChange}/></details>{data.events.length>0&&<details><summary className="cursor-pointer text-sm">Schedule history</summary>{data.events.map(e=><p key={e.id} className="mt-2 text-xs text-gray-500">{e.description} · {new Date(e.created_at).toLocaleString()}</p>)}</details>}</section>;
+ const s=data.schedule;return <section className="space-y-3 rounded-xl border p-4"><h3 className="font-semibold">Recurring schedule</h3><p className="text-sm">{s.archived?'Held — archived work':s.held?'Held — inactive creator or assignee':s.paused?'Paused':s.end_date&&s.next_run>s.end_date?'Ended':'Running'} · Next scheduled date: {workspaceDate(s.next_run)}</p><details><summary className="cursor-pointer py-2 text-sm font-semibold">Edit future occurrences</summary><ScheduleForm key={String(s.version)} schedule={s} members={members} onSaved={reload} onBusyChange={onBusyChange}/></details>{data.events.length>0&&<details><summary className="cursor-pointer text-sm">Schedule history</summary>{data.events.map(e=><p key={e.id} className="mt-2 text-xs text-gray-500">{e.description} · {workspaceTimestamp(e.created_at)}</p>)}</details>}</section>;
 }

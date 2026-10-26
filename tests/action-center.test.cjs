@@ -14,46 +14,11 @@ new Function(
 )(reviewAgingExports);
 const { getReviewAging } = reviewAgingExports;
 
-test('Action Center logic: review task waiting on user receives SLA badge and action variant', () => {
-  const aging = getReviewAging({
-    status: 'in_review',
-    updatedAt: new Date(Date.now() - 30 * 3600 * 1000).toISOString(), // 30h ago (aging tier)
-  });
-  assert.ok(aging);
-  assert.equal(aging.tier, 'aging');
-  assert.equal(aging.days, 1);
-
-  const badge_label =
-    aging.tier === 'stalled'
-      ? `Review stalled (${aging.days}d)`
-      : aging.tier === 'aging'
-        ? `Review aging (${aging.days}d)`
-        : 'Review requested';
-  const badge_variant = aging.tier === 'stalled' ? 'warn' : 'action';
-
-  assert.equal(badge_label, 'Review aging (1d)');
-  assert.equal(badge_variant, 'action');
-});
-
-test('Action Center logic: stalled review task (>48h) triggers critical SLA warning', () => {
-  const aging = getReviewAging({
-    status: 'in_review',
-    updatedAt: new Date(Date.now() - 75 * 3600 * 1000).toISOString(), // 3+ days
-  });
-  assert.ok(aging);
-  assert.equal(aging.tier, 'stalled');
-  assert.equal(aging.days, 3);
-
-  const badge_label =
-    aging.tier === 'stalled'
-      ? `Review stalled (${aging.days}d)`
-      : aging.tier === 'aging'
-        ? `Review aging (${aging.days}d)`
-        : 'Review requested';
-  const badge_variant = aging.tier === 'stalled' ? 'warn' : 'action';
-
-  assert.equal(badge_label, 'Review stalled (3d)');
-  assert.equal(badge_variant, 'warn');
+test('review waiting time stays descriptive without a configured business SLA',()=>{
+ for(const hours of [30,75]){
+  const aging=getReviewAging({status:'in_review',updatedAt:new Date(Date.now()-hours*3600*1000).toISOString()});
+  assert.ok(aging);assert.match(aging.label,/Waiting/);assert.equal(aging.isOverdueSla,false);assert.equal(aging.slaStatus,'not_configured');assert.doesNotMatch(aging.slaDescription,/SLA|overdue|stalled/i);
+ }
 });
 
 test('Action Center bucket classification and mutual exclusivity', () => {

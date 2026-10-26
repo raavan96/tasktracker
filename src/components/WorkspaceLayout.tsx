@@ -1,4 +1,6 @@
 import {cookies} from 'next/headers';
+import StartPageSettings from './StartPageSettings';
+import {workspaceRead} from '@/lib/workspace-data';
 import ChatPopup from './ChatPopup';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
@@ -38,6 +40,7 @@ export default async function WorkspaceLayout({
     supabase.from('notifications').select('*', { count: 'exact', head: true })
       .eq('user_id', user.id).eq('is_read', false),
   ]);
+  const landing=await workspaceRead(async db=>(await db.query('SELECT landing_page FROM workspace_preferences WHERE user_id=auth.uid()')).rows[0]?.landing_page||'/dashboard');
   const isAdmin = profile?.role === 'admin';
   const initialSeen=(await cookies()).get('tasktracker-tour-'+user.id)?.value==='seen';
 
@@ -83,7 +86,7 @@ export default async function WorkspaceLayout({
               )}
             </Link>
 
-            <WorkspaceAccountControls userId={user.id}>            <Link href="/reset-password" title="Change password" aria-label="Change password" className="flex min-h-11 items-center gap-2 rounded-lg p-2 text-sm hover:bg-gray-100"><KeyRound className="w-4 h-4" />Change password</Link>
+            <WorkspaceAccountControls userId={user.id}><StartPageSettings initial={landing}/>            <Link href="/reset-password" title="Change password" aria-label="Change password" className="flex min-h-11 items-center gap-2 rounded-lg p-2 text-sm hover:bg-gray-100"><KeyRound className="w-4 h-4" />Change password</Link>
             <div className="space-y-3 p-2">
               <div className="text-left">
                 <div className="text-sm font-medium text-gray-900">{profile?.full_name || profile?.email}</div>

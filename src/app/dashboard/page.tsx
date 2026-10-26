@@ -44,8 +44,7 @@ export default async function DashboardPage({searchParams}:{searchParams:Promise
       <TaskSummary counts={taskCounts} today={todayKey()} />
       </ProjectOverview>
       <nav className="flex gap-3" aria-label="Project visibility"><Link className="rounded-lg border px-4 py-2" aria-current={!archived?'page':undefined} href="/dashboard">Active projects</Link><Link className="rounded-lg border px-4 py-2" href="/dashboard/archive">Archived projects</Link></nav>
-      {['attention','ready'].includes(query.status||'')&&<p role="status" className="text-sm text-gray-600">Showing {query.status==='attention'?'projects with overdue or blocked tasks':'projects with all tasks completed'}. <Link href="/dashboard" className="text-blue-600 underline">Show all active projects</Link></p>}
-      <ProjectCollection projects={(projects||[]).filter(p=>p.is_archived===archived).filter(p=>query.status==='attention'?needsAttention(p):query.status==='ready'?readyToComplete(p):true).map(p=>({id:p.id,name:p.name,description:p.description,created_at:p.created_at,last_task_edit_at:p.last_task_edit_at||undefined,creatorId:p.created_by,creator:creators.get(p.created_by)?.full_name||creators.get(p.created_by)?.email||'Unavailable',memberCount:p.member_count,totalTasks:p.total_tasks,completedTasks:p.completed_tasks}))}/>
+      <ProjectCollection projects={(projects||[]).filter(p=>p.is_archived===archived).map(p=>({id:p.id,name:p.name,description:p.description,created_at:p.created_at,last_task_edit_at:p.last_task_edit_at||undefined,creatorId:p.created_by,creator:creators.get(p.created_by)?.full_name||creators.get(p.created_by)?.email||'Unavailable',favorite:p.favorite,needsAttention:p.needs_attention,ready:p.ready,memberCount:p.member_count,totalTasks:p.total_tasks,completedTasks:p.completed_tasks}))}/>
 
     </div>
   );

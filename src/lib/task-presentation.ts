@@ -1,4 +1,15 @@
 export const WORKSPACE_TIMEZONE = 'Asia/Kolkata';
+export const taskStatusLabels:Record<string,string>={todo:'To do',in_progress:'In progress',blocked:'Blocked',in_review:'In review',done:'Completed'};
+export function workspaceDate(value:string|null|undefined){
+ if(!value)return 'No date';
+ const date=new Date(value.slice(0,10)+'T12:00:00Z');
+ return Number.isFinite(date.getTime())?date.toLocaleDateString('en-IN',{timeZone:WORKSPACE_TIMEZONE,day:'numeric',month:'short',year:'numeric'}):'Date unavailable';
+}
+export function workspaceTimestamp(value:string|null|undefined){
+ if(!value)return 'Time unavailable';
+ const date=new Date(value);
+ return Number.isFinite(date.getTime())?date.toLocaleString('en-IN',{timeZone:WORKSPACE_TIMEZONE,day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',hour12:true})+' IST':'Time unavailable';
+}
 export function todayKey(now = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: WORKSPACE_TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
 }
@@ -6,7 +17,7 @@ export function deadlineLabel(due: string | null, status: string, today: string)
   if (!due) return 'No deadline';
   const date = due.slice(0, 10);
   const days = Math.round((Date.parse(date) - Date.parse(today)) / 86400000);
-  if (status === 'done') return `Due ${date}`;
+  if (status === 'done') return `Due ${workspaceDate(date)}`;
   if (days < 0) return `${-days} day${days === -1 ? '' : 's'} overdue`;
   if (days === 0) return 'Due today';
   if (days === 1) return 'Due tomorrow';

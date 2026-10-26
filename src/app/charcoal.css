@@ -175,3 +175,19 @@
  :root[data-theme] .dark-workspace-sidebar[data-expanded="false"] nav a,:root[data-theme][data-sidebar-expanded="false"] .dark-workspace-sidebar nav a{height:56px;flex-direction:column;gap:4px;padding:5px 0}
  :root[data-theme] .dark-workspace-sidebar[data-expanded="false"] [aria-current="page"] .workspace-nav-label,:root[data-theme][data-sidebar-expanded="false"] .dark-workspace-sidebar [aria-current="page"] .workspace-nav-label{position:static;width:auto;height:auto;clip-path:none;overflow:visible;font-size:9px;line-height:11px;letter-spacing:-.02em;text-align:center}
 }
+
+/* Release C: one surface vocabulary for cards, menus and quiet metadata. */
+:root[data-theme]{--ui-card:var(--surface);--ui-raised:var(--charcoal-raised);--ui-line:var(--glass-line);--ui-muted:var(--glass-muted);--ui-micro-shadow:0 1px 2px rgba(0,0,0,.035)}
+:root[data-theme="light"]{--glass-line:#cfd6e0;--charcoal-raised:#eef1f5}
+:root[data-theme] :is([data-actions-menu],.icon-choice-menu){background:var(--ui-card);border-color:var(--ui-line);box-shadow:0 3px 10px rgba(0,0,0,.10)}
+:root[data-theme="light"] :is(.summary-card,.project-card,.insights-box,.task-table-container){box-shadow:var(--ui-micro-shadow)}
+:root[data-theme] .task-filter-chip{background:var(--ui-card);border-color:var(--ui-line);color:var(--foreground)}
+:root[data-theme] .project-favorite{color:var(--ui-muted);background:var(--ui-card)}
+:root[data-theme] .project-favorite[aria-pressed="true"]{color:var(--glass-accent)}
+:root[data-theme] .project-favorite:hover{background:var(--ui-raised)}
+:root[data-theme] .project-favorite svg{width:16px;height:16px}
+:root[data-theme] .review-sla-badge:is([data-tier="aging"],[data-tier="stalled"]){color:var(--glass-muted);background:var(--charcoal-raised);border-color:var(--glass-line)}
+:root[data-theme] .review-sla-badge[data-tier="stalled"] .review-sla-dot{background:currentColor;box-shadow:none;animation:none}
+:root[data-theme] .task-status-label[data-status="done"]{color:var(--glass-muted)}
+.workspace-main :is(time,.insights-stat strong,.task-deadline-cell){font-variant-numeric:tabular-nums}
+@media(min-width:1280px){.command-palette-trigger-label,.command-palette-trigger-kbd{display:none}.command-palette-trigger{height:40px;width:40px;justify-content:center;padding:0}}

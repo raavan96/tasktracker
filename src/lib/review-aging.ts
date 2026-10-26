@@ -6,7 +6,7 @@ export type ReviewAgingInfo = {
   days: number;
   label: string;
   shortBadgeLabel: string;
-  slaStatus: 'on_track' | 'aging' | 'overdue';
+  slaStatus: 'not_configured';
   isOverdueSla: boolean;
   slaDescription: string;
   reviewerName?: string;
@@ -20,14 +20,7 @@ export type ReviewAgingInput = {
   reviewerName?: string | null;
 };
 
-/**
- * Computes review aging & SLA metrics for tasks in 'in_review' status.
- *
- * SLAs:
- * - Fresh (< 24h): within standard review window.
- * - Aging (24h - 48h / 1-2 days): review delay warning.
- * - Stalled (>= 48h / 3+ days): critical review bottleneck requiring attention.
- */
+/** Elapsed waiting time only. No business SLA is configured in this workspace. */
 export function getReviewAging(input: ReviewAgingInput): ReviewAgingInfo | null {
   if (input.status !== 'in_review') {
     return null;
@@ -61,9 +54,9 @@ export function getReviewAging(input: ReviewAgingInput): ReviewAgingInfo | null 
       days,
       label: `In review · ${timeLabel}`,
       shortBadgeLabel: shortLabel,
-      slaStatus: 'on_track',
+      slaStatus: 'not_configured',
       isOverdueSla: false,
-      slaDescription: hours <= 0 ? 'Submitted just now (within 24h SLA)' : `Submitted ${hours}h ago (within 24h SLA)`,
+      slaDescription: hours <= 0 ? 'Submitted just now' : `Submitted ${hours}h ago`,
       reviewerName: input.reviewerName ?? undefined,
     };
   }
@@ -76,9 +69,9 @@ export function getReviewAging(input: ReviewAgingInput): ReviewAgingInfo | null 
       days: displayDays,
       label: `Waiting ${displayDays}d${reviewerSuffix}`,
       shortBadgeLabel: `Waiting ${displayDays}d`,
-      slaStatus: 'aging',
+      slaStatus: 'not_configured',
       isOverdueSla: false,
-      slaDescription: `Submitted ${displayDays}d ago (${hours}h elapsed · approaching SLA limit)`,
+      slaDescription: `Submitted ${displayDays}d ago (${hours}h elapsed)`,
       reviewerName: input.reviewerName ?? undefined,
     };
   }
@@ -88,11 +81,11 @@ export function getReviewAging(input: ReviewAgingInput): ReviewAgingInfo | null 
     tier: 'stalled',
     hours,
     days: displayDays,
-    label: `Stalled · ${displayDays}d${reviewerSuffix}`,
-    shortBadgeLabel: `Stalled · ${displayDays}d`,
-    slaStatus: 'overdue',
-    isOverdueSla: true,
-    slaDescription: `Submitted ${displayDays}d ago (${hours}h elapsed · overdue >48h SLA)`,
+    label: `Waiting ${displayDays}d${reviewerSuffix}`,
+    shortBadgeLabel: `Waiting ${displayDays}d`,
+    slaStatus: 'not_configured',
+    isOverdueSla: false,
+    slaDescription: `Submitted ${displayDays}d ago (${hours}h elapsed)`,
     reviewerName: input.reviewerName ?? undefined,
   };
 }

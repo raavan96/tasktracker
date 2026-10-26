@@ -10,7 +10,7 @@ import TaskDiscussion from '@/components/TaskDiscussion';
 import ArchiveAction from '@/components/ArchiveAction';
 import TaskExtras from '@/components/TaskExtras';
 import TaskTable from '@/components/TaskTable';
-import { deadlineLabel, initials } from '@/lib/task-presentation';
+import { deadlineLabel, workspaceDate, workspaceTimestamp, initials } from '@/lib/task-presentation';
 import DeleteConfirmation from '@/components/DeleteConfirmation';
 import Modal from '@/components/Modal';
 import ActionsMenu from '@/components/ActionsMenu';
@@ -108,11 +108,11 @@ export default function ProjectView({
 
   const [collapsed,setCollapsed]=useState<string[]>([]);
   const statusColumns = [
-    { id: 'todo', title: 'To Do', icon: Circle, color: 'text-gray-500 bg-gray-100' },
-    { id: 'in_progress', title: 'In Progress', icon: Clock, color: 'text-blue-600 bg-blue-50' },
+    { id: 'todo', title: 'To do', icon: Circle, color: 'text-gray-500 bg-gray-100' },
+    { id: 'in_progress', title: 'In progress', icon: Clock, color: 'text-blue-600 bg-blue-50' },
     { id: 'blocked', title: 'Blocked', icon: AlertCircle, color: 'text-red-600 bg-red-50' },
-    { id: 'in_review', title: 'In Review', icon: Clock, color: 'text-amber-700 bg-amber-50' },
-    { id: 'done', title: 'Done', icon: CheckCircle2, color: 'text-slate-500 bg-slate-500/10' },
+    { id: 'in_review', title: 'In review', icon: Clock, color: 'text-amber-700 bg-amber-50' },
+    { id: 'done', title: 'Completed', icon: CheckCircle2, color: 'text-slate-500 bg-slate-500/10' },
   ];
 
   async function runAction(action: () => Promise<{ error?: string; success?: unknown }>, message: string) {
@@ -347,7 +347,7 @@ export default function ProjectView({
 
                 <div className="text-xs text-gray-400 pt-2 border-t flex justify-between">
                   <span>By: {note.author?.full_name || note.author?.email}</span>
-                  <span>{new Date(note.updated_at).toLocaleDateString()}</span>
+                  <span>{workspaceTimestamp(note.updated_at)}</span>
                 </div>
               </div>
             ))
@@ -471,7 +471,7 @@ export default function ProjectView({
           <TaskAcknowledgement key={selectedTask.id} taskId={selectedTask.id} userId={currentUserId} readOnly={taskReadOnly || selectedTask.status==='done'}>
           <div aria-label="Task panel sections" className="flex gap-2 border-b py-3 mb-3">{(['details','updates'] as const).map(tab=><button key={tab} type="button" aria-pressed={detailTab===tab} onClick={()=>setDetailTab(tab)} className={`rounded-lg px-4 py-2 text-sm font-medium ${detailTab===tab?'bg-blue-600 text-white':'bg-gray-100 text-gray-700'}`}>{tab==='details'?'Details':`Updates (${remarkCount(selectedTask)})`}</button>)}</div>
           <div hidden={detailTab !== 'details'}>
-          {selectedTask.due_date && <p className="mb-3 text-sm text-slate-600">Due {new Date(selectedTask.due_date.slice(0, 10) + 'T00:00:00').toLocaleDateString()}</p>}
+          {selectedTask.due_date && <p className="mb-3 text-sm text-slate-600">Due {workspaceDate(selectedTask.due_date)}</p>}
             <TaskReview key={selectedTask.id} task={selectedTask} userId={currentUserId} isAdmin={isAdmin} reviewEnabled={reviewEnabled} onBusyChange={setIsSubmitting} externalBusy={isSubmitting} onStatusChange={async status => { await runAction(() => updateTaskStatus(selectedTask.id, project.id, status, Number(selectedTask.review_version)), 'Status updated.'); }} readOnly={taskReadOnly || (!isAdmin&&!members.some(m=>m.id===currentUserId))}/>
             {selectedTask.description && (
               <div className="py-3 text-sm text-gray-700 border-b">

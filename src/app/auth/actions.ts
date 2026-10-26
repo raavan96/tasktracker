@@ -1,5 +1,7 @@
 'use server';
 
+import {transaction} from '@/lib/postgres/db';
+import {validLandingPage} from '@/lib/workspace-preferences';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
@@ -14,14 +16,17 @@ export async function signIn(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return { error: error.message };
   }
 
   const next=String(formData.get('next')||'');
-  redirect(/^\/acknowledge\/[0-9a-f-]{36}$/i.test(next)?next:'/dashboard');
+  if(/^\/acknowledge\/[0-9a-f-]{36}$/i.test(next))redirect(next);
+  let landing='/dashboard';
+  if(process.env.DATA_BACKEND==='postgres'&&data.user){landing=await transaction(data.user.id,async db=>{await db.query('SELECT public.assert_active()');return validLandingPage((await db.query('SELECT landing_page FROM workspace_preferences WHERE user_id=auth.uid()')).rows[0]?.landing_page);});}
+  redirect(landing);
 }
 
 export async function signOut() {

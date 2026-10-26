@@ -1,4 +1,5 @@
 'use client';
+import {taskStatusLabels,workspaceTimestamp} from '@/lib/task-presentation';
 import {useState} from 'react';
 import {Check, RotateCcw, Undo2, MessageSquare, ArrowRight} from 'lucide-react';
 import {reviewTask} from '@/app/dashboard/tasks/review';
@@ -7,7 +8,7 @@ import {getReviewAging} from '@/lib/review-aging';
 import ActionsMenu from './ActionsMenu';
 
 type ActiveStatus='todo'|'in_progress'|'blocked';
-const labels:Record<string,string>={todo:'To do',in_progress:'In progress',blocked:'Blocked',in_review:'In review',done:'Completed'};
+const labels=taskStatusLabels;
 const reasonLabels={changes:'Request changes',withdraw:'Withdraw submission',reopen:'Reopen task'};
 export default function TaskReview({task,userId,isAdmin,readOnly,reviewEnabled,onBusyChange,onStatusChange,externalBusy=false}:{task:Task;userId:string;isAdmin:boolean;readOnly:boolean;reviewEnabled:boolean;onBusyChange?:(busy:boolean)=>void;onStatusChange:(status:ActiveStatus)=>Promise<void>;externalBusy?:boolean}){
  const [reason,setReason]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -23,7 +24,7 @@ export default function TaskReview({task,userId,isAdmin,readOnly,reviewEnabled,o
  const reviewerShort=creatorEligible&&task.creator?.full_name?task.creator.full_name.split(' ')[0]:'Admin';
  const aging=task.status==='in_review'?getReviewAging({status:task.status,updatedAt:task.updated_at,reviewerName:reviewerShort}):null;
  const assignees=task.assignees?.map(m=>m.full_name).join(', ')||task.assignee?.full_name||'an assignee';
- const next=readOnly?'Archived work is read-only.':task.status==='in_review'?`Waiting for ${waiting}`:task.status==='done'?task.completed_at?`Completed ${new Date(task.completed_at).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST`:'Work is complete.':!ids.length?'Assign a teammate before submitting for review.':!active?'Reassign inactive teammates before submitting this shared task for review.':`Next: ${assignees} · ${task.status==='blocked'?'resolve the blocker, then continue work':'complete the work and submit for review'}`;
+ const next=readOnly?'Archived work is read-only.':task.status==='in_review'?`Waiting for ${waiting}`:task.status==='done'?task.completed_at?`Completed ${workspaceTimestamp(task.completed_at)}`:'Work is complete.':!ids.length?'Assign a teammate before submitting for review.':!active?'Reassign inactive teammates before submitting this shared task for review.':`Next: ${assignees} · ${task.status==='blocked'?'resolve the blocker, then continue work':'complete the work and submit for review'}`;
  async function run(action:string){setBusy(true);onBusyChange?.(true);setError('');try{const r=await reviewTask(task.id,task.project_id,Number(task.review_version||0),action,reason);if(r.error)setError(r.error);else {setReason('');setReasonAction(null);}}catch{setError('Could not confirm the review. Refresh and try again.');}finally{setBusy(false);onBusyChange?.(false);}}
  function choose(action:keyof typeof reasonLabels){setReasonAction(action);setError('');}
  const reasonAllowed=reasonAction==='changes'?decide:reasonAction==='withdraw'?withdraw:reasonAction==='reopen'?reopen:false;
