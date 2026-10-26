@@ -917,6 +917,7 @@ try{
   await expect(admin.locator('.workspace-nav-stack-mobile .workspace-search-kbd')).toBeHidden();
   await expect.poll(()=>admin.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   console.log('Release AB: server-rendered first task page, assignments-first My Tasks, remembered compact summary, day-only calendar request and compact mobile Search passed.');
+  await admin.setViewportSize({width:1440,height:1000});
   await admin.getByText('My account',{exact:true}).click();await admin.getByRole('button',{name:'Sign out',exact:true}).click();await expect(admin).toHaveURL(base+'/');
   assert.equal(external.length,0,'Staging must not contact Supabase');
   console.log('Eight browser logins, private project, task assignment, local upload/download, outsider denial, review and admin approval passed against PostgreSQL 16.');
