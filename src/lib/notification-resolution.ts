@@ -146,6 +146,8 @@ export function getNotificationResolution(n: Notification): ResolutionContext {
     return { badge: 'Approved', variant: 'success', isStaleAction: false };
   }
   if (title === 'Changes requested') {
+    if(!task)return {badge:'Task removed',variant:'muted',explanation:'The referenced task is no longer available.',isStaleAction:true};
+    if(task.is_archived)return {badge:'Task archived',variant:'muted',explanation:'This earlier review decision is historical; the task is archived.',isStaleAction:true};
     if(n.action_needed===false&&task?.status!=='done'&&!task?.is_archived)return {badge:'Review update',variant:'info',explanation:'See the task for the latest review decision and next action.',isStaleAction:true};
     if (task?.status === 'done') {
       return { badge: 'Already completed', variant: 'success', explanation: 'Revisions completed; task is now approved.', isStaleAction: true };

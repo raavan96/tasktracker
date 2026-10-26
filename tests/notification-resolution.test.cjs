@@ -248,3 +248,9 @@ test('accepted and reassigned notifications do not ask for an obsolete action',(
  assert.equal(getNotificationResolution(base).badge,'Already accepted');
  assert.equal(getNotificationResolution({...base,task:{...base.task,assigned_to_recipient:false}}).badge,'Assignment changed');
 });
+
+test('archived review outcomes cannot imply a current revision request',()=>{
+ const base={id:'n',title:'Changes requested',message:'Work',created_at:'2026-10-26',is_read:false,action_needed:false,task:{id:'t',project_id:'p',status:'in_progress',is_archived:true}};
+ assert.equal(getNotificationResolution(base).badge,'Task archived');
+ assert.equal(getNotificationResolution({...base,task:null}).badge,'Task removed');
+});
