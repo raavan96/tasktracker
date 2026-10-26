@@ -206,3 +206,5 @@ body{min-height:100dvh;overflow-x:clip}
 
 /* Keep weekly zero buckets legible and align all bars on one baseline. */
 .insights-bars{height:150px;min-height:150px;border-bottom:1px solid var(--glass-line);padding-bottom:8px;gap:8px}.insights-bars>div{font-variant-numeric:tabular-nums}.insights-bars span{flex-shrink:0}.insights-bars b{line-height:18px}.insights-bars small{line-height:16px}
+
+@media(max-width:1279px){.workspace-nav-stack-mobile :is(.workspace-search-label,.workspace-search-kbd){display:none}.workspace-nav-stack-mobile .workspace-search-content{display:flex;align-items:center;justify-content:center}}

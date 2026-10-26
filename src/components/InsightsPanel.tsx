@@ -3,7 +3,7 @@ import { completionWeeks } from '@/lib/completion-trend';
 import AttentionQueue from '@/components/AttentionQueue';
 import WorkspaceHeading from '@/components/WorkspaceHeading';
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import Link from './IntentLink';
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { todayKey } from '@/lib/task-presentation';
 import type { DashboardInsights } from '@/lib/dashboard-insights';
@@ -11,7 +11,11 @@ const states=[['todo','To do','#727b86'],['in_progress','In progress','#4a94ff']
 const shortDate=(day:string)=>new Date(day+'T12:00:00Z').toLocaleDateString('en-IN',{day:'numeric',month:'short',timeZone:'Asia/Kolkata'});
 export default function InsightsPanel(){
  const [day,setDay]=useState(todayKey()),[data,setData]=useState<DashboardInsights|null>(null),[error,setError]=useState(''),[retry,setRetry]=useState(0);
- useEffect(()=>{const controller=new AbortController();fetch('/api/dashboard-insights?month='+day.slice(0,7)+'&day='+day,{signal:controller.signal,cache:'no-store'}).then(async r=>{const body=await r.json();if(!r.ok)throw new Error(body.error||'Dashboard could not load.');return body;}).then(body=>{setData(body);setError('');}).catch(e=>{if(e.name!=='AbortError')setError(e.message);});return()=>controller.abort();},[day,retry]);
+ const monthKey=day.slice(0,7);
+ useEffect(()=>{const controller=new AbortController();fetch('/api/dashboard-insights?month='+monthKey,{signal:controller.signal,cache:'no-store'}).then(async r=>{const body=await r.json();if(!r.ok)throw new Error(body.error||'Dashboard could not load.');return body;}).then(body=>{setData(body);setError('');}).catch(e=>{if(e.name!=='AbortError')setError(e.message);});return()=>controller.abort();},[monthKey,retry]);
+ const loadedMonth=data?.month,loadedDay=data?.day;
+ useEffect(()=>{if(loadedMonth!==monthKey||loadedDay===day)return;const controller=new AbortController();fetch('/api/dashboard-insights?scope=agenda&day='+day,{signal:controller.signal,cache:'no-store'}).then(async r=>{const body=await r.json();if(!r.ok)throw new Error(body.error||'Agenda could not load.');return body;}).then(body=>{setData(previous=>previous?.month===monthKey?{...previous,...body}:previous);setError('');}).catch(e=>{if(e.name!=='AbortError')setError(e.message);});return()=>controller.abort();},[day,monthKey,loadedMonth,loadedDay,retry]);
+
  const loading=!data;
  const monthLoading=Boolean(data&&data.month!==day.slice(0,7));
  const weeks=completionWeeks(day.slice(0,7),monthLoading?[]:data?.trend||[]);

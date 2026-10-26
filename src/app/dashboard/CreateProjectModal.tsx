@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import {useSearchParams} from 'next/navigation';
 import type { Member } from '@/lib/task-types';
 import { createProject } from './projects/actions';
 import Modal from '@/components/Modal';
@@ -10,7 +11,11 @@ export default function CreateProjectModal({ users }: { users: Member[] }) {
   const [memberSearch,setMemberSearch]=useState('');
   const [selectedMembers,setSelectedMembers]=useState<string[]>([]);
   const matchesMember=(member:Member)=>`${member.full_name||''} ${member.email}`.toLowerCase().includes(memberSearch.trim().toLowerCase());
-  const [isOpen, setIsOpen] = useState(false);
+  const params=useSearchParams();
+  const requested=params.get('create')==='project';
+  const [opened,setOpened]=useState(false);
+  const isOpen=opened||requested;
+  function setIsOpen(value:boolean){setOpened(value);if(!value&&requested){const url=new URL(window.location.href);url.searchParams.delete('create');window.history.replaceState(null,'',url.pathname+url.search+url.hash);}}
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,8 +57,10 @@ export default function CreateProjectModal({ users }: { users: Member[] }) {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Project Name *</label>
+                <label htmlFor="new-project-name" className="block text-xs font-semibold text-gray-700 mb-1">Project Name *</label>
                 <input
+                  id="new-project-name"
+                  autoFocus
                   name="name"
                   type="text"
                   required

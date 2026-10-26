@@ -1,3 +1,4 @@
+import {cookies} from 'next/headers';
 import ChatPopup from './ChatPopup';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
@@ -38,6 +39,7 @@ export default async function WorkspaceLayout({
       .eq('user_id', user.id).eq('is_read', false),
   ]);
   const isAdmin = profile?.role === 'admin';
+  const initialSeen=(await cookies()).get('tasktracker-tour-'+user.id)?.value==='seen';
 
   return (
     <WorkspaceBackProvider><div className="workspace-shell min-h-screen bg-gray-50 flex flex-col">
@@ -67,7 +69,7 @@ export default async function WorkspaceLayout({
 
           <div className="flex items-center gap-1 sm:gap-3">
             <CommandPaletteTrigger />
-            <WorkspaceHelp userId={user.id} isAdmin={isAdmin} buttonOnly />
+            <WorkspaceHelp initialSeen={initialSeen} userId={user.id} isAdmin={isAdmin} buttonOnly />
 
             {/* Notification Indicator */}
             <Link
@@ -110,7 +112,7 @@ export default async function WorkspaceLayout({
       <ArchiveNotice />
       {/* Main Content Area */}
       <main className="workspace-main flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <WorkspaceHelp userId={user.id} isAdmin={isAdmin} /><MorningPrompt userId={user.id} />
+        <WorkspaceHelp initialSeen={initialSeen} userId={user.id} isAdmin={isAdmin} /><MorningPrompt userId={user.id} />
         {children}
       </main>
       <AppFooter workspace /><ChatPopup userId={user.id} /><GlobalCommandPalette isAdmin={isAdmin} /><MobileBottomNav unreadCount={Number(unreadCount) || 0} />

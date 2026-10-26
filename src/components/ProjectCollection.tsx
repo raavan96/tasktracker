@@ -1,5 +1,5 @@
 'use client';
-import Link from 'next/link';
+import Link from './IntentLink';
 import {useRef,useState,useId} from 'react';
 import SegmentedControl from './SegmentedControl';
 import IconChoiceMenu from './IconChoiceMenu';

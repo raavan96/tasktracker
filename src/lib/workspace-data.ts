@@ -11,7 +11,7 @@ export async function taskPage(filters:TaskFilters,exportAll=false){return works
  const where=[filters.archived?'(t.is_archived OR p.is_archived)':'NOT t.is_archived AND NOT p.is_archived'];
  if(filters.project)where.push('t.project_id='+bind(filters.project)+'::uuid');
  if(filters.preset==='delegated')where.push('t.created_by='+bind(user)+'::uuid AND EXISTS(SELECT 1 FROM unnest(t.assignee_ids) person WHERE person<>'+bind(user)+'::uuid)');
- if(filters.preset==='review')where.push("public.can_work_project(t.project_id) AND t.status='in_review' AND NOT("+bind(user)+"::uuid=ANY(t.assignee_ids)) AND (public.is_admin() OR (public.review_enabled() AND t.created_by="+bind(user)+"::uuid))");
+ if(filters.preset==='review')where.push("t.status='in_review' AND public.can_review_workspace_task(t.id)");
  if(filters.preset==='stale')where.push("t.status<>'done' AND (activity.last_activity AT TIME ZONE 'Asia/Kolkata')::date <= (now() AT TIME ZONE 'Asia/Kolkata')::date-7");
  if(filters.mine)where.push(bind(user)+'::uuid=ANY(t.assignee_ids)');
  if(filters.assignee&&filters.assignee!=='all')where.push(filters.assignee==='unassigned'?'cardinality(t.assignee_ids)=0':bind(filters.assignee)+'::uuid=ANY(t.assignee_ids)');
@@ -22,7 +22,8 @@ export async function taskPage(filters:TaskFilters,exportAll=false){return works
  if(filters.status&&filters.status!=='all')where.push('t.status::text='+bind(filters.status));
  if(filters.priority&&filters.priority!=='all')where.push('t.priority::text='+bind(filters.priority));
  const from=` FROM tasks t JOIN projects p ON p.id=t.project_id LEFT JOIN LATERAL (SELECT string_agg(coalesce(m.full_name,m.email),', ' ORDER BY m.full_name,m.id) full_name,string_agg(m.email,' ' ORDER BY m.id) email,bool_and(m.is_active) is_active FROM profiles m WHERE m.id=ANY(t.assignee_ids)) a ON true LEFT JOIN profiles c ON c.id=t.created_by LEFT JOIN LATERAL (SELECT greatest(t.updated_at,(SELECT max(greatest(created_at,edited_at)) FROM task_comments WHERE task_id=t.id),(SELECT max(created_at) FROM task_history WHERE task_id=t.id)) last_activity) activity ON true WHERE `+where.join(' AND ');
- const total=Number((await db.query<{n:string}>('SELECT count(*) n'+from,args)).rows[0].n);
+ const countFrom=from.replace(/ LEFT JOIN LATERAL \(SELECT string_agg[\s\S]*? a ON true/,match=>filters.q?.trim()?match:'').replace(' LEFT JOIN profiles c ON c.id=t.created_by',filters.q?.trim()?' LEFT JOIN profiles c ON c.id=t.created_by':'').replace(/ LEFT JOIN LATERAL \(SELECT greatest[\s\S]*? activity ON true/,match=>filters.preset==='stale'?match:'');
+ const total=Number((await db.query<{n:string}>('SELECT count(*) n'+countFrom,args)).rows[0].n);
  if(exportAll&&total>10000)throw new Error('This export exceeds 10,000 rows. Narrow the filters first.');
  const page=Math.min(Math.max(1,Math.trunc(Number(filters.page)||1)),Math.max(1,Math.ceil(total/25)));
  const sorts:Record<string,string>={deadline:'t.due_date ASC NULLS LAST',title:'lower(t.title)',assignee:"lower(coalesce(a.full_name,a.email,''))",priority:"CASE t.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END"};
@@ -30,7 +31,8 @@ export async function taskPage(filters:TaskFilters,exportAll=false){return works
  const people=filters.includeOptions===false?[]:(await db.query<{id:string;full_name:string|null;email:string;is_active:boolean}>('SELECT id,full_name,email,is_active FROM profiles ORDER BY full_name,id')).rows;
  const projects=filters.includeOptions===false?[]:(await db.query<{id:string;name:string}>('SELECT id,name FROM projects ORDER BY name,id')).rows;
  const views=filters.includeOptions===false?[]:(await db.query<SavedTaskView>('SELECT id,name,filters FROM saved_task_views WHERE user_id=$1 ORDER BY name,id',[user])).rows;
- return {items,total,page,people,projects,views};
+ const reviewEnabled=Boolean((await db.query("SELECT public.review_enabled() enabled")).rows[0]?.enabled);
+ return {items,total,page,people,projects,views,reviewEnabled};
 });}
 export async function searchWorkspace(query:string,archived:boolean,page=1){return workspaceRead(async db=>{
  const q=query.trim().slice(0,200);if(!q)return {items:[],total:0,page:1};

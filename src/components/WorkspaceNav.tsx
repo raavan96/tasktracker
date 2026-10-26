@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import Link from 'next/link';
+import Link from './IntentLink';
 import WorkspaceBack from './WorkspaceBack';
 import { usePathname } from 'next/navigation';
 import { 

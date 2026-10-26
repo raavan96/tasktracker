@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import Link from 'next/link';
+import { useState, useTransition, useEffect } from 'react';
+import Link from './IntentLink';
 import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
@@ -16,12 +16,16 @@ import {
 import type { ActionCenterData, ActionCenterItem } from '@/lib/action-center';
 import DailyStandupModal from '@/components/DailyStandupModal';
 
-export default function ActionCenter({ data }: { data: ActionCenterData }) {
+export default function ActionCenter({ data,initialOpen=false }: { data: ActionCenterData;initialOpen?:boolean }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [acceptedIds, setAcceptedIds] = useState<Record<string, boolean>>({});
   const [mobileTab, setMobileTab] = useState<'needsAction' | 'activeWork' | 'waitingOnOthers'>('needsAction');
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(initialOpen);
+  const [expanded,setExpanded]=useState<Record<string,boolean>>({});
+  useEffect(()=>{const focus=()=>{if(location.hash==='#focus')setIsOpen(true);};focus();window.addEventListener('hashchange',focus);return()=>window.removeEventListener('hashchange',focus);},[]);
+  function toggle(){setIsOpen(value=>{document.cookie='tasktracker-focus-'+data.userId+'='+String(!value)+'; Path=/; Max-Age=31536000; SameSite=Lax';return !value;});}
+  function renderList(items:ActionCenterItem[],key:string){return <>{(expanded[key]?items:items.slice(0,3)).map(renderItemCard)}{items.length>3&&<button type="button" className="min-h-11 rounded-lg border px-3 py-2 text-sm" onClick={()=>setExpanded(state=>({...state,[key]:!state[key]}))}>{expanded[key]?'Show fewer':`Show all ${items.length}`}</button>}</>;}
   const [isStandupOpen, setIsStandupOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -212,7 +216,7 @@ export default function ActionCenter({ data }: { data: ActionCenterData }) {
           <button
             type="button"
             aria-expanded={isOpen}
-            onClick={() => setIsOpen(!isOpen)}
+            onClick={toggle}
             className="rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
             title={isOpen ? 'Collapse Action Center' : 'Expand Action Center'}
             aria-label={isOpen ? 'Collapse Action Center' : 'Expand Action Center'}
@@ -306,7 +310,7 @@ export default function ActionCenter({ data }: { data: ActionCenterData }) {
                     </p>
                   </div>
                 ) : (
-                  effectiveNeedsAction.map(renderItemCard)
+                  renderList(effectiveNeedsAction,'needsAction')
                 )}
               </div>
             </div>
@@ -344,7 +348,7 @@ export default function ActionCenter({ data }: { data: ActionCenterData }) {
                     </Link>
                   </div>
                 ) : (
-                  data.activeWork.map(renderItemCard)
+                  renderList(data.activeWork,'activeWork')
                 )}
               </div>
             </div>
@@ -376,7 +380,7 @@ export default function ActionCenter({ data }: { data: ActionCenterData }) {
                     </p>
                   </div>
                 ) : (
-                  data.waitingOnOthers.map(renderItemCard)
+                  renderList(data.waitingOnOthers,'waitingOnOthers')
                 )}
               </div>
             </div>

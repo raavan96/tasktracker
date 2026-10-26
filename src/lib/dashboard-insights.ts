@@ -17,7 +17,7 @@ export async function dashboardInsights(monthInput?:string,dayInput?:string):Pro
   const active=`FROM tasks t JOIN projects p ON p.id=t.project_id WHERE NOT t.is_archived AND NOT p.is_archived`;
   const attentionTasks=(await db.query<DashboardInsights['attentionTasks'][number]>(`SELECT t.id,t.project_id,t.title,p.name project,t.due_date::text,t.status::text,t.updated_at::text ${active}
    AND ((auth.uid()=ANY(t.assignee_ids) AND (t.status='blocked' OR (t.status NOT IN ('done','in_review') AND t.due_date<=$1::date)))
-   OR (t.status='in_review' AND NOT(auth.uid()=ANY(t.assignee_ids)) AND (public.is_admin() OR (public.review_enabled() AND t.created_by=auth.uid()))))
+   OR (t.status='in_review' AND public.can_review_workspace_task(t.id)))
    ORDER BY t.due_date ASC NULLS LAST,t.title,t.id`,[today])).rows;
   const status=(await db.query<{status:string;count:number}>(`SELECT t.status::text,count(*)::int count ${active} GROUP BY t.status`)).rows;
   const overdue=Number((await db.query(`SELECT count(*)::int n ${active} AND t.status NOT IN ('done','in_review') AND t.due_date<$1::date`,[today])).rows[0].n);
@@ -26,5 +26,16 @@ export async function dashboardInsights(monthInput?:string,dayInput?:string):Pro
   const calendar=(await db.query<{day:string;count:number}>(`SELECT t.due_date::text AS day,count(*)::int count ${active} AND t.status<>'done' AND t.due_date >= $1::date AND t.due_date < $1::date+interval '1 month' GROUP BY t.due_date ORDER BY t.due_date`,[month+'-01'])).rows;
   const deadlines=(await db.query<DashboardInsights['deadlines'][number]>(`SELECT t.id,t.project_id,t.title,p.name project,t.due_date::text,t.status::text ${active} AND t.status<>'done' AND t.due_date=$1::date ORDER BY t.title,t.id LIMIT 50`,[day])).rows;
   return {today,month,isAdmin,projects,attentionTasks,status,overdue,trend,workload,calendar,deadlines,deadlineTotal:calendar.find(x=>x.day===day)?.count||0,day};
+ });
+}
+
+/** Day-only reads intentionally exclude project, trend and workload aggregation. */
+export async function dashboardAgenda(day:string){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||Number(day.slice(0,4))<2000||Number(day.slice(0,4))>2100||!Number.isFinite(Date.parse(day))||new Date(day).toISOString().slice(0,10)!==day)throw new Error('Invalid day');
+ return workspaceRead(async db=>{
+  const from=" FROM tasks t JOIN projects p ON p.id=t.project_id WHERE NOT t.is_archived AND NOT p.is_archived AND t.status<>'done' AND t.due_date=$1::date";
+  const deadlines=(await db.query<DashboardInsights['deadlines'][number]>("SELECT t.id,t.project_id,t.title,p.name project,t.due_date::text,t.status::text"+from+' ORDER BY t.title,t.id LIMIT 50',[day])).rows;
+  const deadlineTotal=Number((await db.query('SELECT count(*)::int n'+from,[day])).rows[0].n);
+  return {day,deadlines,deadlineTotal};
  });
 }

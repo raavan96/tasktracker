@@ -643,4 +643,42 @@ const removalNotice=(await rows("SELECT title,message FROM notifications WHERE u
 assert.ok(removalNotice);
 assert.match(removalNotice.message,/Dependent Gamma is ready to start/);
 console.log('Automated dependency unblocking: completion alert, removal unblock, history and idempotency passed.');
+
+await as(null);await db.exec(read('postgres/025_notifications_delete.sql'));await db.exec(read('postgres/026_notification_context.sql'));
+const ab=[];
+for(const [name,role] of [['AB Admin','admin'],['AB Creator','member'],['AB Assignee','member'],['AB Outside','member']]){
+ const id=(await rows('INSERT INTO auth.users(id,email) VALUES(gen_random_uuid(),$1) RETURNING id',[name.replaceAll(' ','')+'@collegedunia.com']))[0].id;
+ await rows('INSERT INTO profiles(id,email,full_name,role) VALUES($1,$2,$3,$4)',[id,name.replaceAll(' ','')+'@collegedunia.com',name,role]);ab.push(id);
+}
+const abProject=(await rows("INSERT INTO projects(name,created_by,is_private) VALUES('AB workflow',$1,true) RETURNING id",[ab[1]]))[0].id;
+for(const id of ab.slice(0,3))await rows('INSERT INTO project_members(project_id,user_id) VALUES($1,$2) ON CONFLICT DO NOTHING',[abProject,id]);
+await as(ab[1]);const abTask=(await rows("INSERT INTO tasks(project_id,title,created_by,assignee_ids) VALUES($1,'AB delegate',$2,ARRAY[$3::uuid]) RETURNING id",[abProject,ab[1],ab[2]]))[0].id;
+await as(ab[2]);let abVersion=(await rows('SELECT review_version FROM tasks WHERE id=$1',[abTask]))[0].review_version;
+await rows("SELECT review_task($1,$2,'submit','')",[abTask,abVersion]);
+await as(ab[1]);assert.equal((await rows('SELECT can_review_workspace_task($1) yes',[abTask]))[0].yes,true);
+await as(ab[3]);assert.equal((await rows('SELECT can_review_workspace_task($1) yes',[abTask]))[0].yes,false);
+await as(ab[0]);const abNotice=(await rows("SELECT * FROM notifications WHERE task_id=$1 AND user_id=$2 AND title='Ready for review' ORDER BY created_at DESC LIMIT 1",[abTask,ab[0]]))[0];
+assert.equal(abNotice.actor_id,ab[2]);assert.equal(abNotice.actor_name,'AB Assignee');assert.ok(abNotice.event_review_id);
+const contextModule={exports:{}};new Function('exports',require('typescript').transpileModule(read('src/lib/notification-context.ts'),{compilerOptions:{module:require('typescript').ModuleKind.CommonJS}}).outputText)(contextModule.exports);
+const noticeContext=contextModule.exports.notificationContextSQL;
+assert.equal((await rows(noticeContext+' SELECT action_needed FROM classified WHERE id=$2',[ab[0],abNotice.id]))[0].action_needed,true);
+abVersion=(await rows('SELECT review_version FROM tasks WHERE id=$1',[abTask]))[0].review_version;
+await rows("SELECT review_task($1,$2,'approve','')",[abTask,abVersion]);
+assert.equal((await rows('SELECT actor_name FROM notifications WHERE id=$1',[abNotice.id]))[0].actor_name,'AB Assignee');
+assert.equal((await rows(noticeContext+' SELECT action_needed FROM classified WHERE id=$2',[ab[0],abNotice.id]))[0].action_needed,false);
+await as(null);const abMailBefore=(await rows('SELECT count(*) n FROM email_queue'))[0].n;
+await as(ab[0]);await rows('UPDATE notifications SET is_read=true WHERE id=$1',[abNotice.id]);await rows(noticeContext+' SELECT id FROM classified LIMIT 10',[ab[0]]);
+await as(null);assert.equal((await rows('SELECT count(*) n FROM email_queue'))[0].n,abMailBefore);
+await as(ab[0]);const abSelf=(await rows("INSERT INTO tasks(project_id,title,created_by,assignee_ids) VALUES($1,'AB self',$2,ARRAY[$2::uuid]) RETURNING id",[abProject,ab[0]]))[0].id;
+await rows("SELECT review_task($1,0,'submit','')",[abSelf]);assert.equal((await rows('SELECT can_review_workspace_task($1) yes',[abSelf]))[0].yes,true);
+assert.equal((await rows("SELECT count(*)::int n FROM tasks WHERE id=$1 AND status='in_review' AND can_review_workspace_task(id)",[abSelf]))[0].n,1);
+await as(null);await rows('UPDATE review_settings SET enabled=false');await as(ab[1]);assert.equal((await rows('SELECT can_review_workspace_task($1) yes',[abSelf]))[0].yes,false);await as(ab[0]);assert.equal((await rows('SELECT can_review_workspace_task($1) yes',[abSelf]))[0].yes,true);
+await as(ab[0]);await rows("SELECT set_member_active($1,false,'AB test')",[ab[1]]);await as(ab[1]);assert.equal((await rows('SELECT can_review_workspace_task($1) yes',[abTask]))[0].yes,false);
+await as(ab[0]);await rows("SELECT set_member_active($1,true,'AB test complete')",[ab[1]]);await as(null);await rows('UPDATE review_settings SET enabled=true');
+await as(ab[0]);const abAssignment=(await rows("SELECT id,assignment_id FROM notifications WHERE task_id=$1 AND user_id=$2 AND title='Task assigned'",[abSelf,ab[0]]))[0];assert.ok(abAssignment.assignment_id);
+await rows("SELECT review_task($1,1,'withdraw','Correct the scope')",[abSelf]);await rows('UPDATE tasks SET assignee_ids=ARRAY[$1::uuid] WHERE id=$2',[ab[1],abSelf]);
+assert.equal((await rows(noticeContext+' SELECT action_needed FROM classified WHERE id=$2',[ab[0],abAssignment.id]))[0].action_needed,false);
+await rows("SELECT set_archive('project',$1,true,true,false)",[abProject]);assert.equal((await rows('SELECT can_review_workspace_task($1) yes',[abSelf]))[0].yes,false);
+console.log('Release AB: review eligibility/admin self-review, immutable event actor, notification read without email, reassignment and archive resolution passed.');
+
 await db.close();

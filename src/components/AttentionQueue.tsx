@@ -1,7 +1,7 @@
 'use client';
 
 import {useState} from 'react';
-import Link from 'next/link';
+import Link from './IntentLink';
 import {deadlineLabel} from '@/lib/task-presentation';
 import {getReviewAging} from '@/lib/review-aging';
 import type {DashboardInsights} from '@/lib/dashboard-insights';

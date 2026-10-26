@@ -5,6 +5,8 @@ export type NotificationTask = {
   status?: string;
   is_archived?: boolean;
   project_name?: string;
+  assigned_to_recipient?:boolean;
+  assignment_accepted?:boolean;
 };
 
 export type Notification = {
@@ -17,6 +19,10 @@ export type Notification = {
   is_read: boolean;
   task?: NotificationTask | null;
   actor_name?: string | null;
+  action_needed?:boolean;
+  current_event?:boolean;
+  assignment_id?:string|null;
+  event_review_id?:string|null;
 };
 
 export type NotificationCategory = 'all' | 'action' | 'mentions' | 'updates';
@@ -51,11 +57,15 @@ export function getNotificationResolution(n: Notification): ResolutionContext {
     if (task.status === 'done') {
       return { badge: 'Already completed', variant: 'success', explanation: 'This task has already been completed and approved.', isStaleAction: true };
     }
+    if(task.status==='in_review'&&n.current_event===false)return {badge:'Earlier review request',variant:'muted',explanation:'Open the task to see the latest review request.',isStaleAction:true};
+    if(task.status==='in_review'&&n.action_needed===false)return {badge:'No action required',variant:'info',explanation:'This review is waiting on an eligible reviewer.',isStaleAction:true};
     if (task.status === 'in_review') {
       return { badge: 'Action needed', variant: 'action', explanation: 'Review is awaiting action.', isStaleAction: false };
     }
     return { badge: 'Review withdrawn', variant: 'muted', explanation: 'The review is no longer pending — task was returned to progress.', isStaleAction: true };
   }
+
+  if(task&&task.assigned_to_recipient===false&&['Task assigned','Due today','Task due today','Task overdue','Due tomorrow','Task due tomorrow','Dependency unblocked'].includes(title))return {badge:'Assignment changed',variant:'muted',explanation:'You are no longer assigned to this task.',isStaleAction:true};
 
   // 2. Task assignments:
   if (title === 'Task assigned') {
@@ -71,6 +81,8 @@ export function getNotificationResolution(n: Notification): ResolutionContext {
     if (task.status === 'in_review') {
       return { badge: 'In review', variant: 'info', explanation: 'This task has been submitted for review.', isStaleAction: false };
     }
+    if(task.assignment_accepted)return {badge:'Already accepted',variant:'info',explanation:'You have confirmed receipt. Open the task for its current status.',isStaleAction:true};
+    if(n.action_needed===false)return {badge:'Assignment update',variant:'info',explanation:'Open the task to see the current assignment and next action.',isStaleAction:true};
     return { badge: 'Assigned', variant: 'action', explanation: 'Active task assigned to you.', isStaleAction: false };
   }
 
@@ -88,6 +100,7 @@ export function getNotificationResolution(n: Notification): ResolutionContext {
     if (task.status === 'in_review') {
       return { badge: 'In review', variant: 'info', explanation: 'Task is awaiting review.', isStaleAction: false };
     }
+    if(n.action_needed===false)return {badge:'Deadline updated',variant:'info',explanation:'This earlier reminder no longer requires an action from you.',isStaleAction:true};
     return { badge: 'Deadline pending', variant: 'action', explanation: 'Task deadline requires attention.', isStaleAction: false };
   }
 
@@ -108,6 +121,7 @@ export function getNotificationResolution(n: Notification): ResolutionContext {
     if (task.status === 'in_review') {
       return { badge: 'In review', variant: 'info', explanation: 'Task has been submitted for review.', isStaleAction: false };
     }
+    if(n.action_needed===false)return {badge:'Dependency update',variant:'info',explanation:'Open the task to check its current prerequisites and owner.',isStaleAction:true};
     return { badge: 'Ready to start', variant: 'action', explanation: 'All blocking dependencies completed — task is unblocked and ready to start!', isStaleAction: false };
   }
 
@@ -127,9 +141,12 @@ export function getNotificationResolution(n: Notification): ResolutionContext {
 
   // 5. Review outcomes:
   if (title === 'Task approved') {
+    if(task?.is_archived)return {badge:'Task archived',variant:'muted',isStaleAction:true};
+    if(task&&task.status!=='done')return {badge:task.status==='in_review'?'In review again':'Task active again',variant:'info',explanation:'This approval is historical. The task has since been reopened or resubmitted.',isStaleAction:true};
     return { badge: 'Approved', variant: 'success', isStaleAction: false };
   }
   if (title === 'Changes requested') {
+    if(n.action_needed===false&&task?.status!=='done'&&!task?.is_archived)return {badge:'Review update',variant:'info',explanation:'See the task for the latest review decision and next action.',isStaleAction:true};
     if (task?.status === 'done') {
       return { badge: 'Already completed', variant: 'success', explanation: 'Revisions completed; task is now approved.', isStaleAction: true };
     }

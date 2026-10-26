@@ -235,3 +235,16 @@ test('Dependency unblocked: archived or removed task resolves gracefully', () =>
   assert.equal(getNotificationResolution(removedNotice).isStaleAction, true);
 });
 
+
+test('resolved context keeps read state separate from review relevance',()=>{
+ const task={id:'t',project_id:'p',status:'in_review',is_archived:false};
+ const base={id:'n',title:'Ready for review',message:'Work',created_at:'2026-10-26',is_read:false,task};
+ assert.equal(getNotificationResolution({...base,current_event:false,action_needed:false}).badge,'Earlier review request');
+ assert.equal(getNotificationResolution({...base,current_event:true,action_needed:false}).badge,'No action required');
+ assert.equal(getNotificationResolution({...base,is_read:true,current_event:true,action_needed:true}).badge,'Action needed');
+});
+test('accepted and reassigned notifications do not ask for an obsolete action',()=>{
+ const base={id:'n',title:'Task assigned',message:'Work',created_at:'2026-10-26',is_read:false,action_needed:false,task:{id:'t',project_id:'p',status:'todo',is_archived:false,assigned_to_recipient:true,assignment_accepted:true}};
+ assert.equal(getNotificationResolution(base).badge,'Already accepted');
+ assert.equal(getNotificationResolution({...base,task:{...base.task,assigned_to_recipient:false}}).badge,'Assignment changed');
+});

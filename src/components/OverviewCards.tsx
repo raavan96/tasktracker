@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from './IntentLink';
 export type OverviewItem={id:string;label:string;value:number;href:string;hint:string};
 export default function OverviewCards({label,items}:{label:string;items:OverviewItem[]}){
  return <section aria-label={label} className={`overview-cards grid grid-cols-2 gap-3 ${items.length===3?'lg:grid-cols-3':'lg:grid-cols-5'}`}>

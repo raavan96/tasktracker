@@ -55,6 +55,8 @@ try{
    assert.deepEqual(await positions(),before,'Back disappearing must not move navigation');
   }
 
+  await admin.keyboard.press('Control+k');await admin.getByRole('combobox').fill('Create New Project');await admin.getByRole('option').filter({hasText:'Create New Project'}).click();
+  await expect(admin.getByRole('dialog',{name:'Create new project',exact:true})).toBeVisible();await admin.getByRole('button',{name:'Close dialog',exact:true}).click();await expect(admin).toHaveURL(base+'/dashboard');
   await admin.getByRole('button',{name:'New Project'}).click();
   await admin.locator('dialog input[name=name]').fill('Private staging workflow');
   await admin.getByLabel('Search team members',{exact:true}).fill(users[1].email.toUpperCase());
@@ -325,6 +327,8 @@ try{
   const ownReview=(await db.query("INSERT INTO tasks(project_id,title,created_by,assignee_ids) VALUES($1,'Admin self review QA',$2,ARRAY[$2::uuid]) RETURNING id",[projectURL.split('/').pop(),users[0].id])).rows[0].id;
   await admin.goto(projectURL+'?task='+ownReview);await admin.getByRole('button',{name:'Ready for review',exact:true}).click();
   await expect(admin.getByRole('button',{name:'Approve & complete',exact:true})).toBeVisible();
+  await admin.goto(base+'/dashboard/tasks?preset=review&q=Admin%20self%20review%20QA');await expect(admin.locator('.task-title-cell').getByRole('link',{name:'Admin self review QA',exact:true})).toBeVisible();
+  await admin.locator('.task-title-cell').getByRole('link',{name:'Admin self review QA',exact:true}).click();
   await admin.getByRole('button',{name:'Approve & complete',exact:true}).click();
   await expect.poll(async()=>(await db.query('SELECT status FROM tasks WHERE id=$1',[ownReview])).rows[0].status).toBe('done');
   // Real PostgreSQL row locks: two eligible reviewers cannot approve one version twice.
@@ -648,7 +652,8 @@ try{
   await openDashboard();await expect(admin.getByRole('heading',{name:'Project health',exact:true})).toBeVisible();
   const calendarDate=admin.locator('.insights-calendar button[aria-pressed="false"]').first();
   await calendarDate.scrollIntoViewIfNeeded();const calendarScroll=await admin.evaluate(()=>window.scrollY);
-  await calendarDate.click();await expect(admin.getByText('Loading dashboard…',{exact:true})).toHaveCount(0);
+  const dayRequest=admin.waitForRequest(r=>r.url().includes('/api/dashboard-insights?scope=agenda&day='));
+  await calendarDate.click();await dayRequest;await expect(admin.getByText('Loading dashboard…',{exact:true})).toHaveCount(0);
   await expect(admin.locator('.insights-agenda')).toHaveAttribute('aria-busy','false');
   assert.ok(Math.abs((await admin.evaluate(()=>window.scrollY))-calendarScroll)<8,'Selecting a dashboard date must preserve scroll');
   await admin.getByRole('button',{name:'Next month',exact:true}).click();await expect(admin.getByText('Loading dashboard…',{exact:true})).toBeHidden();
@@ -900,6 +905,18 @@ try{
   await ackPage.reload();await expect(ackPage.getByRole('button',{name:'Accept task',exact:true})).toHaveCount(0);
   assert.equal((await db.query('SELECT status FROM tasks WHERE id=$1',[ackTask])).rows[0].status,'todo');
   await ackPage.setViewportSize({width:430,height:900});await ackPage.screenshot({path:'/tmp/release5-acknowledgement-mobile.png',fullPage:true});await ackContext.close();
+  // Release A/B: first task rows are server rendered, summaries remember state and mobile Search stays compact.
+  await admin.setViewportSize({width:430,height:932});
+  const initialHTML=await (await admin.request.get(base+'/dashboard/tasks')).text();
+  assert.ok(initialHTML.includes('task-title-cell'),'First page tasks must exist in server HTML');
+  await admin.goto(base+'/dashboard/my-tasks');
+  assert.ok(await admin.locator('#tasks').evaluate(el=>Boolean(el.compareDocumentPosition(document.querySelector('#focus'))&Node.DOCUMENT_POSITION_FOLLOWING)),'Assignments must precede Focus');
+  const summary=admin.getByRole('region',{name:'My task overview',exact:true}).getByRole('button');
+  await expect(summary).toHaveAttribute('aria-expanded','false');await summary.click();await admin.reload();await expect(summary).toHaveAttribute('aria-expanded','true');await summary.click();
+  await expect(admin.locator('.workspace-nav-stack-mobile .workspace-search-label')).toBeHidden();
+  await expect(admin.locator('.workspace-nav-stack-mobile .workspace-search-kbd')).toBeHidden();
+  await expect.poll(()=>admin.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  console.log('Release AB: server-rendered first task page, assignments-first My Tasks, remembered compact summary, day-only calendar request and compact mobile Search passed.');
   await admin.getByText('My account',{exact:true}).click();await admin.getByRole('button',{name:'Sign out',exact:true}).click();await expect(admin).toHaveURL(base+'/');
   assert.equal(external.length,0,'Staging must not contact Supabase');
   console.log('Eight browser logins, private project, task assignment, local upload/download, outsider denial, review and admin approval passed against PostgreSQL 16.');

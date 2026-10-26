@@ -35,6 +35,7 @@ export type ActionCenterItem = {
 };
 
 export type ActionCenterData = {
+  userId:string;
   today: string;
   userName: string;
   needsAction: ActionCenterItem[];
@@ -86,11 +87,10 @@ export async function getActionCenterData(): Promise<ActionCenterData> {
         WHERE NOT t.is_archived AND NOT p.is_archived
           AND public.can_work_project(t.project_id)
           AND t.status = 'in_review'
-          AND NOT ($1::uuid = ANY(t.assignee_ids))
-          AND ($2::boolean OR (public.review_enabled() AND t.created_by = $1::uuid))
+          AND public.can_review_workspace_task(t.id)
         ORDER BY t.updated_at ASC, t.title
       `,
-        [userId, isAdmin]
+        []
       )
     ).rows;
 
@@ -395,6 +395,7 @@ export async function getActionCenterData(): Promise<ActionCenterData> {
     return {
       today,
       userName,
+      userId,
       needsAction,
       activeWork,
       waitingOnOthers,
