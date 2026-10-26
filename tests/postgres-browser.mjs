@@ -775,9 +775,9 @@ try{
   console.log('Light/dark control parity: 11 pages including task drawer, at phone and desktop widths; names, destinations, visibility, enabled state and field values match.');
   await admin.goto(base+'/dashboard');
   await admin.goto(projectURL+'?view=board');
-  await admin.getByRole('button',{name:'Collapse Done column',exact:true}).click();
+  await admin.getByRole('button',{name:'Collapse Completed column',exact:true}).click();
   await expect(admin.locator('.board-column[data-status="done"]')).toHaveAttribute('data-collapsed','true');
-  await admin.getByRole('button',{name:'Expand Done column',exact:true}).click();
+  await admin.getByRole('button',{name:'Expand Completed column',exact:true}).click();
   await admin.setViewportSize({width:1440,height:1000});
   await admin.locator('aside').getByRole('link',{name:'Projects',exact:true}).click();
   await expect(admin).toHaveURL(base+'/dashboard');
@@ -930,6 +930,10 @@ try{
   await admin.getByRole('button',{name:'Restore draft',exact:true}).click();await expect(admin.getByLabel('Write a task update',{exact:true})).toHaveValue('Recovered release C draft');
   await admin.getByRole('button',{name:'Post update',exact:true}).click();await expect(admin.getByRole('status').filter({hasText:'Saved.'})).toBeVisible();await admin.reload();await expect(admin.getByRole('button',{name:'Restore draft',exact:true})).toHaveCount(0);
   assert.equal((await db.query("SELECT count(*)::int n FROM task_comments WHERE task_id=$1 AND content='Recovered release C draft'",[ackTask])).rows[0].n,1);
+  await admin.getByLabel('Write a task update',{exact:true}).fill('Intentionally discarded release C draft');
+  admin.once('dialog',dialog=>dialog.accept());await admin.getByRole('button',{name:'Close dialog',exact:true}).click();
+  await admin.goto(base+'/dashboard/projects/'+ackProject+'?task='+ackTask+'&discussion=true');await expect(admin.getByLabel('Write a task update',{exact:true})).toBeEnabled();await expect(admin.getByRole('button',{name:'Restore draft',exact:true})).toHaveCount(0);
+
   await admin.goto(base+'/dashboard/notifications?filter=all');await expect(admin.getByRole('button',{name:'Delete all',exact:true})).toBeHidden();
   await admin.locator('summary').filter({hasText:'Notification actions'}).click();await expect(admin.getByRole('button',{name:'Delete all',exact:true})).toBeVisible();await admin.keyboard.press('Escape');
   await admin.getByText('My account',{exact:true}).click();await admin.getByRole('button',{name:'Start page',exact:true}).click();await admin.getByRole('combobox',{name:'Start page',exact:true}).selectOption('/dashboard/my-tasks');await admin.getByRole('button',{name:'Save start page',exact:true}).click();await expect(admin.getByRole('dialog',{name:'Your start page'})).toHaveCount(0);

@@ -1,4 +1,5 @@
 'use client';
+import {remarkDraftKey} from '@/lib/remark-draft';
 import WorkspaceHeading from '@/components/WorkspaceHeading';
 import {assignedIds,assigneeNames} from '@/lib/task-types';
 
@@ -459,7 +460,7 @@ export default function ProjectView({
 
       {/* MODAL: TASK DETAIL & COMMENTS */}
       {selectedTask && (
-        <Modal side title={selectedTask.title} busy={isSubmitting} onClose={() => setSelectedTaskId(null)}>
+        <Modal side onDiscard={dialog=>{if(dialog.querySelector('textarea[data-unsaved-draft="true"]'))try{localStorage.removeItem(remarkDraftKey(currentUserId,selectedTask.id));}catch{/* Recovery is best effort when device storage is unavailable. */}}} title={selectedTask.title} busy={isSubmitting} onClose={() => setSelectedTaskId(null)}>
           {errorNotice}
           <p className="mb-3 text-sm text-gray-500 break-words">Created by {selectedTask.creator?.full_name || selectedTask.creator?.email || 'Unavailable'}</p>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
